@@ -10,7 +10,7 @@ services:
     volumes:
       - ./presentia-backend/:/var/www/html/
       - ./logs/nginx:/var/log/nginx/
-    container_name: api_presentia_container
+    container_name: nginx
 
   php:
     build:
