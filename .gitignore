@@ -1,3 +1,4 @@
 logs
 db-data
 .env
+docker-compose.yml
