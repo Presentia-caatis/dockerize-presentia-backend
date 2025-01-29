@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
-use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -36,7 +35,7 @@ class AttendanceController extends Controller
         $checkInTypes = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
-            ->get(); //get all check in status without the default -1 check in type and ordered by late_duration
+            ->get(); //get all check in status without the default -1 CheckInType and asc order by late_duration
 
         //get and parse the time limit
         $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta';
@@ -45,18 +44,20 @@ class AttendanceController extends Controller
         $checkOutStart = convert_timezone_to_utc($attendanceWindow->check_out_start_time, $schoolTimeZone);
         $checkOutEnd = convert_timezone_to_utc($attendanceWindow->check_out_end_time, $schoolTimeZone);
 
-        $isInCheckInTimeRange = false; //the boolean value that chech if the student present in certain time duration
+        $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration 
 
         foreach ($jsonInput as $student) {
             $studentId = $student['id'];
             $checkTime = Carbon::parse($student['date']);
 
+            // base invalid case
             if (
+                !\App\Models\Student::find($studentId) || // if the id is invalid
                 $checkTime->lt($checkInStart) || //if the attendance record session has not started
                 $checkTime->gt($checkOutEnd) || //if the attendance record session has ended
                 $checkTime->between($checkInEnd->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
             ) {
-                continue; //the student record will not been made;
+                continue; 
             }
 
             // get the attendance data for desired student
@@ -145,7 +146,6 @@ class AttendanceController extends Controller
             'status' => 'success',
             'message' => 'Attendance deleted successfully'
         ]);
-
     }
 }
 
