@@ -28,7 +28,6 @@ class AttendanceWindowController extends Controller
         ]);
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
-        
 
         $dayData = Day::where('name', $day)
         ->first();

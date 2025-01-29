@@ -34,8 +34,8 @@ class CheckInStatusSeeder extends Seeder
         ]);
 
         CheckInStatus::create([
-            'type_name' => 'Absent',
-            'description' => 'Absent',
+            'type_name' => 'Absence',
+            'description' => 'Absence',
             'late_duration' => -1,
             'is_active' => true,
             'school_id' => $this->school_id,
