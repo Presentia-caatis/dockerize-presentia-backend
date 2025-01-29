@@ -89,6 +89,7 @@ class StudentController extends Controller
                     continue;
                 }
 
+
                 try {
 
                     $classGroup = ClassGroup::firstOrCreate(
@@ -106,7 +107,7 @@ class StudentController extends Controller
                         'class_group_id' => $classGroup->id,
                         'nis' => $row[0],
                         'nisn' => $row[1],
-                        'student_name' => $row[2],
+                        'student_name' => str_replace(',', '', $row[2]),
                         'gender' => $gender,
                         'is_active' => true,
                         'created_at' => now(),
