@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 use App\Models\Attendance;
+use function App\Helpers\convert_timezone_to_utc;
 
 class AttendanceController extends Controller
 {
@@ -25,94 +26,84 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
-        $jsonInput = $request->all(); 
-
-        $firstDate = $jsonInput['0']['date']; 
-        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d');
+        $jsonInput = $request->all(); //get the data
+        $firstDate = $jsonInput['0']['date']->utc(); //get the current date by taking first data
+        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025 
 
         $attendanceWindow = AttendanceWindow::whereDate('date', $formattedFirstDate)
-            ->first();
+            ->first(); //get the coressponding window as the input date
 
-        $attendanceLateTypes = CheckInStatus::where('is_active', true)
+        $checkInTypes = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
-            ->get();
+            ->get(); //get all check in status without the default -1 check in type and ordered by late_duration
 
-        $checkInStart = Carbon::parse($attendanceWindow->check_in_start_time);
-        $checkInEnd = Carbon::parse($attendanceWindow->check_in_end_time);
-        $checkOutStart = Carbon::parse($attendanceWindow->check_out_start_time);
-        $latestCheckInTypeId = CheckInStatus::where("late_duration", -1)->first()->id;
-        $isType = false;
+        //get and parse the time limit
+        $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta';
+        $checkInStart = convert_timezone_to_utc($attendanceWindow->check_in_start_time, $schoolTimeZone);
+        $checkInEnd = convert_timezone_to_utc($attendanceWindow->check_in_end_time, $schoolTimeZone);
+        $checkOutStart = convert_timezone_to_utc($attendanceWindow->check_out_start_time, $schoolTimeZone);
+        $checkOutEnd = convert_timezone_to_utc($attendanceWindow->check_out_end_time, $schoolTimeZone);
+
+        $isInCheckInTimeRange = false; //the boolean value that chech if the student present in certain time duration
 
         foreach ($jsonInput as $student) {
             $studentId = $student['id'];
-            $checkDate = Carbon::parse($student['date'])->utc();
+            $checkTime = Carbon::parse($student['date']);
 
-            if ($checkDate->lt($checkInStart)) {
-                continue;
+            if (
+                $checkTime->lt($checkInStart) || //if the attendance record session has not started
+                $checkTime->gt($checkOutEnd) || //if the attendance record session has ended
+                $checkTime->between($checkInEnd->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
+            ) {
+                continue; //the student record will not been made;
             }
 
-            
-            $attendace = Attendance::where("student_id", $studentId)
-                ->where("check_in_time", $checkDate)
-                ->whereHas("attendanceWindow", function($query) use ($formattedFirstDate){
+            // get the attendance data for desired student
+            $attendance = Attendance::where("student_id", $studentId)
+                ->where("check_in_time", $checkTime)
+                ->whereHas("attendanceWindow", function ($query) use ($formattedFirstDate) {
                     $query->where("date", $formattedFirstDate);
                 })
                 ->first();
 
-            if(!$attendace){
-                $attendace = Attendance::Create([
+            //create new one if its not exist
+            if (!$attendance) {
+                if ($checkTime->gt($checkOutStart)) { //the student has not check in yet
+                    continue;
+                }
+
+                $attendance = Attendance::Create([
                     'school_id' => $attendanceWindow->school_id,
                     'student_id' => $studentId,
                     'attendance_window_id' => $attendanceWindow->id,
-                    'check_in_status_id' => $latestCheckInTypeId,
                 ]);
+            } else {
+                //check if the student is a fucking uneducated orphan attention seeker wannabe  with no friends
+                if (
+                    $attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->addMinutes($checkInTypes->max('late_duration'))) ||
+                    $attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)
+                ) {
+                    continue;
+                }
             }
 
-            foreach ($attendanceLateTypes as $atc) {
-
-                // \Log::info("Student ID: $studentId, Student Date: $checkDate");
-                // \Log::info("Check-in Start: $checkInStart, Check-in End: " . $checkInEnd->addMinutes($atc->late_duration));
-                // \Log::info("Check-out Start: $checkOutStart, Check-out End: " . $checkOutEnd->addMinutes($atc->late_duration));
-
-                /* 
-                    1. if its on time (check_in_start_time <= check_in_time <= check_in_end_time) and (check_out_start_time <= check_out_time <= check_out_end_time)
-                    2. if its late (check_in_time > check_in_end_time) and (check_out_time > check_out_end_time)
-                    2.1 if its late by the rules that has been set to the user
-                    2.2 if its late by the rules that has been set to the sysytem
-                    2.2.1 0 minutes late
-                    2.2.2 check_out_start_time -  check_in_end_time late (all student will be considered as absence)
-                    3. Edit or Delete existing CheckInStatus
-                    3.1 if its already assign to student (for check_in_time > 0)
-                    3.1.1 if the user will update all assign student -> read all connected attandance with the attendaceWindows -> recheck the attendance status
-                    3.1.1.1 if the new late duration < the old late duration || delete the late duration -> update the user that in recent category
-                    3.1.1.2 if the new late duration > the old late duration -> update the user that in above category
-                    3.1.2 else make new CheckInStatus with false status and create a new one.
-                    3.2 if its not assign to student -> directly edit or delete the CheckInStatus
-                */
-
-                if ($checkDate->between($checkInStart, $checkInEnd->addMinutes($atc->late_duration))) {
-                    $isType = true;
-                    $attendace->update([
-                        'check_in_status_id' => $atc->id,
-                        'check_in_time' => $checkDate->toISOString()
+            //iterate each $checkInTypes late duration to decide whether the students is on time or not
+            foreach ($checkInTypes as $cit) {
+                if ($checkTime->between($checkInStart, $checkInEnd->addMinutes($cit->late_duration))) {
+                    $isInCheckInTimeRange = true;
+                    $attendance->update([
+                        'check_in_status_id' => $cit->id,
+                        'check_in_time' => $checkTime
                     ]);
                     break;
                 }
             }
 
-
-            if (!$isType) {
-                if($checkDate->between($checkInEnd, $checkOutStart)){
-                    $attendace->update([
-                        'check_in_status_id' => $latestCheckInTypeId,
-                        'check_in_time' => $checkDate->toISOString()
-                    ]);
-                } else {
-                    $attendace->update([
-                        'check_out_time' => $checkDate->toISOString()
-                    ]);
-                }
+            if (!$isInCheckInTimeRange) {
+                $attendance->update([
+                    'check_out_time' => $checkTime
+                ]);
             }
         }
 
