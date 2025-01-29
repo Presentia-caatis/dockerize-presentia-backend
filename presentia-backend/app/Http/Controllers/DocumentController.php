@@ -44,19 +44,19 @@ class DocumentController extends Controller
 
     }
 
-    public function show($school_id, $id)
+    public function show($id)
     {
+        $document = Document::find($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Document retrieved successfully',
-            'data' => Document::find($id)
+            'data' =>  $document
         ]);
     }
 
-    public function update(Request $request, $school_id, $id)
+    public function update(Request $request, $id)
     {
         $document = Document::find($id);
-
         $request->validate([
             'document_name' => 'sometimes|required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
@@ -85,7 +85,7 @@ class DocumentController extends Controller
 
     }
 
-    public function destroy($shool_id, $id)
+    public function destroy($id)
     {
         $document = Document::find($id);
         if ($document->path) {
@@ -94,7 +94,6 @@ class DocumentController extends Controller
 
         $document->delete();
 
-        //$document->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'Document deleted successfully'

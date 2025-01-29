@@ -140,8 +140,9 @@ class StudentController extends Controller
         ], 201);
     }
 
-    public function show(Student $student)
+    public function show($id)
     {
+        $student=Student::find($id);
         $student->load(['classGroup', 'school']);
         return response()->json([
             'status' => 'success',
@@ -151,8 +152,9 @@ class StudentController extends Controller
 
     }
 
-    public function update(Request $request, Student $student)
+    public function update(Request $request, $id)
     {
+        $student=Student::find($id);
         $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
@@ -174,9 +176,9 @@ class StudentController extends Controller
 
     }
 
-    public function destroy(Student $student)
+    public function destroy($id)
     {
-
+        $student=Student::find($id);
         $student->delete();
         return response()->json([
             'status' => 'success',

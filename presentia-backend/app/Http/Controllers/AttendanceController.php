@@ -123,9 +123,9 @@ class AttendanceController extends Controller
 
     }
 
-    public function show(Attendance $attendance)
+    public function show($id)
     {
-
+        $attendance = Attendance::find($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance retrieved successfully',
@@ -134,9 +134,9 @@ class AttendanceController extends Controller
 
     }
 
-    public function update(Request $request, Attendance $attendance)
+    public function update(Request $request, $id)
     {
-
+        $attendance = Attendance::find($id);
         $attendance->update($request->all());
         return response()->json([
             'status' => 'success',
@@ -146,9 +146,9 @@ class AttendanceController extends Controller
 
     }
 
-    public function destroy(Attendance $attendance)
+    public function destroy($id)
     {
-
+        $attendance = Attendance::find($id);
         $attendance->delete();
         return response()->json([
             'status' => 'success',
