@@ -139,6 +139,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::prefix('student')->group(function () {
             Route::get('/', [StudentController::class, 'index']);
             Route::post('/', [StudentController::class, 'store']);
+            Route::get('/csv', [StudentController::class, 'exportStudents']);
             Route::post('/store-via-file', [StudentController::class, 'storeViaFile']);
             Route::get('/{student}', [StudentController::class, 'show']);
             Route::put('/{student}', [StudentController::class, 'update']);

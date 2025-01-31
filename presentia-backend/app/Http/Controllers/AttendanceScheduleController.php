@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\School;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use function App\Helpers\current_school;
 
 class AttendanceScheduleController extends Controller
 {
@@ -77,22 +78,6 @@ class AttendanceScheduleController extends Controller
             ], 400);
         }
 
-        $data['check_in_start_time'] = Carbon::parse($data['check_in_start_time'], $school->timezone)
-            ->utc()
-            ->format('Y-m-d\TH:i:s.u\Z');
-
-        $data['check_in_end_time'] = Carbon::parse($data['check_in_end_time'], $school->timezone)
-            ->utc()
-            ->format('Y-m-d\TH:i:s.u\Z');
-
-        $data['check_out_start_time'] = Carbon::parse($data['check_out_start_time'], $school->timezone)
-            ->utc()
-            ->format('Y-m-d\TH:i:s.u\Z');
-
-        $data['check_out_end_time'] = Carbon::parse($data['check_out_end_time'], $school->timezone)
-            ->utc()
-            ->format('Y-m-d\TH:i:s.u\Z');
-
         if (!$data['event_id']) {
             $event = Event::create([
                 'start_date' => Carbon::parse($data['check_in_start_time'])->format('Y-m-d'),
@@ -113,7 +98,7 @@ class AttendanceScheduleController extends Controller
 
 
 
-    public function update(Request $request, $school, $id)
+    public function update(Request $request, $id)
     {
         $attendanceSchedule = AttendanceSchedule::find($id);
         $request->validate([
@@ -126,8 +111,7 @@ class AttendanceScheduleController extends Controller
             'check_out_end_time' => 'required|date_format:Y-m-d H:i:s'
         ]);
 
-        $school = School::findOrFail($school);
-        $timezone = $school->timezone;
+        $timezone = current_school()->timezone;
 
         $checkInStartTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_in_start_time, $timezone)->utc();
         $checkInEndTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_in_end_time, $timezone)->utc();

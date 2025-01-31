@@ -46,6 +46,23 @@ class StudentController extends Controller
 
     }
 
+    public function exportStudents()
+    {
+        $students = Student::orderBy('id')->get(['id', 'student_name']);
+
+        $output = "PIN,Name\n";
+
+        foreach ($students as $student) {
+            $name = '"' . str_replace('"', '""', $student->student_name) . '"';
+            $output .= "{$student->id},$name\n";
+        }
+
+        return response($output, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="students.csv"',
+        ]);
+    }
+
     public function storeViaFile(Request $request)
     {
         $request->validate([
@@ -107,7 +124,7 @@ class StudentController extends Controller
                         'class_group_id' => $classGroup->id,
                         'nis' => $row[0],
                         'nisn' => $row[1],
-                        'student_name' => str_replace(',', '', $row[2]),
+                        'student_name' => $row[2],
                         'gender' => $gender,
                         'is_active' => true,
                         'created_at' => now(),
@@ -142,7 +159,7 @@ class StudentController extends Controller
 
     public function show($id)
     {
-        $student=Student::find($id);
+        $student = Student::find($id);
         $student->load(['classGroup', 'school']);
         return response()->json([
             'status' => 'success',
@@ -154,7 +171,7 @@ class StudentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $student=Student::find($id);
+        $student = Student::find($id);
         $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
@@ -178,7 +195,7 @@ class StudentController extends Controller
 
     public function destroy($id)
     {
-        $student=Student::find($id);
+        $student = Student::find($id);
         $student->delete();
         return response()->json([
             'status' => 'success',
