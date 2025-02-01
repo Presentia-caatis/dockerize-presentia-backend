@@ -23,15 +23,15 @@ class AttendanceScheduleAndDaySeeder extends Seeder
         $school = School::findOrFail($this->school_id);
         $schoolTimeZone = $school->timezone ?? 'UTC';
 
-        $currentDate = Carbon::createFromFormat('d-m-Y', '29-01-2025', $schoolTimeZone);
+        $currentDate = Carbon::now($schoolTimeZone);
         
         $defaultAttendanceSchedule = AttendanceSchedule::create([
             'event_id' => null,
             'type' => 'default',
             'name' => 'Default Schedule',
-            'check_in_start_time' => $currentDate->copy()->setTime(6,0),
-            'check_in_end_time' => $currentDate->copy()->setTime(6,30),
-            'check_out_start_time' => $currentDate->copy()->setTime(16,0),
+            'check_in_start_time' => $currentDate->copy()->setTime(7,0)->utc(),
+            'check_in_end_time' => $currentDate->copy()->setTime(8,0)->utc(),
+            'check_out_start_time' => $currentDate->copy()->setTime(16,0)->utc(),
             'check_out_end_time' => $currentDate->copy()->setTime(15,0),
         ]);
 
