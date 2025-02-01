@@ -22,14 +22,14 @@ class SchoolFeatureController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'feature_id' => 'required|exists:features,id',
             'status' => 'required|boolean',
         ]);
 
 
-        $data = SchoolFeature::create($request->all());
+        $data = SchoolFeature::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'School feature created successfully',
@@ -38,7 +38,7 @@ class SchoolFeatureController extends Controller
 
     }
 
-    public function show(SchoolFeature $schoolFeature)
+    public function getById(SchoolFeature $schoolFeature)
     {
 
         return response()->json([
@@ -51,13 +51,13 @@ class SchoolFeatureController extends Controller
 
     public function update(Request $request, SchoolFeature $schoolFeature)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'feature_id' => 'required|exists:features,id',
             'status' => 'required|boolean',
         ]);
 
-        $schoolFeature->update($request->all());
+        $schoolFeature->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'School feature updated successfully',

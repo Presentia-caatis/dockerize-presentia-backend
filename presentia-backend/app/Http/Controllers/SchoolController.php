@@ -22,7 +22,7 @@ class SchoolController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
             'name' => 'required|string',
             'address' => 'required|string',
@@ -32,7 +32,7 @@ class SchoolController extends Controller
         ]);
 
 
-        $data = School::create($request->all());
+        $data = School::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'School created successfully',
@@ -41,7 +41,7 @@ class SchoolController extends Controller
 
     }
 
-    public function show(School $School)
+    public function getById(School $School)
     {
 
         return response()->json([
@@ -55,7 +55,7 @@ class SchoolController extends Controller
     public function update(Request $request, School $School)
     {
 
-        $request->validate([
+        $validatedData = $request->validate([
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
             'school_name' => 'required|string',
             'address' => 'required|string',
@@ -63,7 +63,7 @@ class SchoolController extends Controller
             'end_subscription' => 'required|date',
         ]);
 
-        $School->update($request->all());
+        $School->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'School updated successfully',

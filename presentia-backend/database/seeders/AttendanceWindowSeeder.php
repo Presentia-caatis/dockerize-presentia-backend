@@ -34,10 +34,10 @@ class AttendanceWindowSeeder extends Seeder
             'total_absent' => 0,
             'date' => $currentDate->format('Y-m-d'),
             'type' => 'default',
-            'check_in_start_time' => $currentDate->copy()->setTime(7, 0)->utc(),
-            'check_in_end_time' => $currentDate->copy()->setTime(8, 0)->utc(),
-            'check_out_start_time' => $currentDate->copy()->setTime(16, 0)->utc(),
-            'check_out_end_time' => $currentDate->copy()->setTime(15, 0)->utc(),
+            'check_in_start_time' => '06:00:00',
+            'check_in_end_time' => '06:30:00',
+            'check_out_start_time' => '16:00:00',
+            'check_out_end_time' => '17:00:00',
         ]);
     }
 

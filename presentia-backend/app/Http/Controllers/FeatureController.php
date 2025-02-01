@@ -21,13 +21,13 @@ class FeatureController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'feature_name' => 'required|string',
             'description' => 'nullable|string',
         ]);
 
 
-        $data = Feature::create($request->all());
+        $data = Feature::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Feature created successfully',
@@ -36,7 +36,7 @@ class FeatureController extends Controller
 
     }
 
-    public function show(Feature $feature)
+    public function getById(Feature $feature)
     {
 
         return response()->json([
@@ -49,13 +49,13 @@ class FeatureController extends Controller
 
     public function update(Request $request, Feature $feature)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'feature_name' => 'required|string',
             'description' => 'nullable|string',
         ]);
 
 
-        $feature->update($request->all());
+        $feature->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Feature updated successfully',

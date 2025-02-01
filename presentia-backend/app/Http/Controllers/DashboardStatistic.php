@@ -27,7 +27,7 @@ class DashboardStatistic extends Controller
     }
 
     public function DailyStatistic(Request $request){
-        $request->validate([
+        $validatedData = $request->validate([
             'date' => 'required|date',
         ]);
 

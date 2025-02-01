@@ -23,7 +23,7 @@ class CheckInStatusController extends Controller
     
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'type_name' => 'required|string',
             'description' => 'required|string',
             'is_active' => 'required|boolean',
@@ -31,7 +31,7 @@ class CheckInStatusController extends Controller
         ],201);
 
 
-        $data = CheckInStatus::create($request->all());
+        $data = CheckInStatus::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late type created successfully',
@@ -40,7 +40,7 @@ class CheckInStatusController extends Controller
 
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $checkInStatus = CheckInStatus::find($id);
         return response()->json([
@@ -54,14 +54,14 @@ class CheckInStatusController extends Controller
     public function update(Request $request, $id)
     {
         $checkInStatus = CheckInStatus::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'type_name' => 'required|string',
             'description' => 'required|string',
             'is_active' => 'required|boolean',
             'school_id' => 'required|exists:schools,id',
         ]);
 
-        $checkInStatus->update($request->all());
+        $checkInStatus->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late type updated successfully',

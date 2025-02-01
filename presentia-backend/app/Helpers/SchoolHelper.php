@@ -9,10 +9,17 @@ if (!function_exists('current_school_id')) {
     }
 }
 
+
 if (!function_exists('current_school')) {
     function current_school()
     {
         return \App\Models\School::find(current_school_id());
+    }
+}
+
+if (!function_exists('current_school_timezone')) {
+    function current_school_timezone(){
+        return current_school()->timezone;
     }
 }
 

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamp("latest_subscription");
             $table->timestamp("end_subscription")->nullable();
             $table->string('timezone')->default('UTC');
+            $table->string('school_token')->unique();
             $table->timestamps();
         });
     }

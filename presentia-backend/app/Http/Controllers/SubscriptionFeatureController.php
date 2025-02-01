@@ -22,12 +22,12 @@ class SubscriptionFeatureController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'feature_id' => 'required|exists:features,id',
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
         ]);
 
-        $data = SubscriptionFeature::create($request->all());
+        $data = SubscriptionFeature::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription feature created successfully',
@@ -35,7 +35,7 @@ class SubscriptionFeatureController extends Controller
         ],201);
     }
 
-    public function show(SubscriptionFeature $subscriptionFeature)
+    public function getById(SubscriptionFeature $subscriptionFeature)
     {
 
         return response()->json([
@@ -49,12 +49,12 @@ class SubscriptionFeatureController extends Controller
     public function update(Request $request, SubscriptionFeature $subscriptionFeature)
     {
 
-        $request->validate([
+        $validatedData = $request->validate([
             'feature_id' => 'required|exists:features,id',
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
         ]);
 
-        $subscriptionFeature->update($request->all());
+        $subscriptionFeature->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Student updated successfully',

@@ -15,6 +15,7 @@ class AttendanceSchedule extends Model
         'event_id',
         'name',
         'type',
+        'date',
         'check_in_start_time',
         'check_in_end_time',
         'check_out_start_time',
