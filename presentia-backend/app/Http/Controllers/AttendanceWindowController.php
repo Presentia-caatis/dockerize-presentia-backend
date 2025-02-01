@@ -28,7 +28,6 @@ class AttendanceWindowController extends Controller
         ]);
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
-        
 
         $dayData = Day::where('name', $day)
         ->first();
@@ -59,18 +58,18 @@ class AttendanceWindowController extends Controller
     }
 
 
-    public function show(AttendanceWindow $attendanceWindow)
+    public function show($id)
     {
-        //
+        $attendanceWindow=AttendanceWindow::find($id);
     }
 
-    public function update(Request $request, AttendanceWindow $attendanceWindow)
+    public function update(Request $request, $id)
     {
-        //
+        $attendanceWindow=AttendanceWindow::find($id);
     }
 
-    public function destroy(AttendanceWindow $attendanceWindow)
+    public function destroy($id)
     {
-        //
+        $attendanceWindow=AttendanceWindow::find($id);
     }
 }

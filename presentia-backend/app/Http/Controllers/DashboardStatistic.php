@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class DashboardStatistic extends Controller
 {
-    function StaticStatistic(){
+    public function StaticStatistic(){
         
         $data = [
             'packet' => 0,
@@ -26,7 +26,7 @@ class DashboardStatistic extends Controller
         ]);
     }
 
-    function DailyStatistic(Request $request){
+    public function DailyStatistic(Request $request){
         $request->validate([
             'date' => 'required|date',
         ]);

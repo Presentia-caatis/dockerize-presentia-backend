@@ -37,8 +37,9 @@ class AbsencePermitTypeController extends Controller
         ], 201);
     }
 
-    public function show(AbsencePermitType $absencePermitType)
+    public function show($id)
     {
+        $absencePermitType=AbsencePermitType::find($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type retrieved successfully',
@@ -46,8 +47,9 @@ class AbsencePermitTypeController extends Controller
         ]);
     }
 
-    public function update(Request $request, AbsencePermitType $absencePermitType)
+    public function update(Request $request, $id)
     {
+        $absencePermitType=AbsencePermitType::find($id);
         $request->validate([
             'permit_name' => 'required|string',
             'is_active' => 'required|boolean',
@@ -63,9 +65,9 @@ class AbsencePermitTypeController extends Controller
 
     }
 
-    public function destroy(AbsencePermitType $absencePermitType)
+    public function destroy($id)
     {
-
+        $absencePermitType=AbsencePermitType::find($id);
         $absencePermitType->delete();
         return response()->json([
             'status' => 'success',

@@ -20,8 +20,9 @@ class DayController extends Controller
 
 
     
-    public function show(Day $day)
+    public function show($id)
     {
+        $day=Day::find($id);
         $data = $day->load('school', 'attendanceSchedule');
         return response()->json([
             'status' => 'success',
@@ -30,18 +31,10 @@ class DayController extends Controller
         ]);
     }
 
-    public function showAllBySchool(){
-        $data = Day::with('school', 'attendanceSchedule')->where('school_id', auth()->user()->school_id)->get();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Days retrieved successfully',
-            'data' => $data
-        ]);
-    }
-
     
-    public function update(Request $request, Day $day)
+    public function update(Request $request, $id)
     {
+        $day=Day::find($id);
         $request->validate([
             'attendance_schedule_id' => 'nullable|exists:attendance_schedules,id',
         ]);

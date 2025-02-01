@@ -40,19 +40,20 @@ class CheckInStatusController extends Controller
 
     }
 
-    public function show(CheckInStatus $CheckInStatus)
+    public function show($id)
     {
-
+        $checkInStatus = CheckInStatus::find($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late type retrieved successfully',
-            'data' => $CheckInStatus
+            'data' => $checkInStatus
         ]);
 
     }
 
-    public function update(Request $request, CheckInStatus $CheckInStatus)
+    public function update(Request $request, $id)
     {
+        $checkInStatus = CheckInStatus::find($id);
         $request->validate([
             'type_name' => 'required|string',
             'description' => 'required|string',
@@ -60,19 +61,19 @@ class CheckInStatusController extends Controller
             'school_id' => 'required|exists:schools,id',
         ]);
 
-        $CheckInStatus->update($request->all());
+        $checkInStatus->update($request->all());
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late type updated successfully',
-            'data' => $CheckInStatus
+            'data' => $checkInStatus
         ]);
 
     }
 
-    public function destroy(CheckInStatus $CheckInStatus)
+    public function destroy($id)
     {
-
-        $CheckInStatus->delete();
+        $checkInStatus = CheckInStatus::find($id);
+        $checkInStatus->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late type deleted successfully'

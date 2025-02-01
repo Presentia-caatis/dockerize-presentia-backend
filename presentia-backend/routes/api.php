@@ -125,7 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{payment}', [PaymentController::class, 'destroy']);
     });
 
-    Route::prefix('{school_id}')->middleware('school')->group(function () {
+    Route::middleware('school')->group(function () {
         // Class Group Routes
         Route::prefix('class-group')->group(function () {
             Route::get('/', [ClassGroupController::class, 'index']);

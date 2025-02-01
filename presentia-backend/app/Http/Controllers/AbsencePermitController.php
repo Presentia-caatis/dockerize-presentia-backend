@@ -38,9 +38,9 @@ class AbsencePermitController extends Controller
 
     }
 
-    public function show(AbsencePermit $absencePermit)
+    public function show($id)
     {
-
+        $absencePermit=AbsencePermit::find($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit retrieved successfully',
@@ -49,8 +49,9 @@ class AbsencePermitController extends Controller
 
     }
 
-    public function update(Request $request, AbsencePermit $absencePermit)
+    public function update(Request $request, $id)
     {
+        $absencePermit=AbsencePermit::find($id);
         $validatedData = $request->validate([
             'attendance_id' => 'sometimes|exists:attendances,id',
             'remove_document' => 'sometimes|boolean',
@@ -73,9 +74,9 @@ class AbsencePermitController extends Controller
 
     }
 
-    public function destroy(AbsencePermit $absencePermit)
+    public function destroy($id)
     {
-
+        $absencePermit=AbsencePermit::find($id);
         $absencePermit->delete();
         return response()->json([
             'status' => 'success',

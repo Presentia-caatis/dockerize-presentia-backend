@@ -17,7 +17,7 @@ class SchoolMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $schoolId = $request->segment(2);
+        $schoolId = auth()->user()->school_id;
 
         School::findOrFail($schoolId);
         validate_school_access($schoolId, auth()->user());

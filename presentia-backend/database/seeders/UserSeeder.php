@@ -8,21 +8,17 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
-    private $school_id;
-
-    public function __construct($school_id)
-    {
-        $this->school_id = $school_id;
-    }
-
     public function run()
     {
-        User::create([
-            'school_id' => $this->school_id,
-            'email' => "presentia{$this->school_id}@gmail.com",
-            'fullname' => "Presentia {$this->school_id} Official Account",
-            'username' => "presentia{$this->school_id}",
-            'password' => bcrypt('12345678')
-        ]);
+        for($i = 1; $i <= 6; $i++){
+            User::create([
+                'school_id' => 1,
+                'email' => "presentia{$i}@gmail.com",
+                'fullname' => "Presentia {$i} Official Account",
+                'username' => "presentia{$i}",
+                'password' => bcrypt('12345678')
+            ]);
+        }
+        
     }
 }
