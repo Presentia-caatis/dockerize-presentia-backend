@@ -22,14 +22,14 @@ class AbsencePermitTypeController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'permit_name' => 'required|string',
             'is_active' => 'required|boolean',
             'school_id' => 'required|exists:schools,id',
         ]);
 
 
-        $data = AbsencePermitType::create($request->all());
+        $data = AbsencePermitType::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type created successfully',
@@ -50,13 +50,13 @@ class AbsencePermitTypeController extends Controller
     public function update(Request $request, $id)
     {
         $absencePermitType=AbsencePermitType::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'permit_name' => 'required|string',
             'is_active' => 'required|boolean',
             'school_id' => 'required|exists:schools,id',
         ]);
 
-        $absencePermitType->update($request->all());
+        $absencePermitType->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type updated successfully',

@@ -22,13 +22,13 @@ class SubscriptionHistoryController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
         ]);
 
 
-        $data = SubscriptionHistory::create($request->all());
+        $data = SubscriptionHistory::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription history created successfully',

@@ -21,7 +21,7 @@ class PaymentController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
             'payment_date' => 'required|date',
@@ -31,7 +31,7 @@ class PaymentController extends Controller
         ]);
 
 
-        $data = Payment::create($request->all());
+        $data = Payment::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Payment created successfully',
@@ -53,7 +53,7 @@ class PaymentController extends Controller
 
     public function update(Request $request, Payment $payment)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'subscription_plan_id' => 'required|exists:subscription_plans,id',
             'payment_date' => 'required|date',
@@ -62,7 +62,7 @@ class PaymentController extends Controller
             'status' => 'required|string',
         ]);
 
-        $payment->update($request->all());
+        $payment->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Payment updated successfully',

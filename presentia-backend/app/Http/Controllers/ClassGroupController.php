@@ -22,13 +22,13 @@ class ClassGroupController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_name' => 'required|string',
             'amount_of_students' => 'required|integer',
         ]);
 
-        $data = ClassGroup::create($request->all());
+        $data = ClassGroup::create($validatedData);
         $data->load('school');
         return response()->json([
             'status' => 'success',
@@ -53,13 +53,13 @@ class ClassGroupController extends Controller
     public function update(Request $request, $id)
     {
         $classGroup=ClassGroup::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_name' => 'required|string',
             'amount_of_students' => 'required|integer',
         ]);
 
-        $classGroup->update($request->all());
+        $classGroup->update($validatedData);
         $classGroup->load('school');
         return response()->json([
             'status' => 'success',

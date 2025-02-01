@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('adms_credentials', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id');
             $table->foreignId('school_id')->nullable()->constrained('schools');
             $table->string('username');
             $table->string('password');
@@ -25,6 +25,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('adms_credentials');
+        Schema::enableForeignKeyConstraints();
     }
 };

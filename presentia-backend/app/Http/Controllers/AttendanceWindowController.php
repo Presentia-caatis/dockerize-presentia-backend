@@ -31,7 +31,6 @@ class AttendanceWindowController extends Controller
                 'school_id' => $record->school_id,
                 'total_present' => $record->total_present,
                 'total_absent' => $record->total_absent,
-                'date' => Carbon::parse($record->date, $currentSchoolTimezone)->utc()->toDateString(),
                 'type' => $record->type,
                 'check_in_start_time' => Carbon::parse($record->check_in_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
                 'check_in_end_time' => Carbon::parse($record->check_in_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
@@ -48,7 +47,7 @@ class AttendanceWindowController extends Controller
 
     public function generateWindow(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'date'  => 'required|date_format:Y-m-d',
         ]);
 
@@ -69,10 +68,10 @@ class AttendanceWindowController extends Controller
             'total_absent' => 0,
             'date' => $request->date,
             'type' => $dataSchedule->type,
-            'check_in_start_time' => Carbon::parse($date->toDateString() . ' ' . Carbon::parse($dataSchedule->check_in_start_time)->format('H:i:s')),
-            'check_in_end_time' => Carbon::parse($date->toDateString() . ' ' . Carbon::parse($dataSchedule->check_in_end_time)->format('H:i:s')),
-            'check_out_start_time' => Carbon::parse($date->toDateString() . ' ' . Carbon::parse($dataSchedule->check_out_start_time)->format('H:i:s')),
-            'check_out_end_time' => Carbon::parse($date->toDateString() . ' ' . Carbon::parse($dataSchedule->check_out_end_time)->format('H:i:s'))
+            'check_in_start_time' => $dataSchedule->check_in_start_time,
+            'check_in_end_time' => $dataSchedule->check_in_end_time,
+            'check_out_start_time' => $dataSchedule->check_out_start_time,
+            'check_out_end_time' => $dataSchedule->check_out_end_time
         ]);
 
         return response()->json([
@@ -85,7 +84,7 @@ class AttendanceWindowController extends Controller
 
     public function getById($id)
     {
-        $attendanceWindow=AttendanceWindow::find($id);
+        $attendanceWindow=AttendanceWindow::findOrFail($id);
 
         return response()->json([
             'status' => 'success',
@@ -96,20 +95,17 @@ class AttendanceWindowController extends Controller
 
     public function update(Request $request, $id)
     {
-        $attendanceWindow=AttendanceWindow::find($id);
+        $attendanceWindow=AttendanceWindow::findOrFail($id);
 
-        $request->validate([
-            'name' => 'sometimes|string',
-            'date' => 'sometimes|date_format:Y-m-d',
-            'total_present' => 'sometimes|integer',
-            'total_absent' => 'sometimes|integer',
-            'check_in_start_time' => 'sometimes|date_format:H:i:s',
-            'check_in_end_time' => 'sometimes|date_format:H:i:s',
-            'check_out_start_time' => 'sometimes|date_format:H:i:s',
-            'check_out_end_time' => 'sometimes|date_format:H:i:s'
+        $validatedData = $validatedData = $request->validate([
+            'name' => 'required|string',
+            'check_in_start_time' => 'required|date_format:H:i:s',
+            'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
+            'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',
+            'check_out_end_time' => 'required|date_format:H:i:s|after:check_out_start_time',
         ]);
-
-        $attendanceWindow->update($request->validated());
+    
+        $attendanceWindow->update($validatedData);
 
         return response()->json([
             'status' => 'success',
@@ -120,7 +116,7 @@ class AttendanceWindowController extends Controller
 
     public function destroy($id)
     {
-        $attendanceWindow=AttendanceWindow::find($id);
+        $attendanceWindow=AttendanceWindow::findOrFail($id);
         $attendanceWindow->delete();
 
         return response()->json([

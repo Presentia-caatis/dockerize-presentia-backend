@@ -21,7 +21,7 @@ class AbsencePermitController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'attendance_id' => 'required|exists:attendances,id',
             'document_id' => 'nullable|exists:documents,id',
             'absence_permit_type_id' => 'required|exists:absence_permit_types,id',
@@ -29,7 +29,7 @@ class AbsencePermitController extends Controller
         ]);
 
 
-        $data = AbsencePermit::create($request->all());
+        $data = AbsencePermit::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit created successfully',
@@ -52,7 +52,7 @@ class AbsencePermitController extends Controller
     public function update(Request $request, $id)
     {
         $absencePermit=AbsencePermit::find($id);
-        $validatedData = $request->validate([
+        $validatedData = $validatedData = $request->validate([
             'attendance_id' => 'sometimes|exists:attendances,id',
             'remove_document' => 'sometimes|boolean',
             'document_id' => 'sometimes|nullable|exists:documents,id',

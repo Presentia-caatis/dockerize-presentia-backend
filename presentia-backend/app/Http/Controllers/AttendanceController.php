@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Attendance;
 use function App\Helpers\convert_timezone_to_utc;
+use function App\Helpers\convert_utc_to_timezone;
 
 class AttendanceController extends Controller
 {
@@ -26,23 +27,28 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         $jsonInput = $request->all(); //get the data
-        $firstDate = $jsonInput['0']['date']->utc(); //get the current date by taking first data
+        $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta';
+        $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
         $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025 
+        
+        dd(AttendanceWindow::first());
 
-        $attendanceWindow = AttendanceWindow::whereDate('date', $formattedFirstDate)
+        $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
             ->first(); //get the coressponding window as the input date
-
+        
+        if(!$attendanceWindow){
+            abort(404, "Attendance window not found");
+        }
         $checkInTypes = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
             ->get(); //get all check in status without the default -1 CheckInType and asc order by late_duration
 
         //get and parse the time limit
-        $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta';
-        $checkInStart = convert_timezone_to_utc($attendanceWindow->check_in_start_time, $schoolTimeZone);
-        $checkInEnd = convert_timezone_to_utc($attendanceWindow->check_in_end_time, $schoolTimeZone);
-        $checkOutStart = convert_timezone_to_utc($attendanceWindow->check_out_start_time, $schoolTimeZone);
-        $checkOutEnd = convert_timezone_to_utc($attendanceWindow->check_out_end_time, $schoolTimeZone);
+        $checkInStart = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_in_start_time, $schoolTimeZone);
+        $checkInEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_in_end_time, $schoolTimeZone);
+        $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_out_start_time, $schoolTimeZone);
+        $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_out_end_time, $schoolTimeZone);
 
         $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration 
 

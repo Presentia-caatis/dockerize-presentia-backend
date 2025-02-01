@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->nullable()->constrained('events');
             $table->string('name');
-            $table->date('date');
+            $table->date('date')->nullable();
             $table->enum('type', ['default', 'event' , 'holiday'])->default('event');
             $table->time('check_in_start_time')->nullable();
             $table->time('check_in_end_time')->nullable();

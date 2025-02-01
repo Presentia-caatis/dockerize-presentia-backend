@@ -24,7 +24,7 @@ class UserController extends Controller
 
     public function linkToSchool(Request $request, User $User)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'nullable|exists:schools,id'
         ]);
 
@@ -40,7 +40,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'fullname' => 'required|string|min:3|max:100|regex:/^[a-zA-Z \'\\\\]+$/',
             'username' => 'required|string|alpha_dash|min:3|max:50|unique:users,username',
             'school_id' => 'nullable|exists:schools,id',
@@ -48,7 +48,7 @@ class UserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $data = $request->all();
+        $data = $validatedData;
         $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
 
         $user = User::create($data);
@@ -89,14 +89,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $User)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'fullname' => 'required|string|min:3|max:100|regex:/^[a-zA-Z \'\\\\]+$/',
             'username' => 'required|string|alpha_dash|min:3|max:50|unique:users,username',
             'school_id' => 'nullable|exists:schools,id',
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
-        $User->update($request->all());
+        $User->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'User updated successfully',

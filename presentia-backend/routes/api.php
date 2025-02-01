@@ -194,6 +194,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [AttendanceWindowController::class, 'index']);
             Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
             Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow']);
+            Route::get('/{absencePermit}', [AttendanceWindowController::class, 'getById']);
+            Route::put('/{absencePermit}', [AttendanceWindowController::class, 'update']);
+            Route::delete('/{absencePermit}', [AttendanceWindowController::class, 'destroy']);
         });
 
         Route::prefix('attendance-schedule')->group(function () {

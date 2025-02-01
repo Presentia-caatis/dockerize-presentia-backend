@@ -22,13 +22,13 @@ class SubscriptionPlanController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'subscription_name' => 'required|string',
             'billing_cycle_month' => 'required|int',
             'price' => 'required|integer',
         ]);
 
-        $data = SubscriptionPlan::create($request->all());
+        $data = SubscriptionPlan::create($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription plan created successfully',
@@ -48,13 +48,13 @@ class SubscriptionPlanController extends Controller
 
     public function update(Request $request, SubscriptionPlan $subscriptionPlan)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'subscription_name' => 'required|string',
             'billing_cycle_month' => 'required|int',
             'price' => 'required|integer',
         ]);
         
-        $subscriptionPlan->update($request->all());
+        $subscriptionPlan->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription plan updated successfully',

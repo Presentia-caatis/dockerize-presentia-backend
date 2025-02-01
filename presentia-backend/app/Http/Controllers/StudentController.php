@@ -25,7 +25,7 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
@@ -36,7 +36,7 @@ class StudentController extends Controller
         ]);
 
 
-        $data = Student::create($request->all());
+        $data = Student::create($validatedData);
         $data->load(['classGroup', 'school']);
         return response()->json([
             'status' => 'success',
@@ -65,7 +65,7 @@ class StudentController extends Controller
 
     public function storeViaFile(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'file' => 'required|file|mimes:xlsx,xls',
         ]);
@@ -172,7 +172,7 @@ class StudentController extends Controller
     public function update(Request $request, $id)
     {
         $student = Student::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
@@ -182,7 +182,7 @@ class StudentController extends Controller
             'gender' => 'required|in:male,female',
         ]);
 
-        $student->update($request->all());
+        $student->update($validatedData);
         $student->load(['classGroup', 'school']);
 
         return response()->json([

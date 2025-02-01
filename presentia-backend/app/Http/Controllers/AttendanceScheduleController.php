@@ -43,7 +43,7 @@ class AttendanceScheduleController extends Controller
 
     public function showByType(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'type' => 'required|in:event,default,holiday',
         ]);
 
@@ -58,17 +58,18 @@ class AttendanceScheduleController extends Controller
 
     public function storeEvent(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'event_id' => 'nullable',
             'name' => 'required|string',
             'type' => 'required|in:event',
-            'check_in_start_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_in_end_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_out_start_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_out_end_time' => 'required|date_format:Y-m-d H:i:s'
+            'date' => 'required|date_format: Y-m-d',
+            'check_in_start_time' => 'required|date_format:H:i:s',
+            'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
+            'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',
+            'check_out_end_time' => 'required|date_format:H:i:s|after:check_out_start_time',
         ]);
 
-        $data = $request->all();
+        $data = $validatedData;
 
         if (!current_school_timezone()) {
             return response()->json([
@@ -100,33 +101,18 @@ class AttendanceScheduleController extends Controller
     public function update(Request $request, $id)
     {
         $attendanceSchedule = AttendanceSchedule::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'event_id' => 'nullable',
             'name' => 'required|string',
-            'type' => 'required|in:event,default,holiday',
-            'check_in_start_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_in_end_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_out_start_time' => 'required|date_format:Y-m-d H:i:s',
-            'check_out_end_time' => 'required|date_format:Y-m-d H:i:s'
+            'date' => 'required|date_format: Y-m-d',
+            'check_in_start_time' => 'required|date_format: H:i:s',
+            'check_in_end_time' => 'required|date_format:H:i:s',
+            'check_out_start_time' => 'required|date_format:H:i:s',
+            'check_out_end_time' => 'required|date_format:H:i:s'
         ]);
-
-        $timezone = current_school()->timezone;
-
-        $checkInStartTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_in_start_time, $timezone)->utc();
-        $checkInEndTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_in_end_time, $timezone)->utc();
-        $checkOutStartTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_out_start_time, $timezone)->utc();
-        $checkOutEndTime = Carbon::createFromFormat('Y-m-d H:i:s', $request->check_out_end_time, $timezone)->utc();
 
         $attendanceSchedule = AttendanceSchedule::findOrFail($id);
-        $attendanceSchedule->update([
-            'event_id' => $request->event_id,
-            'name' => $request->name,
-            'type' => $request->type,
-            'check_in_start_time' => $checkInStartTime,
-            'check_in_end_time' => $checkInEndTime,
-            'check_out_start_time' => $checkOutStartTime,
-            'check_out_end_time' => $checkOutEndTime,
-        ]);
+        $attendanceSchedule->update($validatedData);
 
         return response()->json([
             'status' => 'success',

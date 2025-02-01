@@ -22,7 +22,7 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'document_name' => 'required|string',
             'file' => 'required|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
@@ -57,7 +57,7 @@ class DocumentController extends Controller
     public function update(Request $request, $id)
     {
         $document = Document::find($id);
-        $request->validate([
+        $validatedData = $request->validate([
             'document_name' => 'sometimes|required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
