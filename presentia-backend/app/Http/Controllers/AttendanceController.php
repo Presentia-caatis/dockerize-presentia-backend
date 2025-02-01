@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
+use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -26,17 +27,21 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
+        /*
+            Batching rules
+            1. the date of all data is same
+            2. the source of all date should come from same school
+        */
         $jsonInput = $request->all(); //get the data
         $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta'; //set the time zone
-        $school_id = "";
+        $schoolId = $jsonInput[0]['id']; //get the school id
+        config(['school.id' => $schoolId]); // config the global variable
         $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
         $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025 
         
-        dd(AttendanceWindow::all());
-
         $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
             ->first(); //get the coressponding window as the input date
-        
+
         if(!$attendanceWindow){
             abort(404, "Attendance window not found");
         }
@@ -51,15 +56,14 @@ class AttendanceController extends Controller
         $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_out_start_time, $schoolTimeZone);
         $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_out_end_time, $schoolTimeZone);
 
-        $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration 
-
         foreach ($jsonInput as $student) {
+            $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration  
             $studentId = $student['id'];
             $checkTime = Carbon::parse($student['date']);
 
             // base invalid case
             if (
-                !\App\Models\Student::find($studentId) || // if the id is invalid
+                !Student::find($studentId) || // if the id is invalid
                 $checkTime->lt($checkInStart) || //if the attendance record session has not started
                 $checkTime->gt($checkOutEnd) || //if the attendance record session has ended
                 $checkTime->between($checkInEnd->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
@@ -69,7 +73,6 @@ class AttendanceController extends Controller
 
             // get the attendance data for desired student
             $attendance = Attendance::where("student_id", $studentId)
-                ->where("check_in_time", $checkTime)
                 ->whereHas("attendanceWindow", function ($query) use ($formattedFirstDate) {
                     $query->where("date", $formattedFirstDate);
                 })
@@ -102,7 +105,7 @@ class AttendanceController extends Controller
                     $isInCheckInTimeRange = true;
                     $attendance->update([
                         'check_in_status_id' => $cit->id,
-                        'check_in_time' => $checkTime
+                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
                     ]);
                     break;
                 }
@@ -110,7 +113,7 @@ class AttendanceController extends Controller
 
             if (!$isInCheckInTimeRange) {
                 $attendance->update([
-                    'check_out_time' => $checkTime
+                    'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
                 ]);
             }
         }

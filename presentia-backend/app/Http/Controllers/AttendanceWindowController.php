@@ -32,10 +32,10 @@ class AttendanceWindowController extends Controller
                 'total_present' => $record->total_present,
                 'total_absent' => $record->total_absent,
                 'type' => $record->type,
-                'check_in_start_time' => Carbon::parse($record->check_in_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_in_end_time' => Carbon::parse($record->check_in_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_out_start_time' => Carbon::parse($record->check_out_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_out_end_time' => Carbon::parse($record->check_out_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_in_start_time' => Carbon::parse($record->date.' '.$record->check_in_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_in_end_time' => Carbon::parse($record->date.' '.$record->check_in_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_out_start_time' => Carbon::parse($record->date.' '.$record->check_out_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_out_end_time' => Carbon::parse($record->date.' '.$record->check_out_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
             ];
         });
         return response()->json([
