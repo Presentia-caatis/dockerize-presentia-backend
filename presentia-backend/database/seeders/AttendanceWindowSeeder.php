@@ -24,7 +24,7 @@ class AttendanceWindowSeeder extends Seeder
         $school = School::findOrFail($this->school_id);
         $schoolTimeZone = $school->timezone ?? 'UTC';
 
-        $currentDate = Carbon::createFromFormat('d-m-Y', '29-01-2025', $schoolTimeZone);
+        $currentDate = Carbon::now($schoolTimeZone);
 
         AttendanceWindow::create([
             'day_id' => 4,
