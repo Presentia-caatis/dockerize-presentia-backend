@@ -27,11 +27,12 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         $jsonInput = $request->all(); //get the data
-        $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta';
+        $schoolTimeZone = $attendanceWindow->school->timezone ?? 'Asia/Jakarta'; //set the time zone
+        $school_id = "";
         $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
         $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025 
         
-        dd(AttendanceWindow::first());
+        dd(AttendanceWindow::all());
 
         $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
             ->first(); //get the coressponding window as the input date
