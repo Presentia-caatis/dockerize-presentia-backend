@@ -37,7 +37,7 @@ class AttendanceWindowSeeder extends Seeder
             'check_in_start_time' => $currentDate->copy()->setTime(6, 0),
             'check_in_end_time' => $currentDate->copy()->setTime(6, 30),
             'check_out_start_time' => $currentDate->copy()->setTime(16, 0),
-            'check_out_end_time' => $currentDate->copy()->setTime(15, 0),
+            'check_out_end_time' => $currentDate->copy()->setTime(17, 0),
         ]);
     }
 

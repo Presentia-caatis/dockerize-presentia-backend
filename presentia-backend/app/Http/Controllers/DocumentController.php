@@ -44,7 +44,7 @@ class DocumentController extends Controller
 
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $document = Document::find($id);
         return response()->json([

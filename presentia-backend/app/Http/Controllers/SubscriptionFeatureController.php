@@ -35,7 +35,7 @@ class SubscriptionFeatureController extends Controller
         ],201);
     }
 
-    public function show(SubscriptionFeature $subscriptionFeature)
+    public function getById(SubscriptionFeature $subscriptionFeature)
     {
 
         return response()->json([

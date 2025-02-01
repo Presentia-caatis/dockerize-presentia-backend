@@ -40,7 +40,7 @@ class CheckInStatusController extends Controller
 
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $checkInStatus = CheckInStatus::find($id);
         return response()->json([

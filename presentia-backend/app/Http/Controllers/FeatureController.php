@@ -36,7 +36,7 @@ class FeatureController extends Controller
 
     }
 
-    public function show(Feature $feature)
+    public function getById(Feature $feature)
     {
 
         return response()->json([

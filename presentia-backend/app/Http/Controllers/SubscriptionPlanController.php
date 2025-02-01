@@ -37,7 +37,7 @@ class SubscriptionPlanController extends Controller
 
     }
 
-    public function show(SubscriptionPlan $subscriptionPlan)
+    public function getById(SubscriptionPlan $subscriptionPlan)
     {
         return response()->json([
             'status' => 'success',

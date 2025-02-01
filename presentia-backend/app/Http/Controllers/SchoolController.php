@@ -41,7 +41,7 @@ class SchoolController extends Controller
 
     }
 
-    public function show(School $School)
+    public function getById(School $School)
     {
 
         return response()->json([

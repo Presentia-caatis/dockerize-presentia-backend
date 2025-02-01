@@ -38,7 +38,7 @@ class ClassGroupController extends Controller
 
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $classGroup=ClassGroup::find($id);
         $classGroup->load('school');

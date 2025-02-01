@@ -37,7 +37,7 @@ class SubscriptionHistoryController extends Controller
 
     }
 
-    public function show(SubscriptionHistory $subscriptionHistory)
+    public function getById(SubscriptionHistory $subscriptionHistory)
     {
 
         return response()->json([

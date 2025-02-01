@@ -8,6 +8,7 @@ use App\Models\School;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\current_school;
+use function App\Helpers\current_school_timezone;
 
 class AttendanceScheduleController extends Controller
 {
@@ -30,7 +31,7 @@ class AttendanceScheduleController extends Controller
         ]);
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $attendanceSchedule = AttendanceSchedule::find($id);
         return response()->json([
@@ -69,9 +70,7 @@ class AttendanceScheduleController extends Controller
 
         $data = $request->all();
 
-        $school = School::findOrFail($request->route('school_id'));
-
-        if (!$school->timezone) {
+        if (!current_school_timezone()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'School timezone is not set'

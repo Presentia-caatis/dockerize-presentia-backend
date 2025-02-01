@@ -115,7 +115,11 @@ class AttendanceController extends Controller
 
     }
 
-    public function show($id)
+    public function exportAttendance(){
+        
+    }
+
+    public function getById($id)
     {
         $attendance = Attendance::find($id);
         return response()->json([
@@ -123,7 +127,6 @@ class AttendanceController extends Controller
             'message' => 'Attendance retrieved successfully',
             'data' => $attendance
         ]);
-
     }
 
     public function update(Request $request, $id)

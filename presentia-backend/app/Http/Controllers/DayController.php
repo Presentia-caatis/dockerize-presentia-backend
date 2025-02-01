@@ -20,7 +20,7 @@ class DayController extends Controller
 
 
     
-    public function show($id)
+    public function getById($id)
     {
         $day=Day::find($id);
         $data = $day->load('school', 'attendanceSchedule');

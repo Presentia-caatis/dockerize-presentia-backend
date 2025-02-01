@@ -61,7 +61,7 @@ class UserController extends Controller
 
     }
 
-    public function show(User $User)
+    public function getById(User $User)
     {
 
         return response()->json([

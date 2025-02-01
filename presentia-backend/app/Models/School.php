@@ -15,7 +15,8 @@ class School extends Model
         'address',
         'latest_subscription',
         'end_subscription',
-        'timezone'
+        'timezone',
+        'school_token'
     ];
 
 

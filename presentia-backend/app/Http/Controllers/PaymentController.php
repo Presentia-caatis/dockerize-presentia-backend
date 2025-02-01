@@ -40,7 +40,7 @@ class PaymentController extends Controller
 
     }
 
-    public function show(Payment $payment)
+    public function getById(Payment $payment)
     {
 
         return response()->json([

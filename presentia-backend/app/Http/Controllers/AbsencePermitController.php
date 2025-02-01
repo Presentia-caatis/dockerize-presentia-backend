@@ -38,7 +38,7 @@ class AbsencePermitController extends Controller
 
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $absencePermit=AbsencePermit::find($id);
         return response()->json([

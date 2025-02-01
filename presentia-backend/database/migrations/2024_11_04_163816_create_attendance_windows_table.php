@@ -20,10 +20,10 @@ return new class extends Migration
             $table->integer('total_absent');
             $table->date('date');
             $table->enum('type', ['default', 'event' , 'holiday'])->default('event');
-            $table->timestamp('check_in_start_time')->nullable();
-            $table->timestamp('check_in_end_time')->nullable();
-            $table->timestamp('check_out_start_time')->nullable();
-            $table->timestamp('check_out_end_time')->nullable();
+            $table->time('check_in_start_time')->nullable();
+            $table->time('check_in_end_time')->nullable();
+            $table->time('check_out_start_time')->nullable();
+            $table->time('check_out_end_time')->nullable();
             $table->timestamps();
         });
     }

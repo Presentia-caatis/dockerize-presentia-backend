@@ -38,7 +38,7 @@ class SchoolFeatureController extends Controller
 
     }
 
-    public function show(SchoolFeature $schoolFeature)
+    public function getById(SchoolFeature $schoolFeature)
     {
 
         return response()->json([

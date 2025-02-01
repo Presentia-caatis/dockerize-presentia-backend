@@ -157,7 +157,7 @@ class StudentController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function getById($id)
     {
         $student = Student::find($id);
         $student->load(['classGroup', 'school']);

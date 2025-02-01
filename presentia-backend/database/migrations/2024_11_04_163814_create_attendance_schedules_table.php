@@ -15,11 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->nullable()->constrained('events');
             $table->string('name');
+            $table->date('date');
             $table->enum('type', ['default', 'event' , 'holiday'])->default('event');
-            $table->timestamp('check_in_start_time')->nullable();
-            $table->timestamp('check_in_end_time')->nullable();
-            $table->timestamp('check_out_start_time')->nullable();
-            $table->timestamp('check_out_end_time')->nullable();
+            $table->time('check_in_start_time')->nullable();
+            $table->time('check_in_end_time')->nullable();
+            $table->time('check_out_start_time')->nullable();
+            $table->time('check_out_end_time')->nullable();
             $table->timestamps();
         });
     }
