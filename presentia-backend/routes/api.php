@@ -38,14 +38,11 @@ use App\Http\Controllers\{
 };
 
 
-Route::middleware('valid-adms')->group(function() {
-    Route::post('/attendance', [AttendanceController::class, 'store']);
-});
 
-
+Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
+Route::post('/attendance-window/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('scheduler');
 
 Route::middleware(['auth:sanctum'])->group(function () {
-
     // Time Routes
     Route::prefix('time')->group(function () {
         Route::get('/', [TimeController::class, 'getCurrentTime']);
@@ -193,7 +190,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::prefix('attendance-window')->group(function () {
             Route::get('/', [AttendanceWindowController::class, 'index']);
             Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
-            Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow']);
             Route::get('/{absencePermit}', [AttendanceWindowController::class, 'getById']);
             Route::put('/{absencePermit}', [AttendanceWindowController::class, 'update']);
             Route::delete('/{absencePermit}', [AttendanceWindowController::class, 'destroy']);

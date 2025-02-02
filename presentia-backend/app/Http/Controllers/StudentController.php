@@ -65,7 +65,7 @@ class StudentController extends Controller
 
     public function storeViaFile(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'school_id' => 'required|exists:schools,id',
             'file' => 'required|file|mimes:xlsx,xls',
         ]);

@@ -41,7 +41,7 @@ class AttendanceController extends Controller
         
         $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
             ->first(); //get the coressponding window as the input date
-
+        
         if(!$attendanceWindow){
             abort(404, "Attendance window not found");
         }
@@ -57,7 +57,7 @@ class AttendanceController extends Controller
         $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' .$attendanceWindow->check_out_end_time, $schoolTimeZone);
 
         foreach ($jsonInput as $student) {
-            $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration  
+            $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration
             $studentId = $student['id'];
             $checkTime = Carbon::parse($student['date']);
 
@@ -66,7 +66,7 @@ class AttendanceController extends Controller
                 !Student::find($studentId) || // if the id is invalid
                 $checkTime->lt($checkInStart) || //if the attendance record session has not started
                 $checkTime->gt($checkOutEnd) || //if the attendance record session has ended
-                $checkTime->between($checkInEnd->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
+                $checkTime->between($checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
             ) {
                 continue; 
             }
@@ -83,7 +83,6 @@ class AttendanceController extends Controller
                 if ($checkTime->gt($checkOutStart)) { //the student has not check in yet
                     continue;
                 }
-
                 $attendance = Attendance::Create([
                     'school_id' => $attendanceWindow->school_id,
                     'student_id' => $studentId,
@@ -92,7 +91,7 @@ class AttendanceController extends Controller
             } else {
                 //check if the student is a fucking uneducated orphan attention seeker wannabe  with no friends
                 if (
-                    $attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->addMinutes($checkInTypes->max('late_duration'))) ||
+                    $attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration'))) ||
                     $attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)
                 ) {
                     continue;
@@ -101,7 +100,7 @@ class AttendanceController extends Controller
 
             //iterate each $checkInTypes late duration to decide whether the students is on time or not
             foreach ($checkInTypes as $cit) {
-                if ($checkTime->between($checkInStart, $checkInEnd->addMinutes($cit->late_duration))) {
+                if ($checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($cit->late_duration))) {
                     $isInCheckInTimeRange = true;
                     $attendance->update([
                         'check_in_status_id' => $cit->id,

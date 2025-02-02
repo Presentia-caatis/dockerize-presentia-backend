@@ -42,13 +42,11 @@ class School extends Model
 
     public function absencePermitTypes()
     {
-        return $this->belongsToMany(AbsencePermitType::class, 'absence_permit_type_schools')
-                    ->withTimestamps();
+        return $this->hasMany(AbsencePermitType::class);
     }
 
     public function attendanceLateTypes()
     {
-        return $this->belongsToMany(AttendanceLateType::class, 'attendance_late_type_schools')
-                    ->withTimestamps();
+        return $this->hasMany(CheckInStatus::class);
     }
 }
