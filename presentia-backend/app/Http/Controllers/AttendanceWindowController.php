@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceSchedule;
 use App\Models\AttendanceWindow;
 use App\Models\Day;
+use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\current_school_timezone;
@@ -47,9 +48,12 @@ class AttendanceWindowController extends Controller
 
     public function generateWindow(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'date'  => 'required|date_format:Y-m-d',
+            'school_id' => 'required|exists:schools,id'
         ]);
+
+        config(['school.id' => $request->school_id]);        
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
 
@@ -57,8 +61,6 @@ class AttendanceWindowController extends Controller
         ->first();
 
         $dataSchedule = $dayData->attendanceSchedule;
-
-        $date = Carbon::parse($request->date);
 
         $attendanceWindow = AttendanceWindow::create([
             'day_id' => $dayData->id,

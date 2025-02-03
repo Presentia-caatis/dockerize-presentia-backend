@@ -82,9 +82,35 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
+        /**
+         * Check if a process is already running
+         */
+        $osProcessIsRunning = function($needle) {
+            try {
+                exec('ps aux -ww', $process_status);
+                
+                if (!is_array($process_status)) {
+                    \Log::warning('Process status check failed - not an array');
+                    return false;
+                }
+    
+                $result = array_filter($process_status, function($var) use ($needle) {
+                    return strpos($var, $needle) !== false;
+                });
+    
+                return !empty($result);
+            } catch (\Exception $e) {
+                \Log::error('Process check failed: ' . $e->getMessage());
+                return false;
+            }
+        };
+    
         foreach(App\Models\School::where('is_task_scheduling_active', true)->get() as $school){
-            $schedule->command('call:generate-window-api'.' '.$school->id)
-                ->dailyAt(convert_time_timezone_to_utc('19:25', $school->timezone));
+            if (!$osProcessIsRunning("call:generate-window-api {$school->id}")) {
+                $schedule->command("call:generate-window-api {$school->id}")
+                    ->dailyAt(convert_time_timezone_to_utc('12:37', $school->timezone))
+                    ->withoutOverlapping();
+            }
         }
     })
     ->create();

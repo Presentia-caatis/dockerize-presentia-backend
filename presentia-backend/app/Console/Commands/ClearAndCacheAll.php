@@ -37,13 +37,13 @@ class ClearAndCacheAll extends Command
         $this->info('Caching configuration...');
         $this->call('config:cache');
 
-        // Run optimize:clear (optional, clears all cached files)
-        $this->info('Clearing all cached files...');
-        $this->call('optimize:clear');
+        // // Run optimize:clear (optional, clears all cached files)
+        // $this->info('Clearing all cached files...');
+        // $this->call('optimize:clear');
 
-        // Run optimize (optional, caches everything)
-        $this->info('Caching everything...');
-        $this->call('optimize');
+        // // Run optimize (optional, caches everything)
+        // $this->info('Caching everything...');
+        // $this->call('optimize');
 
         $this->info('All cache and config operations completed successfully!');
     }

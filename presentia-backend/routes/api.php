@@ -197,7 +197,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('attendance-schedule')->group(function () {
             Route::get('/', [AttendanceScheduleController::class, 'index']);
-            Route::post('/getById-by-type', [AttendanceScheduleController::class, 'showByType']); 
+            Route::post('/get-by-type', [AttendanceScheduleController::class, 'showByType']); 
             Route::post('/', [AttendanceScheduleController::class, 'storeEvent']);
             Route::get('/{attendanceSchedule}', [AttendanceScheduleController::class, 'getById']);
             Route::put('/{attendanceSchedule}', [AttendanceScheduleController::class, 'update']);
