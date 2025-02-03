@@ -2,15 +2,39 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Models\ClassGroup;
+use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class AttendanceExport implements FromCollection
+class AttendanceExport implements WithMultipleSheets
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
-    public function collection()
+    use Exportable;
+
+    protected $startDate;
+    protected $endDate;
+    protected $classGroup = 'all';
+    
+    public function __construct(string $startDate, string $endDate, string $classGroup)
     {
-        //
+        $this->startDate = $startDate;
+        $this->endDate= $endDate;
+        $this->classGroup = $classGroup;
     }
+
+    public function sheets(): array
+    {
+        $sheets = [];
+
+        $classGroup = $this->classGroup == 'all' ? ClassGroup::all() : $this->classGroup;
+        
+        
+
+        foreach () {
+            ;
+        }
+
+        return $sheets;
+    }
+    
 }

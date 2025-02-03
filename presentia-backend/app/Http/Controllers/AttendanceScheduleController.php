@@ -105,7 +105,7 @@ class AttendanceScheduleController extends Controller
             'event_id' => 'nullable',
             'name' => 'required|string',
             'date' => 'required|date_format: Y-m-d',
-            'check_in_start_time' => 'required|date_format: H:i:s',
+            'check_in_start_time' => 'required|date_format:H:i:s',
             'check_in_end_time' => 'required|date_format:H:i:s',
             'check_out_start_time' => 'required|date_format:H:i:s',
             'check_out_end_time' => 'required|date_format:H:i:s'

@@ -124,7 +124,10 @@ class AttendanceController extends Controller
 
     }
 
-    public function exportAttendance(){
+    public function exportAttendance(Request $request){
+        $startDate = $request->query('startDate');
+        $endDate =$request->query('endDate');
+        $classGroup = $request->query('classGroup');
         
     }
 
