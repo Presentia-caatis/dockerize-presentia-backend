@@ -35,7 +35,7 @@ jobs:
     
     # Change directory to where composer.json is located
     - name: Set working directory to 'presentia-backend'
-      run: cd dockerize-presentia-backend/dockerize-presentia-backend/presentia-backend
+      run: cd dockerize-presentia-backend/presentia-backend
 
     # Ensure composer is installed
     - name: Set up Composer
@@ -49,14 +49,14 @@ jobs:
     # Ensure composer.json exists in the new directory
     - name: Check if composer.json exists
       run: |
-        if [ ! -f dockerize-presentia-backend/dockerize-presentia-backend/presentia-backend/composer.json ]; then
+        if [ ! -f dockerize-presentia-backend/presentia-backend/composer.json ]; then
           echo "composer.json not found in presentia-backend directory. Make sure it's in the correct folder.";
           exit 1;
         fi
 
     - name: Install Dependencies
       run: |
-        cd dockerize-presentia-backend/dockerize-presentia-backend/presentia-backend
+        cd dockerize-presentia-backend/presentia-backend
         composer install
 
     - name: Generate key
