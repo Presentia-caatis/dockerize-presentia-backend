@@ -43,8 +43,12 @@ jobs:
         curl -sS https://getcomposer.org/installer | php
         sudo mv composer.phar /usr/local/bin/composer
 
-    - name: Copy .env
-      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    # Ensure the .env file exists
+    - name: Copy .env if not exists
+      run: |
+        if [ ! -f presentia-backend/.env ]; then
+          cp presentia-backend/.env.example presentia-backend/.env;
+        fi
 
     # Ensure composer.json exists in the new directory
     - name: Check if composer.json exists
