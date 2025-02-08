@@ -25,7 +25,6 @@ class ADMSMiddleware
             abort(401, "Unauthorized. Invalid token.");
         }
 
-
         return $next($request);
     }
 }

@@ -17,7 +17,6 @@ class SchoolSeeder extends Seeder
             'name' => 'SMKN 10 Bandung',
             'address' => 'JL. CIJAWURA HILIR NO. 339, Cijaura, Kec. Buahbatu, Kota Bandung, Jawa Barat',
             'latest_subscription' => now(),
-            'end_subscription' => now()->addMonth(),
             'timezone' => 'Asia/Jakarta',
             'school_token' => Str::uuid(),
         ]);
@@ -28,7 +27,6 @@ class SchoolSeeder extends Seeder
             'name' => 'SMKN Telkom',
             'address' => 'Jl. Radio Palasari Road, Citeureup, Kec. Dayeuhkolot, Kabupaten Bandung, Jawa Barat',
             'latest_subscription' => now(),
-            'end_subscription' => now()->addMonth(),
             'timezone' => 'Asia/Jakarta',
             'school_token' => Str::uuid(),
         ]);

@@ -18,7 +18,15 @@ class CheckInStatusSeeder extends Seeder
     public function run(): void
     {
         CheckInStatus::create([
-            'type_name' => 'Late',
+            'status_name' => 'Retarted',
+            'description' => 'Stop Being Fockin Retorded',
+            'late_duration' => 30,
+            'is_active' => true,
+            'school_id' => $this->school_id,
+        ]);
+
+        CheckInStatus::create([
+            'status_name' => 'Late',
             'description' => 'Late',
             'late_duration' => 15,
             'is_active' => true,
@@ -26,7 +34,7 @@ class CheckInStatusSeeder extends Seeder
         ]);
 
         CheckInStatus::create([
-            'type_name' => 'On Time',
+            'status_name' => 'On Time',
             'description' => 'On Time',
             'late_duration' => 0,
             'is_active' => true,
@@ -34,7 +42,7 @@ class CheckInStatusSeeder extends Seeder
         ]);
 
         CheckInStatus::create([
-            'type_name' => 'Absence',
+            'status_name' => 'Absence',
             'description' => 'Absence',
             'late_duration' => -1,
             'is_active' => true,

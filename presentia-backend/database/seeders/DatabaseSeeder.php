@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             (new AttendanceScheduleAndDaySeeder($school->id))->run();
             (new CheckInStatusSeeder($school->id))->run();
             (new AttendanceWindowSeeder($school->id))->run();
+            (new AbsencePermitTypeSeeder($school->id))->run();
         }
     }
 }

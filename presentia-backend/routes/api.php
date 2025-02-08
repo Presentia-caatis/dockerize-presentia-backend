@@ -155,6 +155,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Attendance Routes
         Route::prefix('attendance')->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
+            Route::get('/export-attendance', [AttendanceController::class, 'exportAttendance']);
             Route::get('/{attendance}', [AttendanceController::class, 'getById']);
             Route::put('/{attendance}', [AttendanceController::class, 'update']);
             Route::delete('/{attendance}', [AttendanceController::class, 'destroy']);
@@ -216,9 +217,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/daily', [DashboardStatistic::class, 'DailyStatistic']);
         });
     });
-
-
-
 
 });
 

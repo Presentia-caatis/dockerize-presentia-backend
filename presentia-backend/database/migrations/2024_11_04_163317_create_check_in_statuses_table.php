@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('check_in_statuses', function (Blueprint $table) {
             $table->id();
             $table->foreignId("school_id")->constrained("schools")->cascadeOnDelete();
-            $table->string("type_name");
+            $table->string("status_name");
             $table->string("description")->nullable();
             $table->integer("late_duration");
             $table->boolean("is_active")->default(true);

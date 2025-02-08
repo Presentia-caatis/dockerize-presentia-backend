@@ -101,6 +101,7 @@ class AttendanceWindowController extends Controller
 
         $validatedData = $validatedData = $request->validate([
             'name' => 'required|string',
+            'date' => 'required|date_format:Y-m-d',
             'check_in_start_time' => 'required|date_format:H:i:s',
             'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
             'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',

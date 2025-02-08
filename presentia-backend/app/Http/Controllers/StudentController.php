@@ -69,59 +69,57 @@ class StudentController extends Controller
             'school_id' => 'required|exists:schools,id',
             'file' => 'required|file|mimes:xlsx,xls',
         ]);
-
+    
         $schoolId = $request->school_id;
         $data = Excel::toArray([], $request->file('file'))[0];
-        unset($data[0]);
-
-        // Batch processing
+        unset($data[0]); // Remove header row
+    
         $chunks = array_chunk($data, 100);
-
         $totalRows = count($data);
         $successCount = 0;
         $failedCount = 0;
         $failedRows = [];
-
+    
+        // Cache existing class groups to avoid unnecessary queries
+        $existingClassGroups = ClassGroup::where('school_id', $schoolId)
+            ->pluck('id', 'class_name') // ['class_name' => id]
+            ->toArray();
+    
         foreach ($chunks as $chunk) {
             $students = [];
-
-            foreach ($chunk as $index => $row) {
+    
+            foreach ($chunk as $row) {
+                // Basic validation
                 if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3]) || empty($row[4])) {
                     $failedCount++;
-                    $failedRows[] = [
-                        'row' => $row,
-                        'error' => 'Incomplete or missing data',
-                    ];
+                    $failedRows[] = ['row' => $row, 'error' => 'Incomplete or missing data'];
                     continue;
                 }
-
+    
+                // Convert gender
                 $gender = strtolower($row[3]) === 'l' ? 'male' : (strtolower($row[3]) === 'p' ? 'female' : null);
-
                 if (!$gender) {
                     $failedCount++;
-                    $failedRows[] = [
-                        'row' => $row,
-                        'error' => 'Invalid gender value',
-                    ];
+                    $failedRows[] = ['row' => $row, 'error' => 'Invalid gender value'];
                     continue;
                 }
-
-
+    
                 try {
-
-                    $classGroup = ClassGroup::firstOrCreate(
-                        [
+                    // Check if class group exists in cache, otherwise create it
+                    if (!isset($existingClassGroups[$row[4]])) {
+                        $classGroup = ClassGroup::create([
                             'school_id' => $schoolId,
                             'class_name' => $row[4],
-                        ],
-                        [
                             'amount_of_students' => 0,
-                        ]
-                    );
-
+                        ]);
+    
+                        // Update cache
+                        $existingClassGroups[$row[4]] = $classGroup->id;
+                    }
+    
                     $students[] = [
                         'school_id' => $schoolId,
-                        'class_group_id' => $classGroup->id,
+                        'class_group_id' => $existingClassGroups[$row[4]],
                         'nis' => $row[0],
                         'nisn' => $row[1],
                         'student_name' => $row[2],
@@ -130,23 +128,20 @@ class StudentController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
-
+    
                     $successCount++;
-                    $classGroup->increment('amount_of_students');
                 } catch (\Exception $e) {
                     $failedCount++;
-                    $failedRows[] = [
-                        'row' => $row,
-                        'error' => $e->getMessage(),
-                    ];
+                    $failedRows[] = ['row' => $row, 'error' => $e->getMessage()];
                 }
             }
-
+    
+            // Batch insert for efficiency
             if (!empty($students)) {
                 Student::insert($students);
             }
         }
-
+    
         return response()->json([
             'status' => 'success',
             'message' => 'Students created successfully',
