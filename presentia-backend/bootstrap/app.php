@@ -6,6 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Console\Scheduling\Schedule;
+use function App\Helpers\convert_time_timezone_to_utc;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,7 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'school' => \App\Http\Middleware\SchoolMiddleware::class,
-            'valid-adms' => \App\Http\Middleware\ADMSMiddleware::class
+            'valid-adms' => \App\Http\Middleware\ADMSMiddleware::class,
+            'scheduler' => \App\Http\Middleware\EnsureSchedulerRequest::class
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -77,4 +80,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 'error' => $e->getMessage(),
             ], 500);  // 500 Internal Server Error
         });
-    })->create();
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        $schools = App\Models\School::where('is_task_scheduling_active', true)->get();
+        foreach($schools as $school){
+            $schedule->command("call:generate-window-api {$school->id}")->timezone($school->timezone)->everyMinute();
+        }
+    })
+    ->create();

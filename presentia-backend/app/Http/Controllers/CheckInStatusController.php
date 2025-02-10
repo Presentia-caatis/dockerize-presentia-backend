@@ -11,7 +11,7 @@ class CheckInStatusController extends Controller
     public function index()
     {
 
-        $data = CheckInStatus::all();
+        $data = CheckInStatus::orderBy('late_duration')->get();
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late types retrieved successfully',

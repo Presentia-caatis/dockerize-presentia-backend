@@ -38,14 +38,11 @@ use App\Http\Controllers\{
 };
 
 
-Route::middleware('valid-adms')->group(function() {
-    Route::post('/attendance', [AttendanceController::class, 'store']);
-});
 
-
+Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
+Route::post('/attendance-window/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('scheduler');
 
 Route::middleware(['auth:sanctum'])->group(function () {
-
     // Time Routes
     Route::prefix('time')->group(function () {
         Route::get('/', [TimeController::class, 'getCurrentTime']);
@@ -55,74 +52,75 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::post('/', [UserController::class, 'store']);
-        Route::post('/link-to-school/{user}', [UserController::class, 'linkToSchool']);
+        Route::post('/link-to-school/{id}', [UserController::class, 'linkToSchool']);
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
-        Route::get('/{user}', [UserController::class, 'getById']);
-        Route::put('/{user}', [UserController::class, 'update']);
-        Route::delete('/{user}', [UserController::class, 'destroy']);
+        Route::get('/{id}', [UserController::class, 'getById']);
+        Route::put('/{id}', [UserController::class, 'update']);
+        Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
     // Feature Routes
     Route::prefix('feature')->group(function () {
         Route::get('/', [FeatureController::class, 'index']);
         Route::post('/', [FeatureController::class, 'store']);
-        Route::get('/{feature}', [FeatureController::class, 'getById']);
-        Route::put('/{feature}', [FeatureController::class, 'update']);
-        Route::delete('/{feature}', [FeatureController::class, 'destroy']);
+        Route::get('/{id}', [FeatureController::class, 'getById']);
+        Route::put('/{id}', [FeatureController::class, 'update']);
+        Route::delete('/{id}', [FeatureController::class, 'destroy']);
     });
 
     // Subscription Plan Routes
     Route::prefix('subscription-plan')->group(function () {
         Route::get('/', [SubscriptionPlanController::class, 'index']);
         Route::post('/', [SubscriptionPlanController::class, 'store']);
-        Route::get('/{subscriptionPlan}', [SubscriptionPlanController::class, 'getById']);
-        Route::put('/{subscriptionPlan}', [SubscriptionPlanController::class, 'update']);
-        Route::delete('/{subscriptionPlan}', [SubscriptionPlanController::class, 'destroy']);
+        Route::get('/{id}', [SubscriptionPlanController::class, 'getById']);
+        Route::put('/{id}', [SubscriptionPlanController::class, 'update']);
+        Route::delete('/{id}', [SubscriptionPlanController::class, 'destroy']);
     });
 
     // Subscription Feature Routes
     Route::prefix('subscription-feature')->group(function () {
         Route::get('/', [SubscriptionFeatureController::class, 'index']);
         Route::post('/', [SubscriptionFeatureController::class, 'store']);
-        Route::get('/{subscriptionFeature}', [SubscriptionFeatureController::class, 'getById']);
-        Route::put('/{subscriptionFeature}', [SubscriptionFeatureController::class, 'update']);
-        Route::delete('/{subscriptionFeature}', [SubscriptionFeatureController::class, 'destroy']);
+        Route::get('/{id}', [SubscriptionFeatureController::class, 'getById']);
+        Route::put('/{id}', [SubscriptionFeatureController::class, 'update']);
+        Route::delete('/{id}', [SubscriptionFeatureController::class, 'destroy']);
     });
 
     // School Routes
     Route::prefix('school')->group(function () {
         Route::get('/', [SchoolController::class, 'index']);
         Route::post('/', [SchoolController::class, 'store']);
-        Route::get('/{School}', [SchoolController::class, 'getById']);
-        Route::put('/{School}', [SchoolController::class, 'update']);
-        Route::delete('/{School}', [SchoolController::class, 'destroy']);
+        Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
+        Route::get('/{id}', [SchoolController::class, 'getById']);
+        Route::put('/{id}', [SchoolController::class, 'update']);
+        Route::delete('/{id}', [SchoolController::class, 'destroy']);
     });
 
     // School Feature Routes
     Route::prefix('school-feature')->group(function () {
         Route::get('/', [SchoolFeatureController::class, 'index']);
         Route::post('/', [SchoolFeatureController::class, 'store']);
-        Route::get('/{schoolFeature}', [SchoolFeatureController::class, 'getById']);
-        Route::put('/{schoolFeature}', [SchoolFeatureController::class, 'update']);
-        Route::delete('/{schoolFeature}', [SchoolFeatureController::class, 'destroy']);
+        Route::get('/{id}', [SchoolFeatureController::class, 'getById']);
+        Route::put('/{id}', [SchoolFeatureController::class, 'update']);
+        Route::delete('/{id}', [SchoolFeatureController::class, 'destroy']);
     });
 
     // Subscription History Routes
     Route::prefix('subscription-history')->group(function () {
         Route::get('/', [SubscriptionHistoryController::class, 'index']);
         Route::post('/', [SubscriptionHistoryController::class, 'store']);
-        Route::get('/{subscriptionHistory}', [SubscriptionHistoryController::class, 'getById']);
-        Route::put('/{subscriptionHistory}', [SubscriptionHistoryController::class, 'update']);
-        Route::delete('/{subscriptionHistory}', [SubscriptionHistoryController::class, 'destroy']);
+        Route::get('/{id}', [SubscriptionHistoryController::class, 'getById']);
+        Route::put('/{id}', [SubscriptionHistoryController::class, 'update']);
+        Route::delete('/{id}', [SubscriptionHistoryController::class, 'destroy']);
     });
 
     // Payment Routes
     Route::prefix('payment')->group(function () {
         Route::get('/', [PaymentController::class, 'index']);
         Route::post('/', [PaymentController::class, 'store']);
-        Route::get('/{payment}', [PaymentController::class, 'getById']);
-        Route::put('/{payment}', [PaymentController::class, 'update']);
-        Route::delete('/{payment}', [PaymentController::class, 'destroy']);
+        Route::get('/{id}', [PaymentController::class, 'getById']);
+        Route::put('/{id}', [PaymentController::class, 'update']);
+        Route::delete('/{id}', [PaymentController::class, 'destroy']);
     });
 
     Route::middleware('school')->group(function () {
@@ -130,9 +128,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::prefix('class-group')->group(function () {
             Route::get('/', [ClassGroupController::class, 'index']);
             Route::post('/', [ClassGroupController::class, 'store']);
-            Route::get('/{classGroup}', [ClassGroupController::class, 'getById']);
-            Route::put('/{classGroup}', [ClassGroupController::class, 'update']);
-            Route::delete('/{classGroup}', [ClassGroupController::class, 'destroy']);
+            Route::get('/{id}', [ClassGroupController::class, 'getById']);
+            Route::put('/{id}', [ClassGroupController::class, 'update']);
+            Route::delete('/{id}', [ClassGroupController::class, 'destroy']);
         });
 
         // Student Routes
@@ -141,78 +139,79 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/', [StudentController::class, 'store']);
             Route::get('/csv', [StudentController::class, 'exportStudents']);
             Route::post('/store-via-file', [StudentController::class, 'storeViaFile']);
-            Route::get('/{student}', [StudentController::class, 'getById']);
-            Route::put('/{student}', [StudentController::class, 'update']);
-            Route::delete('/{student}', [StudentController::class, 'destroy']);
+            Route::get('/{id}', [StudentController::class, 'getById']);
+            Route::put('/{id}', [StudentController::class, 'update']);
+            Route::delete('/{id}', [StudentController::class, 'destroy']);
         });
 
         // Attendance Late Type Routes
         Route::prefix('check-in-status')->group(function () {
             Route::get('/', [CheckInStatusController::class, 'index']);
             Route::post('/', [CheckInStatusController::class, 'store']);
-            Route::get('/{attendanceLateType}', [CheckInStatusController::class, 'getById']);
-            Route::put('/{attendanceLateType}', [CheckInStatusController::class, 'update']);
-            Route::delete('/{attendanceLateType}', [CheckInStatusController::class, 'destroy']);
+            Route::get('/{id}', [CheckInStatusController::class, 'getById']);
+            Route::put('/{id}', [CheckInStatusController::class, 'update']);
+            Route::delete('/{id}', [CheckInStatusController::class, 'destroy']);
         });
 
         // Attendance Routes
         Route::prefix('attendance')->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
-            Route::get('/{attendance}', [AttendanceController::class, 'getById']);
-            Route::put('/{attendance}', [AttendanceController::class, 'update']);
-            Route::delete('/{attendance}', [AttendanceController::class, 'destroy']);
+            Route::get('/export-attendance', [AttendanceController::class, 'exportAttendance']);
+            Route::get('/{id}', [AttendanceController::class, 'getById']);
+            Route::put('/{id}', [AttendanceController::class, 'update']);
+            Route::delete('/{id}', [AttendanceController::class, 'destroy']);
         });
 
         // Document Routes
         Route::prefix('document')->group(function () {
             Route::get('/', [DocumentController::class, 'index']);
             Route::post('/', [DocumentController::class, 'store']);
-            Route::get('/{document}', [DocumentController::class, 'getById']);
-            Route::put('/{document}', [DocumentController::class, 'update']);
-            Route::delete('/{document}', [DocumentController::class, 'destroy']);
+            Route::get('/{id}', [DocumentController::class, 'getById']);
+            Route::put('/{id}', [DocumentController::class, 'update']);
+            Route::delete('/{id}', [DocumentController::class, 'destroy']);
         });
 
         // Absence Permit Type Routes
         Route::prefix('absence-permit-type')->group(function () {
             Route::get('/', [AbsencePermitTypeController::class, 'index']);
             Route::post('/', [AbsencePermitTypeController::class, 'store']);
-            Route::get('/{absencePermitType}', [AbsencePermitTypeController::class, 'getById']);
-            Route::put('/{absencePermitType}', [AbsencePermitTypeController::class, 'update']);
-            Route::delete('/{absencePermitType}', [AbsencePermitTypeController::class, 'destroy']);
+            Route::get('/{id}', [AbsencePermitTypeController::class, 'getById']);
+            Route::put('/{id}', [AbsencePermitTypeController::class, 'update']);
+            Route::delete('/{id}', [AbsencePermitTypeController::class, 'destroy']);
         });
 
         // Absence Permit Routes
         Route::prefix('absence-permit')->group(function () {
             Route::get('/', [AbsencePermitController::class, 'index']);
             Route::post('/', [AbsencePermitController::class, 'store']);
-            Route::get('/{absencePermit}', [AbsencePermitController::class, 'getById']);
-            Route::put('/{absencePermit}', [AbsencePermitController::class, 'update']);
-            Route::delete('/{absencePermit}', [AbsencePermitController::class, 'destroy']);
+            Route::get('/{id}', [AbsencePermitController::class, 'getById']);
+            Route::put('/{id}', [AbsencePermitController::class, 'update']);
+            Route::delete('/{id}', [AbsencePermitController::class, 'destroy']);
         });
 
         Route::prefix('attendance-window')->group(function () {
+            Route::post('/client-generate-window', [AttendanceWindowController::class, 'generateWindow']);
             Route::get('/', [AttendanceWindowController::class, 'index']);
             Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
-            Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow']);
-            Route::get('/{absencePermit}', [AttendanceWindowController::class, 'getById']);
-            Route::put('/{absencePermit}', [AttendanceWindowController::class, 'update']);
-            Route::delete('/{absencePermit}', [AttendanceWindowController::class, 'destroy']);
+            Route::get('/{id}', [AttendanceWindowController::class, 'getById']);
+            Route::put('/{id}', [AttendanceWindowController::class, 'update']);
+            Route::delete('/{id}', [AttendanceWindowController::class, 'destroy']);
         });
 
         Route::prefix('attendance-schedule')->group(function () {
             Route::get('/', [AttendanceScheduleController::class, 'index']);
-            Route::post('/getById-by-type', [AttendanceScheduleController::class, 'showByType']); 
+            Route::post('/get-by-type', [AttendanceScheduleController::class, 'showByType']); 
             Route::post('/', [AttendanceScheduleController::class, 'storeEvent']);
-            Route::get('/{attendanceSchedule}', [AttendanceScheduleController::class, 'getById']);
-            Route::put('/{attendanceSchedule}', [AttendanceScheduleController::class, 'update']);
-            Route::delete('/{attendanceSchedule}', [AttendanceScheduleController::class, 'destroy']);
+            Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
+            Route::put('/{id}', [AttendanceScheduleController::class, 'update']);
+            Route::delete('/{id}', [AttendanceScheduleController::class, 'destroy']);
         });
 
         Route::prefix('day')->group(function() {
             Route::get('/', [DayController::class, 'index']);
-            Route::get('/{day}', [DayController::class, 'getById']);
+            Route::get('/{id}', [DayController::class, 'getById']);
             Route::get('/all-by-school', [DayController::class, 'showAllBySchool']);
-            Route::put('/{day}', [DayController::class, 'update']);
+            Route::put('/{id}', [DayController::class, 'update']);
         });
 
         Route::prefix('dashboard-statistic')->group(function () {
@@ -220,9 +219,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/daily', [DashboardStatistic::class, 'DailyStatistic']);
         });
     });
-
-
-
 
 });
 

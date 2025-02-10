@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId("school_id")->constrained("schools")->cascadeOnDelete();
             $table->boolean("is_active")->default(true);
             $table->string("nis");
-            $table->string("nisn");
+            $table->string("nisn")->unique();
             $table->string("student_name");
             $table->enum("gender",['male', 'female'])->default('male');
             $table->timestamps();

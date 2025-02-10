@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceSchedule;
 use App\Models\AttendanceWindow;
 use App\Models\Day;
+use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\current_school_timezone;
@@ -32,10 +33,10 @@ class AttendanceWindowController extends Controller
                 'total_present' => $record->total_present,
                 'total_absent' => $record->total_absent,
                 'type' => $record->type,
-                'check_in_start_time' => Carbon::parse($record->check_in_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_in_end_time' => Carbon::parse($record->check_in_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_out_start_time' => Carbon::parse($record->check_out_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
-                'check_out_end_time' => Carbon::parse($record->check_out_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_in_start_time' => Carbon::parse($record->date.' '.$record->check_in_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_in_end_time' => Carbon::parse($record->date.' '.$record->check_in_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_out_start_time' => Carbon::parse($record->date.' '.$record->check_out_start_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
+                'check_out_end_time' => Carbon::parse($record->date.' '.$record->check_out_end_time, $currentSchoolTimezone)->utc()->toDateTimeString(),
             ];
         });
         return response()->json([
@@ -47,9 +48,15 @@ class AttendanceWindowController extends Controller
 
     public function generateWindow(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'date'  => 'required|date_format:Y-m-d',
+            'school_id' => 'sometimes|exists:schools,id'
         ]);
+        
+        //@need-to-change security for school
+        if(isset($request->school_id)){
+            config(['school.id' => $request->school_id ]);
+        }       
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
         
@@ -58,8 +65,6 @@ class AttendanceWindowController extends Controller
         ->first();
 
         $dataSchedule = $dayData->attendanceSchedule;
-
-        $date = Carbon::parse($request->date);
 
         $attendanceWindow = AttendanceWindow::create([
             'day_id' => $dayData->id,
@@ -100,6 +105,7 @@ class AttendanceWindowController extends Controller
 
         $validatedData = $validatedData = $request->validate([
             'name' => 'required|string',
+            'date' => 'required|date_format:Y-m-d',
             'check_in_start_time' => 'required|date_format:H:i:s',
             'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
             'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',
