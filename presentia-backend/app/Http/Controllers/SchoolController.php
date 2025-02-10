@@ -33,7 +33,7 @@ class SchoolController extends Controller
         $school->save();
         return response()->json([
             'status' => 'success',
-            'message' => "Schools Task Scheduler is " . ($school->is_task_scheduling_active ? 'active' : 'inactive'),
+            'message' => $school->name." Task Scheduler is " . ($school->is_task_scheduling_active ? 'active' : 'inactive'),
         ]);
     }
 

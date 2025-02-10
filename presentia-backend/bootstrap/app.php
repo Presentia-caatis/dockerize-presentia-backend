@@ -82,9 +82,15 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
+        if (!Schema::hasTable('schools')) {
+            return;
+        }
+    
         $schools = App\Models\School::where('is_task_scheduling_active', true)->get();
-        foreach($schools as $school){
-            $schedule->command("call:generate-window-api {$school->id}")->timezone($school->timezone)->everyMinute();
+        foreach ($schools as $school) {
+            $schedule->command("call:generate-window-api {$school->id}")
+                ->timezone($school->timezone)
+                ->everyMinute();
         }
     })
     ->create();
