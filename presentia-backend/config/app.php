@@ -123,6 +123,9 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'adms_token' => env('ADMS_TOKEN', "")
+    'adms_token' => env('ADMS_TOKEN', ""),
 
+    'scheduler_token' => env('SCHEDULER_TOKEN', ""),
+
+    'fe_url' => env('FE_URL', "http://localhost:5173")
 ];

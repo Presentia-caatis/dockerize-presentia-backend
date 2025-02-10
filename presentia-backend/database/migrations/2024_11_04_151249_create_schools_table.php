@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string("name");
             $table->string("address");
             $table->timestamp("latest_subscription");
-            $table->timestamp("end_subscription")->nullable();
+            $table->boolean("is_task_scheduling_active")->default(false);
             $table->string('timezone')->default('UTC');
             $table->string('school_token')->unique();
             $table->timestamps();

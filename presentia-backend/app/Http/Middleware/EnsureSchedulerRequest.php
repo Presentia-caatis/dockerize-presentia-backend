@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ADMSMiddleware
+class EnsureSchedulerRequest
 {
     /**
      * Handle an incoming request.
@@ -15,16 +15,15 @@ class ADMSMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $authHeader = $request->header('Authorization');
-        $token = str_replace('Bearer ', '', $authHeader);
+        $schedulerToken = $request->header('X-Scheduler-Token');
 
-
-        $validToken = config('app.adms_token');
-        
-        if (!$validToken || $token !== $validToken) {
-            abort(401, "Unauthorized. Invalid token.");
+        if ($schedulerToken !== config('app.scheduler_token')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
+            ], 401);
         }
-
+        
         return $next($request);
     }
 }
