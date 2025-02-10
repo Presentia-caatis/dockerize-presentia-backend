@@ -33,7 +33,7 @@ class SchoolController extends Controller
         $school->save();
         return response()->json([
             'status' => 'success',
-            'message' => "Schools Task Scheduler is " . ($school->is_task_scheduling_active ? 'active' : 'inactive'),
+            'message' => $school->name." Task Scheduler is " . ($school->is_task_scheduling_active ? 'active' : 'inactive'),
         ]);
     }
 
@@ -64,14 +64,14 @@ class SchoolController extends Controller
         $holidayAttendanceSchedule = AttendanceSchedule::create([
             'event_id' => null,
             'type' => 'holiday',
-            'name' => 'Default Schedule',
+            'name' => 'Holiday Schedule',
         ]);
 
         $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
         foreach ($weekdays as $day) {
             Day::create([
                 'attendance_schedule_id' => $defaultAttendanceSchedule->id,
-                'school_id' => $school->school_id,
+                'school_id' => $school->id,
                 'name' => $day,
             ]);
         }
@@ -80,7 +80,7 @@ class SchoolController extends Controller
         foreach ($weekends as $day) {
             Day::create([
                 'attendance_schedule_id' => $holidayAttendanceSchedule->id,
-                'school_id' => $school->school_id,
+                'school_id' => $school->id,
                 'name' => $day,
             ]);
         }
@@ -90,7 +90,7 @@ class SchoolController extends Controller
             'description' => 'Late',
             'late_duration' => 15,
             'is_active' => true,
-            'school_id' => $school->school_id,
+            'school_id' => $school->id,
         ]);
 
         CheckInStatus::create([
@@ -98,7 +98,7 @@ class SchoolController extends Controller
             'description' => 'On Time',
             'late_duration' => 0,
             'is_active' => true,
-            'school_id' => $school->school_id,
+            'school_id' => $school->id,
         ]);
 
         CheckInStatus::create([
@@ -106,7 +106,7 @@ class SchoolController extends Controller
             'description' => 'Absence',
             'late_duration' => -1,
             'is_active' => true,
-            'school_id' => $school->school_id,
+            'school_id' => $school->id,
         ]);
 
         return response()->json([
