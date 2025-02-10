@@ -90,7 +90,7 @@ return Application::configure(basePath: dirname(__DIR__))
         foreach ($schools as $school) {
             $schedule->command("call:generate-window-api {$school->id}")
                 ->timezone($school->timezone)
-                ->everyMinute();
+                ->dailyAt('00:00');
         }
     })
     ->create();
