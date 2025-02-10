@@ -50,10 +50,13 @@ class AttendanceWindowController extends Controller
     {
         $request->validate([
             'date'  => 'required|date_format:Y-m-d',
-            'school_id' => 'required|exists:schools,id'
+            'school_id' => 'sometimes|exists:schools,id'
         ]);
-
-        config(['school.id' => $request->school_id]);        
+        
+        //@need-to-change security for school
+        if(isset($request->school_id)){
+            config(['school.id' => $request->school_id ]);
+        }       
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
 

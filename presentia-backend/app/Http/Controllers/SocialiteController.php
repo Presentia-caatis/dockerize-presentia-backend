@@ -31,18 +31,16 @@ class SocialiteController extends Controller
             $user = User::where('google_id', $googleUser->id)->first();
 
             if (!$user) {
-                return redirect(config('fe_url') . '/login?status=new_user&name=' . urlencode($googleUser->name) . '&email=' . urlencode($googleUser->email) . '&google_id=' . urlencode($googleUser->id));
+                return redirect(config('app.fe_url') . '/login?status=new_user&name=' . urlencode($googleUser->name) . '&email=' . urlencode($googleUser->email) . '&google_id=' . urlencode($googleUser->id));
             }
-
-            dd($user);
 
             Auth::login($user, true);
             $token = $user->createToken('api-token')->plainTextToken;
 
-            return redirect(config('fe_url') . '/login?status=existing_user&token=' . $token);
+            return redirect(config('app.fe_url') . '/login?status=existing_user&token=' . $token);
 
         } catch (\Exception $e) {
-            return redirect(config('fe_url') . '/login?status=error&message=' . urlencode('Authentication failed.'));
+            return redirect(config('app.fe_url') . '/login?status=error&message=' . urlencode('Authentication failed.'));
         }
     }
 }

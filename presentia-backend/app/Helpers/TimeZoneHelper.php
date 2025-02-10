@@ -32,7 +32,7 @@ if(!function_exists('stringify_convert_timezone_to_utc')){
 }
 
 if (!function_exists('convert_time_timezone_to_utc')) {
-    function convert_time_timezone_to_utc($time, $timezone)
+    function convert_time_timezone_to_utc($time, $timezone = "Asia/Jakarta")
     {
         return Carbon::createFromFormat('H:i', $time, $timezone)
             ->setTimezone('UTC')

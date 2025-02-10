@@ -127,5 +127,5 @@ return [
 
     'scheduler_token' => env('SCHEDULER_TOKEN', ""),
 
-    'fe_url' => env(env('FE_URL'), "http://localhost:5173")
+    'fe_url' => env('FE_URL', "http://localhost:5173")
 ];

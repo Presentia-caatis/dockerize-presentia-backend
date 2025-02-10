@@ -67,7 +67,7 @@ class StudentController extends Controller
     {
         $request->validate([
             'school_id' => 'required|exists:schools,id',
-        'file' => 'required|file|mimes:xlsx,xls',
+            'file' => 'required|file|mimes:xlsx,xls',
         ]);
     
         $schoolId = $request->school_id;
@@ -79,6 +79,7 @@ class StudentController extends Controller
         $successCount = 0;
         $failedCount = 0;
         $failedRows = [];
+        $students = [];
     
         // Cache existing class groups to avoid unnecessary queries
         $existingClassGroups = ClassGroup::where('school_id', $schoolId)
@@ -115,23 +116,26 @@ class StudentController extends Controller
                         $existingClassGroups[$row[4]] = $classGroup->id;
                     }
     
-                    Student::updateOrCreate(
-                        ['nisn' => $row[1]], // Search by NISN
-                        [
-                            'school_id' => $schoolId,
-                            'class_group_id' => $existingClassGroups[$row[4]],
-                            'nis' => $row[0],
-                            'student_name' => $row[2],
-                            'gender' => $gender,
-                            'is_active' => true,
-                        ]
-                    );
+                    $students[] = [
+                        'nisn' => $row[1],
+                        'school_id' => $schoolId,
+                        'class_group_id' => $existingClassGroups[$row[4]],
+                        'nis' => $row[0],
+                        'student_name' => $row[2],
+                        'gender' => $gender,
+                        'is_active' => true,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ];
     
                     $successCount++;
                 } catch (\Exception $e) {
                     $failedCount++;
                     $failedRows[] = ['row' => $row, 'error' => $e->getMessage()];
                 }
+            }
+            if (!empty($students)) {
+                Student::upsert($students, ['nisn'], ['school_id', 'class_group_id', 'nis', 'student_name', 'gender', 'is_active']);
             }
         }
     
