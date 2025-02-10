@@ -14,8 +14,8 @@ class SubscriptionPlanSeeder extends Seeder
     public function run()
     {
         SubscriptionPlan::create([
-            'subscription_name' => 'Basic',
-            'billing_cycle_month' => 1,
+            'subscription_name' => 'Free',
+            'billing_cycle_month' => 0,
             'price' => 0,
         ]);
     }

@@ -12,9 +12,11 @@ class CheckInStatus extends Model
     use BelongsToSchool;
 
     protected $fillable = [
-        'type_name',
+        'status_name',
         'description',
+        'late_duration',
         'is_active',
+        'school_id'
     ];
 
     public function attendances()
