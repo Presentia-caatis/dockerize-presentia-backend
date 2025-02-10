@@ -110,8 +110,8 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
     public function headings(): array
     {
         return [
-            [''], // Empty row 1
-            [''], // Empty row 2
+            [''],
+            [''], 
         ];
     }
 

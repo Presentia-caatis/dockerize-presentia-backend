@@ -67,7 +67,7 @@ class StudentController extends Controller
     {
         $request->validate([
             'school_id' => 'required|exists:schools,id',
-            'file' => 'required|file|mimes:xlsx,xls',
+        'file' => 'required|file|mimes:xlsx,xls',
         ]);
     
         $schoolId = $request->school_id;
@@ -86,8 +86,6 @@ class StudentController extends Controller
             ->toArray();
     
         foreach ($chunks as $chunk) {
-            $students = [];
-    
             foreach ($chunk as $row) {
                 // Basic validation
                 if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3]) || empty($row[4])) {
@@ -117,28 +115,23 @@ class StudentController extends Controller
                         $existingClassGroups[$row[4]] = $classGroup->id;
                     }
     
-                    $students[] = [
-                        'school_id' => $schoolId,
-                        'class_group_id' => $existingClassGroups[$row[4]],
-                        'nis' => $row[0],
-                        'nisn' => $row[1],
-                        'student_name' => $row[2],
-                        'gender' => $gender,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
+                    Student::updateOrCreate(
+                        ['nisn' => $row[1]], // Search by NISN
+                        [
+                            'school_id' => $schoolId,
+                            'class_group_id' => $existingClassGroups[$row[4]],
+                            'nis' => $row[0],
+                            'student_name' => $row[2],
+                            'gender' => $gender,
+                            'is_active' => true,
+                        ]
+                    );
     
                     $successCount++;
                 } catch (\Exception $e) {
                     $failedCount++;
                     $failedRows[] = ['row' => $row, 'error' => $e->getMessage()];
                 }
-            }
-    
-            // Batch insert for efficiency
-            if (!empty($students)) {
-                Student::insert($students);
             }
         }
     
