@@ -2,9 +2,9 @@ name: Laravel
 
 on:
   push:
-    branches: [ "main", "development", "test/all-tests" ]
+    branches: [ "main", "development", "test/all-test" ]
   pull_request:
-    branches: [ "main", "development", "test/all-tests" ]
+    branches: [ "main", "development", "test/all-test" ]
 
 jobs:
   laravel-tests:
@@ -32,16 +32,50 @@ jobs:
       with:
         php-version: '8.2'
     - uses: actions/checkout@v4
-    - name: Copy .env
-      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+    
+    # Change directory to where composer.json is located
+    - name: Set working directory to 'presentia-backend'
+      run: cd presentia-backend
+
+    # Ensure composer is installed
+    - name: Set up Composer
+      run: |
+        curl -sS https://getcomposer.org/installer | php
+        sudo mv composer.phar /usr/local/bin/composer
+
+    # Ensure the .env file exists
+    - name: Copy .env if not exists
+      run: |
+        if [ ! -f presentia-backend/.env ]; then
+          cp presentia-backend/.env.example presentia-backend/.env;
+        fi
+
+    # Ensure composer.json exists in the new directory
+    - name: Check if composer.json exists
+      run: |
+        if [ ! -f presentia-backend/composer.json ]; then
+          echo "composer.json not found in presentia-backend directory. Make sure it's in the correct folder.";
+          exit 1;
+        fi
+
     - name: Install Dependencies
-      run: composer install
+      run: |
+        cd presentia-backend
+        composer install
+
     - name: Generate key
-      run: php artisan key:generate
+      run: |
+        cd presentia-backend
+        php artisan key:generate
+
     - name: Directory Permissions
-      run: chmod -R 777 storage bootstrap/cache
+      run: |
+        cd presentia-backend
+        chmod -R 777 storage bootstrap/cache
+
     - name: Set up MySQL configuration in .env
       run: |
+        cd presentia-backend
         sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
         sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
         sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
@@ -53,7 +87,9 @@ jobs:
       run: sleep 10s
 
     - name: Run migrations
-      run: php artisan migrate --force
+      run: |
+        cd presentia-backend
+        php artisan migrate --force
 
     - name: Execute tests (Unit and Feature tests) via PHPUnit/Pest
       env:
@@ -61,4 +97,6 @@ jobs:
         DB_DATABASE: test_db
         DB_USERNAME: user
         DB_PASSWORD: password
-      run: php artisan test
+      run: |
+        cd presentia-backend
+        php artisan test

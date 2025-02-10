@@ -25,8 +25,4 @@ class AttendanceWindow extends Model
         'check_out_start_time',
         'check_out_end_time'
     ];
-
-    public function school() {
-        return $this->belongsTo(School::class);
-    }
 }
