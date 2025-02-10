@@ -125,5 +125,7 @@ return [
 
     'adms_token' => env('ADMS_TOKEN', ""),
 
-    'scheduler_token' => env('SCHEDULER_TOKEN', "")
+    'scheduler_token' => env('SCHEDULER_TOKEN', ""),
+
+    'fe_url' => env(env('FE_URL'), "http://localhost:5173")
 ];
