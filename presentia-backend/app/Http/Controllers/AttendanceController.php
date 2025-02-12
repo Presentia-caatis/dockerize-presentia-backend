@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\AttendanceExport;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
+use App\Models\ClassGroup;
 use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
@@ -18,10 +19,76 @@ use function App\Helpers\stringify_convert_timezone_to_utc;
 
 class AttendanceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'startDate' => ['sometimes', 'date_format:Y-m-d'],
+            'endDate' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:startDate'],
+            'classGroup' => [
+                'sometimes',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all') {
+                        $ids = explode(',', $value);
+                        $validIds = ClassGroup::whereIn('id', $ids)->pluck('id')->toArray();
 
-        $data = Attendance::with('student', 'checkInStatus')->orderBy('check_in_time')->get();
+                        if (array_diff($ids, $validIds)) {
+                            $fail("The selected $attribute contains invalid class group IDs.");
+                        }
+                    }
+                },
+            ],
+            'checkInStatusId' => [
+                'sometimes',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all') {
+                        $ids = explode(',', $value);
+                        $validIds = CheckInStatus::whereIn('id', $ids)->pluck('id')->toArray();
+
+                        if (array_diff($ids, $validIds)) {
+                            $fail("The selected $attribute contains invalid check in status IDs.");
+                        }
+                    }
+                },
+            ],
+            'checkInTimeOrderType' => 'sometimes|in:asc,desc',
+            'checkOutTimeOrderType' => 'sometimes|in:asc,desc'
+        ]);
+
+        $query = Attendance::with('student', 'checkInStatus');
+
+        if (!empty($validatedData['startDate'])) {
+
+            $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
+                $q->whereDate('date', '>=', $validatedData['startDate']);
+            });
+        }
+
+        if (!empty($validatedData['endDate'])) {
+            $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
+                $q->whereDate('date', '<=' ,$validatedData['endDate']);
+            });
+        }
+
+        if (!empty($validatedData['classGroup']) && $validatedData['classGroup'] !== 'all') {
+            $classGroupIds = explode(',', $validatedData['classGroup']);
+            $query->whereHas('student', function ($q) use ($classGroupIds) {
+                $q->whereIn('class_group_id', $classGroupIds);
+            });
+        }
+
+        if (!empty($validatedData['checkInStatusId']) && $validatedData['checkInStatusId'] !== 'all') {
+            $checkInStatusIds = explode(',', $validatedData['checkInStatusId']);
+            $query->whereIn('check_in_status_id', $checkInStatusIds);
+        }
+
+        if(!empty($validatedData['checkInTimeOrderType'])){
+            $data = $query->orderBy('check_in_time', $validatedData['checkInTimeOrderType'])->get();
+        } else if(!empty($validatedData['checkOutTimeOrderType'])){
+            $data = $query->orderBy('check_in_time', $validatedData['checkOutTimeOrderType'])->get();
+        } else {
+            $data = $query->get();
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendances retrieved successfully',
@@ -39,13 +106,13 @@ class AttendanceController extends Controller
         */
         $jsonInput = $request->all(); //get the data
 
-        if(empty($jsonInput)){
+        if (empty($jsonInput)) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'data is null',
             ], 201);
         }
-        
+
         $studentId = $jsonInput[0]['id']; //get the student id
         config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($studentId)->school_id]); // config the global variable
 
@@ -173,7 +240,7 @@ class AttendanceController extends Controller
             $endDate,
             $classCounter == 'all' ? '_all' : "_{$classCounter}_class"
         );
-        
+
         return (new AttendanceExport($startDate, $endDate, $classGroup))->download($filename);
     }
 
