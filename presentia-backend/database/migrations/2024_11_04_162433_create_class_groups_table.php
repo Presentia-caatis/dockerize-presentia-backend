@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId("school_id")->constrained("schools")->cascadeOnDelete();
             $table->string("class_name");
-            $table->integer("amount_of_students");
             $table->unique(['school_id', 'class_name']);
             $table->timestamps();
         });
