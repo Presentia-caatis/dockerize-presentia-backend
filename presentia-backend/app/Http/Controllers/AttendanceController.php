@@ -22,15 +22,14 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'startDate' => ['sometimes', 'date_format:Y-m-d'],
-            'endDate' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:startDate'],
+            'startDate' => ['required_with:endDate', 'date_format:Y-m-d'],
+            'endDate' => ['required_with:startDate', 'date_format:Y-m-d', 'after_or_equal:startDate'],
             'classGroup' => [
                 'sometimes',
                 function ($attribute, $value, $fail) {
                     if ($value !== 'all') {
                         $ids = explode(',', $value);
                         $validIds = ClassGroup::whereIn('id', $ids)->pluck('id')->toArray();
-
                         if (array_diff($ids, $validIds)) {
                             $fail("The selected $attribute contains invalid class group IDs.");
                         }
@@ -43,7 +42,6 @@ class AttendanceController extends Controller
                     if ($value !== 'all') {
                         $ids = explode(',', $value);
                         $validIds = CheckInStatus::whereIn('id', $ids)->pluck('id')->toArray();
-
                         if (array_diff($ids, $validIds)) {
                             $fail("The selected $attribute contains invalid check in status IDs.");
                         }
@@ -51,21 +49,30 @@ class AttendanceController extends Controller
                 },
             ],
             'checkInTimeOrderType' => 'sometimes|in:asc,desc',
-            'checkOutTimeOrderType' => 'sometimes|in:asc,desc'
+            'checkOutTimeOrderType' => 'sometimes|in:asc,desc',
+            'perPage' => 'sometimes|integer|min:1',
+            'simplify' => 'sometimes|boolean',
         ]);
 
-        $query = Attendance::with('student', 'checkInStatus');
+        $perPage = $validatedData['perPage'] ?? 10;
 
-        if (!empty($validatedData['startDate'])) {
-
-            $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
-                $q->whereDate('date', '>=', $validatedData['startDate']);
-            });
+        $simplify = $validatedData['simplify'] ?? true;
+        if($simplify){
+            $query = Attendance::with([
+                'student:student_name,nis,nisn,gender',
+                'student.classGroup:class_name',  
+                'checkInStatus:status_name',
+                'attendanceWindow:date',     
+            ])->select(['check_in_time', 'check_out_time']);
+        } else{
+            $query = Attendance::with('student', 'checkInStatus');
         }
 
-        if (!empty($validatedData['endDate'])) {
+        
+
+        if (!empty($validatedData['startDate']) && !empty($validatedData['endDate'])) {
             $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
-                $q->whereDate('date', '<=' ,$validatedData['endDate']);
+                $q->whereBetween('date', [$validatedData['startDate'], $validatedData['endDate']]);
             });
         }
 
@@ -81,13 +88,13 @@ class AttendanceController extends Controller
             $query->whereIn('check_in_status_id', $checkInStatusIds);
         }
 
-        if(!empty($validatedData['checkInTimeOrderType'])){
-            $data = $query->orderBy('check_in_time', $validatedData['checkInTimeOrderType'])->get();
-        } else if(!empty($validatedData['checkOutTimeOrderType'])){
-            $data = $query->orderBy('check_in_time', $validatedData['checkOutTimeOrderType'])->get();
-        } else {
-            $data = $query->get();
+        if (!empty($validatedData['checkInTimeOrderType'])) {
+            $query->orderBy('check_in_time', $validatedData['checkInTimeOrderType']);
+        } elseif (!empty($validatedData['checkOutTimeOrderType'])) {
+            $query->orderBy('check_out_time', $validatedData['checkOutTimeOrderType']);
         }
+
+        $data = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
@@ -95,6 +102,7 @@ class AttendanceController extends Controller
             'data' => $data
         ]);
     }
+
 
 
     public function store(Request $request)
