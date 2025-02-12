@@ -66,24 +66,21 @@ class StudentController extends Controller
 
     public function storeViaFile(Request $request)
     {
+        set_time_limit(600);
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
             'file' => 'required|file|mimes:xlsx,xls',
         ]);
 
-        $schoolId = $request->school_id;
+        $schoolId = config('school.id');
         $data = Excel::toArray([], $request->file('file'))[0];
         unset($data[0]); // Remove header row
 
-        $chunks = array_chunk($data, 100);
+        $chunks = array_chunk($data, 500);
         $totalRows = count($data);
         $successCount = 0;
         $failedCount = 0;
         $failedRows = [];
         $students = [];
-
-        $existingClassGroups = ClassGroup::pluck('id', 'class_name') // ['class_name' => id]
-            ->toArray();
 
         foreach ($chunks as $chunk) {
             foreach ($chunk as $row) {
@@ -106,11 +103,11 @@ class StudentController extends Controller
                     $students[] = [
                         'nisn' => $row[1],
                         'school_id' => $schoolId,
-                        'class_group_id' => $existingClassGroups[$row[4]],
                         'nis' => $row[0],
                         'student_name' => $row[2],
                         'gender' => $gender,
                         'is_active' => true,
+                        'class_group_name' => $row[4],
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
@@ -122,7 +119,7 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                ProcessStudentImport::dispatch($students, $existingClassGroups);
+                ProcessStudentImport::dispatch($students, $schoolId);
             }
         }
 

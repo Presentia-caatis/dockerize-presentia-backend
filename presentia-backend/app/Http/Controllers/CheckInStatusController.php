@@ -29,7 +29,7 @@ class CheckInStatusController extends Controller
             'description' => 'required|string',
             'is_active' => 'required|boolean',
             'late_duration' => 'required|integer'
-        ],201);
+        ]);
 
         $validatedData['school_id'] = config('school.id');
 
