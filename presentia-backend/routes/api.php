@@ -34,7 +34,9 @@ use App\Http\Controllers\{
     AbsencePermitTypeController,
     AbsencePermitController,
     AttendanceScheduleController,
-    DayController
+    DayController,
+    AdmsCredentialController,
+    JobController
 };
 
 
@@ -45,7 +47,7 @@ Route::post('/attendance-window/generate-window', [AttendanceWindowController::c
 Route::middleware(['auth:sanctum'])->group(function () {
     // Time Routes
     Route::prefix('time')->group(function () {
-        Route::get('/', [TimeController::class, 'getCurrentTime']);
+        Route::get('/current', [TimeController::class, 'getCurrentTime']);
     });
 
     // User Routes
@@ -121,6 +123,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{id}', [PaymentController::class, 'getById']);
         Route::put('/{id}', [PaymentController::class, 'update']);
         Route::delete('/{id}', [PaymentController::class, 'destroy']);
+    });
+
+    // ADMS Credential Routes
+    Route::prefix('adms-credential')->group(function () {
+        Route::get('/' ,[AdmsCredentialController::class, 'index']);
+        Route::post('/', [AdmsCredentialController::class, 'store']);
+        Route::get('/{id}', [AdmsCredentialController::class, 'getById']);
+        Route::put('/{id}', [AdmsCredentialController::class, 'update']);
+        Route::delete('/{id}', [AdmsCredentialController::class, 'destroy']);
+    });
+
+    // Jobs Route
+    Route::prefix('job')->group(function () {
+        Route::get('/failed', [JobController::class, 'failedJobs']);
+        Route::post('/retry/{id}', [JobController::class, 'retryJob']);
+        Route::post('/flush', [JobController::class, 'flushJobs']);
+        Route::post('/restart', [JobController::class, 'restartQueue']);
+        Route::get('/pending', [JobController::class, 'pendingJobs']);
     });
 
     Route::middleware('school')->group(function () {

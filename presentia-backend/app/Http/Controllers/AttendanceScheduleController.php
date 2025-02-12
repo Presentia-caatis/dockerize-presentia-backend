@@ -103,17 +103,16 @@ class AttendanceScheduleController extends Controller
     {
         $attendanceSchedule = AttendanceSchedule::find($id);
         $validatedData = $request->validate([
-            'event_id' => 'nullable',
-            'name' => 'required|string',
-            'type' => 'required|in:event,default,holiday',
+            'event_id' => 'sometimes|exists:events,id',
+            'name' => 'sometimes|string',
             'date' => [
                 Rule::requiredIf($request->type === 'event'),
                 'date_format:Y-m-d'
             ],
-            'check_in_start_time' => 'required|date_format:H:i:s',
-            'check_in_end_time' => 'required|date_format:H:i:s',
-            'check_out_start_time' => 'required|date_format:H:i:s',
-            'check_out_end_time' => 'required|date_format:H:i:s'
+            'check_in_start_time' => 'sometimes|date_format:H:i:s',
+            'check_in_end_time' => 'sometimes|date_format:H:i:s',
+            'check_out_start_time' => 'sometimes|date_format:H:i:s',
+            'check_out_end_time' => 'sometimes|date_format:H:i:s'
         ]);
 
         $attendanceSchedule = AttendanceSchedule::findOrFail($id);

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -71,6 +72,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Resource not found',
                 'error' => $e->getMessage(),
             ], 404);  // 404 Not Found status
+        });
+
+        $exceptions->renderable(function (AuthorizationException $e, $request) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Action is not permissible or you are not authorized to perform this action.',
+                'error' => $e->getMessage(),
+            ], 403);  // 403 Forbidden
         });
 
         $exceptions->renderable(function (Throwable $e, $request) {

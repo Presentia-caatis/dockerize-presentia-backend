@@ -117,12 +117,13 @@ class SchoolController extends Controller
 
     }
 
-    public function getById(School $School)
+    public function getById($id)
     {
+        $school = School::findOrFail($id); 
         return response()->json([
             'status' => 'success',
             'message' => 'School retrieved successfully',
-            'data' => $School
+            'data' => $school
         ]);
 
     }
