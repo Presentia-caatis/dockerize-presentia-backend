@@ -12,10 +12,16 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = Student::with('classGroup')->get();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = Student::with('classGroup')->paginate($perPage);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Students retrieved successfully',
@@ -69,6 +75,7 @@ class StudentController extends Controller
         set_time_limit(600);
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls',
+            'method' => 'required|in:post,put'
         ]);
 
         $schoolId = config('school.id');
@@ -119,7 +126,7 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                ProcessStudentImport::dispatch($students, $schoolId);
+                ProcessStudentImport::dispatch($students, $schoolId, $request->method);
             }
         }
 

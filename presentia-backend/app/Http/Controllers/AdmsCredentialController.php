@@ -10,12 +10,13 @@ class AdmsCredentialController extends Controller
 {
     public function index(Request $request)
     {
-        $school_id = $request->query('schoolId');
-        $paginate = $request->query('paginate', 10);
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
+
+        $perPage = $validatedData['perPage'] ?? 10;
         
-        $data = $school_id 
-            ? AdmsCredential::where('school_id', $school_id)->get() :
-            AdmsCredential::all();
+        $data = AdmsCredential::paginate($perPage);
 
         return response()->json([
             'status' => 'success',

@@ -9,10 +9,15 @@ use App\Models\CheckInStatus;
 
 class CheckInStatusController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = CheckInStatus::orderBy('late_duration')->get();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = CheckInStatus::orderBy('late_duration')->paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late types retrieved successfully',
@@ -29,7 +34,7 @@ class CheckInStatusController extends Controller
             'description' => 'required|string',
             'is_active' => 'required|boolean',
             'late_duration' => 'required|integer'
-        ]);
+        ],201);
 
         $validatedData['school_id'] = config('school.id');
 

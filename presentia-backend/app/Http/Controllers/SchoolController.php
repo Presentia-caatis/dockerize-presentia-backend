@@ -15,10 +15,15 @@ use function App\Helpers\convert_utc_to_timezone;
 
 class SchoolController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = School::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = School::paginate(10);
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',

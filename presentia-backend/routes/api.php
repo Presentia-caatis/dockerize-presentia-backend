@@ -125,15 +125,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', [PaymentController::class, 'destroy']);
     });
 
-    // ADMS Credential Routes
-    Route::prefix('adms-credential')->group(function () {
-        Route::get('/' ,[AdmsCredentialController::class, 'index']);
-        Route::post('/', [AdmsCredentialController::class, 'store']);
-        Route::get('/{id}', [AdmsCredentialController::class, 'getById']);
-        Route::put('/{id}', [AdmsCredentialController::class, 'update']);
-        Route::delete('/{id}', [AdmsCredentialController::class, 'destroy']);
-    });
-
     // Jobs Route
     Route::prefix('job')->group(function () {
         Route::get('/failed', [JobController::class, 'failedJobs']);
@@ -141,6 +132,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/flush', [JobController::class, 'flushJobs']);
         Route::post('/restart', [JobController::class, 'restartQueue']);
         Route::get('/pending', [JobController::class, 'pendingJobs']);
+        Route::delete('/pending', [JobController::class, 'flushPendingJobs']);
     });
 
     Route::middleware('school')->group(function () {
@@ -236,7 +228,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('dashboard-statistic')->group(function () {
             Route::get('/static', [DashboardStatistic::class, 'StaticStatistic']);
-            Route::post('/daily', [DashboardStatistic::class, 'DailyStatistic']);
+            Route::get('/daily', [DashboardStatistic::class, 'DailyStatistic']);
         });
     });
 

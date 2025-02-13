@@ -73,4 +73,14 @@ class JobController extends Controller
             'pending_jobs' => $pendingJobs
         ]);
     }
+
+    public function flushPendingJobs()
+    {
+        DB::table('jobs')->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'All pending jobs have been flushed.'
+        ]);
+    }
 }

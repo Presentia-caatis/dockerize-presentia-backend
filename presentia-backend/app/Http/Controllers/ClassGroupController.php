@@ -8,10 +8,15 @@ use App\Models\ClassGroup;
 
 class ClassGroupController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = ClassGroup::get();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = ClassGroup::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Class groups retrieved successfully',

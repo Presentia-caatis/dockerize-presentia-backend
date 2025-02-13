@@ -10,10 +10,15 @@ use Illuminate\Validation\Rules;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = User::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = User::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',

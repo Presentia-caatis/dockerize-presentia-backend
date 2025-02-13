@@ -8,10 +8,15 @@ use App\Models\SubscriptionHistory;
 
 class SubscriptionHistoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = SubscriptionHistory::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = SubscriptionHistory::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription histories retrieved successfully',

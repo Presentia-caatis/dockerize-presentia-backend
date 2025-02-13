@@ -6,20 +6,24 @@ use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
 use App\Models\School;
+use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\convert_utc_to_timezone;
 use function App\Helpers\current_school_id;
+use function App\Helpers\current_school_timezone;
+use function App\Helpers\stringify_convert_utc_to_timezone;
 
 class DashboardStatistic extends Controller
 {
-    public function StaticStatistic(){
-        $school =  School::find(current_school_id())->load('subscriptionPlan');
+    public function StaticStatistic()
+    {
+        $school = School::find(current_school_id())->load('subscriptionPlan');
         $data = [
             'active_students' => Student::where('is_active', true)->count(),
             'inactive_students' => Student::where('is_active', false)->count(),
-            'male_students' =>Student::where('gender', 'male')->count(),
+            'male_students' => Student::where('gender', 'male')->count(),
             'female_student' => Student::where('gender', 'female')->count(),
             'subscription_packet' => $school->subscriptionPlan,
         ];
@@ -32,23 +36,51 @@ class DashboardStatistic extends Controller
         ]);
     }
 
-    public function DailyStatistic(Request $request){
+    public function DailyStatistic(Request $request)
+    {
+        // Validate request
         $validatedData = $request->validate([
-            'date' => 'required|date',
+            'date' => 'sometimes|date|format:Y-m-d',
         ]);
 
-        $attendanceWindow = AttendanceWindow::whereDate('date', Carbon::parse($validatedData['date'])->format('Y-m-d'))
-            ->first();
-        
-        $data =[
-            CheckInStatus::where('late_duration', 0)->first()->type_name => $attendanceWindow->total_present,
-            CheckInStatus::where('late_duration', -1)->first()->type_name => $attendanceWindow->total_absent,
-        ];
+        // Get the date or default to today in school's timezone
+        $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
 
-        foreach(CheckInStatus::where('late_duration', '!= ',0)->where('late_duration', '!= ',-1)->get() as $checkInStatus){
-            $data[$checkInStatus->type_name] = Attendance::where('attendance_window_id', $attendanceWindow->id)
-                                        ->where("check_in_status_id", $checkInStatus->id)->count();
+        $attendanceWindowId = AttendanceWindow::whereDate('date', $date)->first()->id;
+        if (!$attendanceWindowId) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No attendance data available for the selected date.',
+            ]);
         }
+
+        $checkInStatuses = CheckInStatus::pluck('status_name', 'id');
+
+
+
+        $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
+            ->where('attendances.attendance_window_id', $attendanceWindowId)
+            ->join('check_in_statuses', 'attendances.check_in_status_id', '=', 'check_in_statuses.id')
+            ->where('check_in_statuses.late_duration', '!=', -1)
+            ->where('attendances.school_id', config('school.id'))
+            ->selectRaw('attendances.check_in_status_id, COUNT(*) as count')
+            ->groupBy('attendances.check_in_status_id')
+            ->pluck('count', 'attendances.check_in_status_id')
+            ->toArray();
+
+        $data = [];
+        $presenceCounter = 0;
+
+        foreach ($checkInStatuses as $id => $statusName) {
+            $data[$statusName] = $attendanceCounts[$id] ?? 0;
+            $presenceCounter += $data[$statusName];
+        }
+
+        $absenceStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+
+
+        $totalActiveStudents = Student::where('is_active', true)->count();
+        $data[$absenceStatusName] = max(0, $totalActiveStudents - $presenceCounter);
 
         return response()->json([
             'status' => 'success',
@@ -56,4 +88,5 @@ class DashboardStatistic extends Controller
             'data' => $data
         ]);
     }
+
 }
