@@ -37,56 +37,57 @@ class DashboardStatistic extends Controller
     }
 
     public function DailyStatistic(Request $request)
-    {
-        // Validate request
-        $validatedData = $request->validate([
-            'date' => 'sometimes|date|date_format:Y-m-d',
-        ]);
+{
+    // Validate request
+    $validatedData = $request->validate([
+        'date' => 'sometimes|date|date_format:Y-m-d',
+    ]);
 
-        // Get the date or default to today in school's timezone
-        $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
+    // Get the date or default to today in school's timezone
+    $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
 
-        $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
-        if (!$attendanceWindowId) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'No attendance data available for the selected date.',
-            ]);
-        }
-
-        $checkInStatuses = CheckInStatus::pluck('status_name', 'id');
-
-
-
-        $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
-            ->where('attendances.attendance_window_id', $attendanceWindowId)
-            ->join('check_in_statuses', 'attendances.check_in_status_id', '=', 'check_in_statuses.id')
-            ->where('check_in_statuses.late_duration', '!=', -1)
-            ->where('attendances.school_id', config('school.id'))
-            ->selectRaw('attendances.check_in_status_id, COUNT(*) as count')
-            ->groupBy('attendances.check_in_status_id')
-            ->pluck('count', 'attendances.check_in_status_id')
-            ->toArray();
-
-        $data = [];
-        $presenceCounter = 0;
-
-        foreach ($checkInStatuses as $id => $statusName) {
-            $data[$statusName] = $attendanceCounts[$id] ?? 0;
-            $presenceCounter += $data[$statusName];
-        }
-
-        $absenceStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
-
-
-        $totalActiveStudents = Student::where('is_active', true)->count();
-        $data[$absenceStatusName] = max(0, $totalActiveStudents - $presenceCounter);
-
+    $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
+    if (!$attendanceWindowId) {
         return response()->json([
-            'status' => 'success',
-            'message' => 'Daily statistic retrieved successfully',
-            'data' => $data
+            'status' => 'failed',
+            'message' => 'No attendance data available for the selected date.',
         ]);
     }
+
+    // Get all possible CheckInStatuses
+    $checkInStatuses = CheckInStatus::pluck('status_name', 'id');
+
+    // Get attendance counts grouped by check_in_status_id
+    $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
+        ->where('attendances.attendance_window_id', $attendanceWindowId)
+        ->join('check_in_statuses', 'attendances.check_in_status_id', '=', 'check_in_statuses.id')
+        ->where('check_in_statuses.late_duration', '!=', -1)
+        ->where('attendances.school_id', config('school.id'))
+        ->selectRaw('attendances.check_in_status_id, COUNT(*) as count')
+        ->groupBy('attendances.check_in_status_id')
+        ->pluck('count', 'attendances.check_in_status_id')
+        ->toArray();
+
+    $data = [];
+    $presenceCounter = 0;
+
+
+    foreach ($checkInStatuses as $id => $statusName) {
+        $data[$statusName] = $attendanceCounts[$id] ?? 0;
+        $presenceCounter += $data[$statusName];
+    }
+
+    $absenceStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+
+    // Get the total active students
+    $totalActiveStudents = Student::where('is_active', true)->count();
+    $data[$absenceStatusName] = max(0, $totalActiveStudents - $presenceCounter);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Daily statistic retrieved successfully',
+        'data' => $data
+    ]);
+}
 
 }
