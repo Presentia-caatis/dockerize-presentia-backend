@@ -40,13 +40,13 @@ class DashboardStatistic extends Controller
     {
         // Validate request
         $validatedData = $request->validate([
-            'date' => 'sometimes|date|format:Y-m-d',
+            'date' => 'sometimes|date|date_format:Y-m-d',
         ]);
 
         // Get the date or default to today in school's timezone
         $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
 
-        $attendanceWindowId = AttendanceWindow::whereDate('date', $date)->first()->id;
+        $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
         if (!$attendanceWindowId) {
             return response()->json([
                 'status' => 'failed',
