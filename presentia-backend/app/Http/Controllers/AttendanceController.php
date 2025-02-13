@@ -224,7 +224,7 @@ class AttendanceController extends Controller
                 function ($attribute, $value, $fail) {
                     if ($value !== 'all') {
                         $ids = explode(',', $value);
-                        $validIds = \App\Models\ClassGroup::whereIn('id', $ids)->pluck('id')->toArray();
+                        $validIds = ClassGroup::whereIn('id', $ids)->pluck('id')->toArray();
 
                         if (array_diff($ids, $validIds)) {
                             $fail("The selected $attribute contains invalid class group IDs.");
