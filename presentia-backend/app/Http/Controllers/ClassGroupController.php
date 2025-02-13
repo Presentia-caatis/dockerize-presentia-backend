@@ -11,7 +11,7 @@ class ClassGroupController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1' 
+            'perPage' => 'sometimes|integer|min:1'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -22,7 +22,6 @@ class ClassGroupController extends Controller
             'message' => 'Class groups retrieved successfully',
             'data' => $data
         ]);
-
     }
 
     public function store(Request $request)
@@ -39,29 +38,26 @@ class ClassGroupController extends Controller
             'status' => 'success',
             'message' => 'Class group created successfully',
             'data' => $data
-        ],201);
-
+        ], 201);
     }
 
     public function getById($id)
     {
-        $classGroup=ClassGroup::find($id);
+        $classGroup = ClassGroup::find($id);
         $classGroup->load('school');
         return response()->json([
             'status' => 'success',
             'message' => 'Class group retrieved successfully',
             'data' => $classGroup
         ]);
-
     }
 
     public function update(Request $request, $id)
     {
-        $classGroup=ClassGroup::find($id);
+        $classGroup = ClassGroup::find($id);
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
-            'class_name' => 'required|string',
-            'amount_of_students' => 'required|integer',
+            'class_name' => 'required|string'
         ]);
 
         $classGroup->update($validatedData);
@@ -75,12 +71,11 @@ class ClassGroupController extends Controller
 
     public function destroy($id)
     {
-        $classGroup=ClassGroup::find($id);
+        $classGroup = ClassGroup::find($id);
         $classGroup->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'Class group deleted successfully'
         ]);
-
     }
 }

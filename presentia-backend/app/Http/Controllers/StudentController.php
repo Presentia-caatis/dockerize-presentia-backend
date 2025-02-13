@@ -15,20 +15,32 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1' 
+            'perPage' => 'sometimes|integer|min:1',
+            'class_group_id' => 'sometimes|exists:class_groups,id',
+            'search' => 'nullable|string|min:1'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
+        $search = $validatedData['search'] ?? null;
+        $query = Student::with('classGroup');
 
-        $data = Student::with('classGroup')->paginate($perPage);
-        
+        if ($request->has('class_group_id')) {
+            $query->where('class_group_id', $request->class_group_id);
+        }
+
+        if ($search) {
+            $query->where('student_name', 'like', "%$search%");
+        }
+
+        $data = $query->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Students retrieved successfully',
             'data' => $data
         ]);
-
     }
+
 
     public function store(Request $request)
     {
@@ -50,7 +62,6 @@ class StudentController extends Controller
             'message' => 'Student created successfully',
             'data' => $data
         ], 201);
-
     }
 
     public function exportStudents()
@@ -149,7 +160,6 @@ class StudentController extends Controller
             'message' => 'Student retrieved successfully',
             'data' => $student
         ]);
-
     }
 
     public function update(Request $request, $id)
@@ -173,7 +183,6 @@ class StudentController extends Controller
             'message' => 'Student updated successfully',
             'data' => $student
         ]);
-
     }
 
     public function destroy($id)
@@ -184,6 +193,5 @@ class StudentController extends Controller
             'status' => 'success',
             'message' => 'Student deleted successfully'
         ]);
-
     }
 }
