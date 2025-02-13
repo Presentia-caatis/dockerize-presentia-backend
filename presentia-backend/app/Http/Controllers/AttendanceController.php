@@ -59,7 +59,7 @@ class AttendanceController extends Controller
         $simplify = $validatedData['simplify'] ?? true;
         if($simplify){
             $query = Attendance::with([
-                'student:id,student_name,nis,nisn,gender',
+                'student:id,student_name,nis,nisn,gender,class_group_id',
                 'student.classGroup:id,class_name',  
                 'checkInStatus:id,status_name',
             ])->select([
