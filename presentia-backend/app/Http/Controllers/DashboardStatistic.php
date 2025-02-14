@@ -52,10 +52,10 @@ class DashboardStatistic extends Controller
         $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
         if (!$attendanceWindowId) {
             return response()->json([
-                'status' => 'failed',
+                'status' => 'success',
                 'message' => 'No attendance data available for the selected date.',
-                'presence' => Student::where('is_active', true)->count(),
-                'absence' => 0
+                'presence' => 0,
+                'absence' =>  Student::where('is_active', true)->count(),
             ]);
         }
 
