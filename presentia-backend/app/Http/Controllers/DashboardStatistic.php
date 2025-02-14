@@ -58,7 +58,7 @@ class DashboardStatistic extends Controller
     }
 
     // Get all possible CheckInStatuses
-    $checkInStatuses = CheckInStatus::pluck('status_name', 'id');
+    $checkInStatuses = CheckInStatus::orderBy('late_duration')->pluck('status_name', 'id');
 
     // Get attendance counts grouped by check_in_status_id
     $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
@@ -96,6 +96,7 @@ class DashboardStatistic extends Controller
             ]
         ]);
     }
+
     return response()->json([
         'status' => 'success',
         'message' => 'Daily statistic retrieved successfully',
