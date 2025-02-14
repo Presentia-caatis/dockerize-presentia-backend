@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [config('app.url'), '*'],  
+    'allowed_origins' => [config('app.fe_url'), '*'],  
 
     'allowed_origins_patterns' => [],
 
