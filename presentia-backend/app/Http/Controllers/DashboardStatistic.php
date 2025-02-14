@@ -38,7 +38,6 @@ class DashboardStatistic extends Controller
 
     public function DailyStatistic(Request $request)
     {
-        // Validate request
         $validatedData = $request->validate([
             'date' => 'sometimes|date|date_format:Y-m-d',
             'summarize' => 'sometimes|boolean'
@@ -49,13 +48,16 @@ class DashboardStatistic extends Controller
         // Get the date or default to today in school's timezone
         $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
 
+        //Get the attendance window id
         $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
         if (!$attendanceWindowId) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'No attendance data available for the selected date.',
-                'presence' => 0,
-                'absence' =>  Student::where('is_active', true)->count(),
+                'data' => [
+                    'presence' => 0,
+                    'absence' => Student::where('is_active', true)->count(),
+                ]
             ]);
         }
 
@@ -76,7 +78,7 @@ class DashboardStatistic extends Controller
         $data = [];
         $presenceCounter = 0;
 
-
+        //map the status name with the counter
         foreach ($checkInStatuses as $id => $statusName) {
             $data[$statusName] = $attendanceCounts[$id] ?? 0;
             $presenceCounter += $data[$statusName];
