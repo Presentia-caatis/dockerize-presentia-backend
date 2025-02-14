@@ -50,19 +50,26 @@ class DashboardStatistic extends Controller
 
         //Get the attendance window id
         $attendanceWindowId = optional(AttendanceWindow::whereDate('date', $date)->first())->id;
+        
+        // Get all possible CheckInStatuses
+        $checkInStatuses = CheckInStatus::orderBy('late_duration')->pluck('status_name', 'id');
+
         if (!$attendanceWindowId) {
+            $studentCounter = Student::where('is_active', true)->count();
             return response()->json([
                 'status' => 'success',
                 'message' => 'No attendance data available for the selected date.',
-                'data' => [
+                'data' => ($summarize ? [
                     'presence' => 0,
-                    'absence' => Student::where('is_active', true)->count(),
-                ]
+                    'absence' => $studentCounter,
+                ] : (function () use ($checkInStatuses, $studentCounter) {
+                    return array_merge([
+                        $checkInStatuses->values()->first() => $studentCounter
+                    ], $checkInStatuses->skip(1)->mapWithKeys(function ($statusName) {return [$statusName => 0];})->toArray()
+                    );
+                })())
             ]);
         }
-
-        // Get all possible CheckInStatuses
-        $checkInStatuses = CheckInStatus::orderBy('late_duration')->pluck('status_name', 'id');
 
         // Get attendance counts grouped by check_in_status_id
         $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
