@@ -44,7 +44,7 @@ class DashboardStatistic extends Controller
             'summarize' => 'sometimes|boolean'
         ]);
 
-        $summarize =  $validatedData['summarize'] ?? true;
+        $summarize = $validatedData['summarize'] ?? true;
 
         // Get the date or default to today in school's timezone
         $date = $validatedData['date'] ?? stringify_convert_utc_to_timezone(now(), current_school_timezone(), 'Y-m-d');
@@ -54,6 +54,8 @@ class DashboardStatistic extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'No attendance data available for the selected date.',
+                'presence' => Student::where('is_active', true)->count(),
+                'absence' => 0
             ]);
         }
 
@@ -91,7 +93,7 @@ class DashboardStatistic extends Controller
                 'status' => 'success',
                 'message' => 'Daily statistic retrieved successfully',
                 'data' => [
-                    'presence' =>  $presenceCounter,
+                    'presence' => $presenceCounter,
                     'absence' => $data[$absenceStatusName]
                 ]
             ]);
