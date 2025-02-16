@@ -18,9 +18,9 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_db
-          MYSQL_USER: user
-          MYSQL_PASSWORD: password
+          MYSQL_DATABASE: presentia_test
+          MYSQL_USER: root
+          MYSQL_PASSWORD: 
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
@@ -31,37 +31,19 @@ jobs:
     - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
       with:
         php-version: '8.2'
+
     - uses: actions/checkout@v4
-    
-    # Change directory to where composer.json is located
-    - name: Set working directory to 'presentia-backend'
-      run: cd presentia-backend
-
-    # Ensure composer is installed
-    - name: Set up Composer
-      run: |
-        curl -sS https://getcomposer.org/installer | php
-        sudo mv composer.phar /usr/local/bin/composer
-
-    # Ensure the .env file exists
-    - name: Copy .env if not exists
-      run: |
-        if [ ! -f presentia-backend/.env ]; then
-          cp presentia-backend/.env.example presentia-backend/.env;
-        fi
-
-    # Ensure composer.json exists in the new directory
-    - name: Check if composer.json exists
-      run: |
-        if [ ! -f presentia-backend/composer.json ]; then
-          echo "composer.json not found in presentia-backend directory. Make sure it's in the correct folder.";
-          exit 1;
-        fi
-
+  
     - name: Install Dependencies
       run: |
         cd presentia-backend
-        composer install
+        composer install --no-progress --no-interaction --prefer-dist
+
+    - name: Copy .env if not exists
+      run: |
+        if [ ! -f presentia-backend/.env ]; then
+          cp presentia-backend/.env.testing presentia-backend/.env;
+        fi
 
     - name: Generate key
       run: |
@@ -72,16 +54,6 @@ jobs:
       run: |
         cd presentia-backend
         chmod -R 777 storage bootstrap/cache
-
-    - name: Set up MySQL configuration in .env
-      run: |
-        cd presentia-backend
-        sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
-        sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
-        sed -i 's/DB_PORT=.*/DB_PORT=3306/' .env
-        sed -i 's/DB_DATABASE=.*/DB_DATABASE=test_db/' .env
-        sed -i 's/DB_USERNAME=.*/DB_USERNAME=user/' .env
-        sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=password/' .env
 
     - name: Wait for MySQL
       run: sleep 10s
@@ -94,9 +66,9 @@ jobs:
     - name: Execute tests (Unit and Feature tests) via PHPUnit/Pest
       env:
         DB_CONNECTION: mysql
-        DB_DATABASE: test_db
-        DB_USERNAME: user
-        DB_PASSWORD: password
+        DB_DATABASE: presentia_test
+        DB_USERNAME: root
+        DB_PASSWORD: 
       run: |
         cd presentia-backend
         php artisan test
