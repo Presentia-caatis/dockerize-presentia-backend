@@ -52,6 +52,7 @@ class AttendanceController extends Controller
             'checkOutTimeOrderType' => 'sometimes|in:asc,desc',
             'perPage' => 'sometimes|integer|min:1',
             'simplify' => 'sometimes|boolean',
+            'attendanceWindowId' => 'sometimes|exists:attendance_windows,id'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -95,6 +96,16 @@ class AttendanceController extends Controller
             $query->orderBy('check_out_time', $validatedData['checkOutTimeOrderType']);
         }
 
+        if (!empty($validatedData['checkInStatusId']) && $validatedData['checkInStatusId'] !== 'all') {
+            $checkInStatusIds = explode(',', $validatedData['checkInStatusId']);
+            $query->whereIn('check_in_status_id', $checkInStatusIds);
+        }
+
+        if (!empty($validatedData['attendanceWindowId'])) {
+            $query->where('attendance_window_id', $validatedData['attendanceWindowId']);
+        }   
+        
+        $totalAll = $query->count();
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -256,13 +267,48 @@ class AttendanceController extends Controller
 
     public function getById($id)
     {
-        $attendance = Attendance::find($id);
+        $attendance = Attendance::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance retrieved successfully',
             'data' => $attendance
         ]);
     }
+
+    public function getByAttendanceWindow(Request $request)
+    {
+        $request->validate([
+            'attendanceWindowId' => 'required_without:date|exists:attendance_windows,id',
+            'date' => 'required_without:attendanceWindowId|date_format:Y-m-d',
+            'perPage' => 'sometimes|int'
+        ]);
+
+        $perPage = $request->perPage ?? 10;
+
+        $query = Attendance::query();
+        if($request->date){
+            $query->whereHas('attendanceWindow', function ($q) use ($request) {
+                $q->whereDate('date', '=' ,$request->date);
+            });
+        }
+
+        if($request->attendanceWindowId){
+            $query->where('attendance_window_id', $request->attendanceWindowId);
+        }
+
+        $totalAll = $query->count();
+
+        $attendance = $query->paginate($perPage);
+        $attendance['total_all'] = $totalAll;
+
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance window retrieved successfully',
+            'data' => $attendance
+        ]);
+    }
+
 
     public function update(Request $request, $id)
     {
