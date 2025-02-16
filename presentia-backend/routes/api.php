@@ -43,8 +43,8 @@ use App\Http\Controllers\{
 
 
 Route::controller(SocialiteController::class)->group(function () {
-    Route::get('google', 'googleLogin');
-    Route::get('google-callback', 'googleAuthentication');
+    Route::get('auth-google', 'googleLogin');
+    Route::get('auth-google-callback', 'googleAuthentication');
 });
 
 Route::post('/register', [AuthController::class, 'register'])->name('register');
