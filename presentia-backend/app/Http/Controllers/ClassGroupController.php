@@ -16,13 +16,15 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = ClassGroup::paginate($perPage);
+        $data = ClassGroup::withCount('students')->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Class groups retrieved successfully',
             'data' => $data
         ]);
     }
+
 
     public function store(Request $request)
     {
@@ -49,6 +51,26 @@ class ClassGroupController extends Controller
             'status' => 'success',
             'message' => 'Class group retrieved successfully',
             'data' => $classGroup
+        ]);
+    }
+
+    public function getStudentsByClass($id)
+    {
+        $classGroup = ClassGroup::find($id);
+        $classGroup->load('school');
+        $classGroup = ClassGroup::with('students');
+
+        if (!$classGroup) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Class group not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Students retrieved successfully',
+            'data' => $classGroup->students,
         ]);
     }
 
