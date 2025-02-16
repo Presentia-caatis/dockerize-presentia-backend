@@ -12,7 +12,7 @@ class CheckInStatusController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1' 
+            'perPage' => 'sometimes|integer|min:1'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -23,10 +23,9 @@ class CheckInStatusController extends Controller
             'message' => 'Attendance late types retrieved successfully',
             'data' => $data
         ]);
-
     }
 
-    
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -34,7 +33,7 @@ class CheckInStatusController extends Controller
             'description' => 'required|string',
             'is_active' => 'required|boolean',
             'late_duration' => 'required|integer'
-        ],201);
+        ]);
 
         $validatedData['school_id'] = config('school.id');
 
@@ -44,7 +43,6 @@ class CheckInStatusController extends Controller
             'message' => 'Attendance late type created successfully',
             'data' => $data
         ]);
-
     }
 
     public function getById($id)
@@ -55,13 +53,12 @@ class CheckInStatusController extends Controller
             'message' => 'Attendance late type retrieved successfully',
             'data' => $checkInStatus
         ]);
-
     }
 
     public function update(Request $request, $id)
     {
         $checkInStatus = CheckInStatus::findOrFail($id);
-        
+
         $validatedData = $request->validate([
             'status_name' => 'sometimes|string',
             'description' => 'sometimes|string',
@@ -70,7 +67,7 @@ class CheckInStatusController extends Controller
             '*' => 'required_without_all:status_name,description,is_active,late_duration'
         ]);
 
-        if(isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)){
+        if (isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)) {
             throw new AuthorizationException('You are not allowed to update late_duration column for this id');
         }
 
@@ -80,7 +77,6 @@ class CheckInStatusController extends Controller
             'message' => 'Attendance late type updated successfully',
             'data' => $checkInStatus
         ]);
-
     }
 
     public function destroy($id)

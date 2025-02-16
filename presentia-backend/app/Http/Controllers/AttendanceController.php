@@ -266,13 +266,41 @@ class AttendanceController extends Controller
     public function update(Request $request, $id)
     {
         $attendance = Attendance::find($id);
-        $attendance->update($request->all());
+
+        if (!$attendance) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Attendance not found'
+            ], 404);
+        }
+
+        $validatedData = $request->validate([
+            'check_in_time' => 'nullable|date',
+            'check_out_time' => 'nullable|date',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses,id',
+        ]);
+
+
+        if (!empty($validatedData['check_in_time'])) {
+            $validatedData['check_in_time'] = Carbon::parse($validatedData['check_in_time'])
+                ->format('Y-m-d H:i:s');
+        }
+
+        if (!empty($validatedData['check_out_time'])) {
+            $validatedData['check_out_time'] = Carbon::parse($validatedData['check_out_time'])
+                ->format('Y-m-d H:i:s');
+        }
+
+        $attendance->update($validatedData);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance updated successfully',
             'data' => $attendance
         ]);
     }
+
+
 
     public function destroy($id)
     {
