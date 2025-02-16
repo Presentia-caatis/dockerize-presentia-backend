@@ -64,8 +64,12 @@ class AttendanceController extends Controller
                 'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
             ])->select([
-                'id', 'student_id', 'check_in_status_id', 'check_in_time', 'check_out_time'
-            ]);
+                        'id',
+                        'student_id',
+                        'check_in_status_id',
+                        'check_in_time',
+                        'check_out_time'
+                    ]);
         } else {
             $query = Attendance::with('student', 'checkInStatus');
         }
@@ -113,7 +117,10 @@ class AttendanceController extends Controller
             1. the date of all data is same
             2. the source of all date should come from same school
         */
-        $jsonInput = $request->all(); //get the data
+
+        set_time_limit(7200);
+
+        $jsonInput = $request->all();
 
         if (empty($jsonInput)) {
             return response()->json([
@@ -125,16 +132,22 @@ class AttendanceController extends Controller
         $studentId = $jsonInput[0]['id']; //get the student id
         config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($studentId)->school_id]); // config the global variable
 
-        $schoolTimeZone = current_school_timezone() ?? 'Asia/Jakarta'; //set the time zone
-        $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
-        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025
+        for ($i = 0; $i < count($jsonInput); $i++) {
+            $schoolTimeZone = current_school_timezone() ?? 'Asia/Jakarta'; //set the time zone
+            $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[$i]['date']), $schoolTimeZone); //get the current date by taking first data
+            $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025
 
-        $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
-            ->first(); //get the coressponding window as the input date
+            $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
+                ->first(); //get the coressponding window as the input date
+            
+            if($attendanceWindow) break;
+        }
 
+        
         if (!$attendanceWindow) {
             abort(404, "Attendance window not found");
         }
+
         $checkInTypes = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
@@ -150,6 +163,16 @@ class AttendanceController extends Controller
             $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration
             $studentId = $student['id'];
             $checkTime = Carbon::parse($student['date']);
+            $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[$i]['date']), $schoolTimeZone); 
+            $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d');
+
+            if($attendanceWindow && $attendanceWindow->date != $formattedFirstDate){
+                $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)->first();
+            }
+
+            if (!$attendanceWindow) {
+                continue;
+            }
 
             // base invalid case
             if (
@@ -163,9 +186,7 @@ class AttendanceController extends Controller
 
             // get the attendance data for desired student
             $attendance = Attendance::where("student_id", $studentId)
-                ->whereHas("attendanceWindow", function ($query) use ($formattedFirstDate) {
-                    $query->where("date", $formattedFirstDate);
-                })
+                ->where('attendance_window_id', $attendanceWindow->id)
                 ->first();
 
             //create new one if its not exist
