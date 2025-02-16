@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "457d91d012ca8122beae072bb4b8b25b",
+    "content-hash": "898281a353b9adabcaa048493ce4ea9d",
     "packages": [
         {
             "name": "brick/math",
@@ -1260,67 +1260,6 @@
             "time": "2023-12-03T19:50:20+00:00"
         },
         {
-            "name": "laravel/breeze",
-            "version": "v2.2.6",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/breeze.git",
-                "reference": "907b12160d1b8b8213e7e2e011987fffb5567edc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/breeze/zipball/907b12160d1b8b8213e7e2e011987fffb5567edc",
-                "reference": "907b12160d1b8b8213e7e2e011987fffb5567edc",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/console": "^11.0",
-                "illuminate/filesystem": "^11.0",
-                "illuminate/support": "^11.0",
-                "illuminate/validation": "^11.0",
-                "php": "^8.2.0",
-                "symfony/console": "^7.0"
-            },
-            "require-dev": {
-                "laravel/framework": "^11.0",
-                "orchestra/testbench-core": "^9.0",
-                "phpstan/phpstan": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Breeze\\BreezeServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Breeze\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "Minimal Laravel authentication scaffolding with Blade and Tailwind.",
-            "keywords": [
-                "auth",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/breeze/issues",
-                "source": "https://github.com/laravel/breeze"
-            },
-            "time": "2024-11-20T15:01:15+00:00"
-        },
-        {
             "name": "laravel/framework",
             "version": "v11.35.1",
             "source": {
@@ -1596,32 +1535,32 @@
         },
         {
             "name": "laravel/sanctum",
-            "version": "v4.0.6",
+            "version": "v4.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sanctum.git",
-                "reference": "9e069e36d90b1e1f41886efa0fe9800a6b354694"
+                "reference": "ec1dd9ddb2ab370f79dfe724a101856e0963f43c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sanctum/zipball/9e069e36d90b1e1f41886efa0fe9800a6b354694",
-                "reference": "9e069e36d90b1e1f41886efa0fe9800a6b354694",
+                "url": "https://api.github.com/repos/laravel/sanctum/zipball/ec1dd9ddb2ab370f79dfe724a101856e0963f43c",
+                "reference": "ec1dd9ddb2ab370f79dfe724a101856e0963f43c",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "illuminate/console": "^11.0",
-                "illuminate/contracts": "^11.0",
-                "illuminate/database": "^11.0",
-                "illuminate/support": "^11.0",
+                "illuminate/console": "^11.0|^12.0",
+                "illuminate/contracts": "^11.0|^12.0",
+                "illuminate/database": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0",
                 "php": "^8.2",
                 "symfony/console": "^7.0"
             },
             "require-dev": {
                 "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^9.0",
+                "orchestra/testbench": "^9.0|^10.0",
                 "phpstan/phpstan": "^1.10",
-                "phpunit/phpunit": "^10.5"
+                "phpunit/phpunit": "^11.3"
             },
             "type": "library",
             "extra": {
@@ -1656,7 +1595,7 @@
                 "issues": "https://github.com/laravel/sanctum/issues",
                 "source": "https://github.com/laravel/sanctum"
             },
-            "time": "2024-11-26T21:18:33+00:00"
+            "time": "2025-01-26T19:34:36+00:00"
         },
         {
             "name": "laravel/serializable-closure",

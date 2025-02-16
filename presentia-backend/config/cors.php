@@ -19,13 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [config('app.url'), '*'],  
+    'allowed_origins' => [env('FRONTEND_URL'), '*'],
 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Content-Disposition'],
 
     'max_age' => 0,
 

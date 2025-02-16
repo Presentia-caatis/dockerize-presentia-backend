@@ -8,10 +8,15 @@ use App\Models\SubscriptionPlan;
 
 class SubscriptionPlanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = SubscriptionPlan::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = SubscriptionPlan::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription plans retrieved successfully',

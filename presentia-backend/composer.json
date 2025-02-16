@@ -7,7 +7,6 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "laravel/breeze": "^2.2",
         "laravel/framework": "^11.31",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.16",
@@ -32,7 +31,8 @@
             "Database\\Seeders\\": "database/seeders/"
         },
         "files": [
-            "app/Helpers/SchoolHelper.php"
+            "app/Helpers/SchoolHelper.php",
+            "app/Helpers/TimeZoneHelper.php"
         ]
     },
     "autoload-dev": {

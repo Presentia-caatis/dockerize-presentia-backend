@@ -8,10 +8,15 @@ use App\Models\AbsencePermitType;
 
 class AbsencePermitTypeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = AbsencePermitType::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = AbsencePermitType::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit types retrieved successfully',

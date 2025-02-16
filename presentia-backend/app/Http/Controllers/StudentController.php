@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExcelFileRequest;
+use App\Jobs\ProcessStudentImport;
 use App\Models\ClassGroup;
 use Illuminate\Http\Request;
 
@@ -11,17 +12,35 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1',
+            'class_group_id' => 'sometimes|exists:class_groups,id',
+            'search' => 'nullable|string|min:1'
+        ]);
 
-        $data = Student::with('classGroup')->get();
+        $perPage = $validatedData['perPage'] ?? 10;
+        $search = $validatedData['search'] ?? null;
+        $query = Student::with('classGroup');
+
+        if ($request->has('class_group_id')) {
+            $query->where('class_group_id', $request->class_group_id);
+        }
+
+        if ($search) {
+            $query->where('student_name', 'like', "%$search%");
+        }
+
+        $data = $query->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Students retrieved successfully',
             'data' => $data
         ]);
-
     }
+
 
     public function store(Request $request)
     {
@@ -43,7 +62,6 @@ class StudentController extends Controller
             'message' => 'Student created successfully',
             'data' => $data
         ], 201);
-
     }
 
     public function exportStudents()
@@ -65,69 +83,53 @@ class StudentController extends Controller
 
     public function storeViaFile(Request $request)
     {
+        set_time_limit(600);
         $request->validate([
-            'school_id' => 'required|exists:schools,id',
             'file' => 'required|file|mimes:xlsx,xls',
+            'method' => 'required|in:post,put'
         ]);
-    
-        $schoolId = $request->school_id;
+
+        $schoolId = config('school.id');
         $data = Excel::toArray([], $request->file('file'))[0];
         unset($data[0]); // Remove header row
-    
-        $chunks = array_chunk($data, 100);
+
+        $chunks = array_chunk($data, 500);
         $totalRows = count($data);
         $successCount = 0;
         $failedCount = 0;
         $failedRows = [];
         $students = [];
-    
-        // Cache existing class groups to avoid unnecessary queries
-        $existingClassGroups = ClassGroup::where('school_id', $schoolId)
-            ->pluck('id', 'class_name') // ['class_name' => id]
-            ->toArray();
-    
+
         foreach ($chunks as $chunk) {
             foreach ($chunk as $row) {
-                // Basic validation
-                if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3]) || empty($row[4])) {
-                    $failedCount++;
-                    $failedRows[] = ['row' => $row, 'error' => 'Incomplete or missing data'];
-                    continue;
-                }
-    
-                // Convert gender
-                $gender = strtolower($row[3]) === 'l' ? 'male' : (strtolower($row[3]) === 'p' ? 'female' : null);
-                if (!$gender) {
-                    $failedCount++;
-                    $failedRows[] = ['row' => $row, 'error' => 'Invalid gender value'];
-                    continue;
-                }
-    
                 try {
-                    // Check if class group exists in cache, otherwise create it
-                    if (!isset($existingClassGroups[$row[4]])) {
-                        $classGroup = ClassGroup::create([
-                            'school_id' => $schoolId,
-                            'class_name' => $row[4],
-                            'amount_of_students' => 0,
-                        ]);
-    
-                        // Update cache
-                        $existingClassGroups[$row[4]] = $classGroup->id;
+                    // Basic validation
+                    if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3]) || empty($row[4])) {
+                        $failedCount++;
+                        $failedRows[] = ['row' => $row, 'error' => 'Incomplete or missing data'];
+                        continue;
                     }
-    
+
+                    // Convert gender
+                    $gender = strtolower($row[3]) === 'l' ? 'male' : (strtolower($row[3]) === 'p' ? 'female' : null);
+                    if (!$gender) {
+                        $failedCount++;
+                        $failedRows[] = ['row' => $row, 'error' => 'Invalid gender value'];
+                        continue;
+                    }
+
                     $students[] = [
                         'nisn' => $row[1],
                         'school_id' => $schoolId,
-                        'class_group_id' => $existingClassGroups[$row[4]],
                         'nis' => $row[0],
                         'student_name' => $row[2],
                         'gender' => $gender,
                         'is_active' => true,
+                        'class_group_name' => $row[4],
                         'updated_at' => now(),
                         'created_at' => now(),
                     ];
-    
+
                     $successCount++;
                 } catch (\Exception $e) {
                     $failedCount++;
@@ -135,18 +137,18 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                Student::upsert($students, ['nisn'], ['school_id', 'class_group_id', 'nis', 'student_name', 'gender', 'is_active']);
+                ProcessStudentImport::dispatch($students, $schoolId, $request->method);
             }
         }
-    
+
         return response()->json([
-            'status' => 'success',
-            'message' => 'Students created successfully',
-            'total_rows' => $totalRows,
-            'success_count' => $successCount,
-            'failed_count' => $failedCount,
-            'failed_rows' => $failedRows,
-        ], 201);
+            'status' => 'processing',
+            'message' => 'Student import has started and is being processed in the background.',
+            'total_records' => $totalRows,
+            'queued_records' => $successCount,
+            'skipped_records' => $failedCount,
+            'skipped_details' => $failedRows,
+        ], 202);
     }
 
     public function getById($id)
@@ -158,7 +160,6 @@ class StudentController extends Controller
             'message' => 'Student retrieved successfully',
             'data' => $student
         ]);
-
     }
 
     public function update(Request $request, $id)
@@ -182,7 +183,6 @@ class StudentController extends Controller
             'message' => 'Student updated successfully',
             'data' => $student
         ]);
-
     }
 
     public function destroy($id)
@@ -193,6 +193,5 @@ class StudentController extends Controller
             'status' => 'success',
             'message' => 'Student deleted successfully'
         ]);
-
     }
 }

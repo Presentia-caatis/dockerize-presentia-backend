@@ -7,10 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\Feature;
 class FeatureController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = Feature::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = Feature::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Features retrieved successfully',

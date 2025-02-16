@@ -34,10 +34,22 @@ use App\Http\Controllers\{
     AbsencePermitTypeController,
     AbsencePermitController,
     AttendanceScheduleController,
-    DayController
+    DayController,
+    AdmsCredentialController,
+    SocialiteController,
+    JobController,
+    AuthController
 };
 
 
+Route::controller(SocialiteController::class)->group(function () {
+    Route::get('auth-google', 'googleLogin');
+    Route::get('auth-google-callback', 'googleAuthentication');
+});
+
+Route::post('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::middleware(['auth:sanctum'])->post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
 Route::post('/attendance-window/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('scheduler');
@@ -45,7 +57,7 @@ Route::post('/attendance-window/generate-window', [AttendanceWindowController::c
 Route::middleware(['auth:sanctum'])->group(function () {
     // Time Routes
     Route::prefix('time')->group(function () {
-        Route::get('/', [TimeController::class, 'getCurrentTime']);
+        Route::get('/current', [TimeController::class, 'getCurrentTime']);
     });
 
     // User Routes
@@ -121,6 +133,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{id}', [PaymentController::class, 'getById']);
         Route::put('/{id}', [PaymentController::class, 'update']);
         Route::delete('/{id}', [PaymentController::class, 'destroy']);
+    });
+
+    // Jobs Route
+    Route::prefix('job')->group(function () {
+        Route::get('/failed', [JobController::class, 'failedJobs']);
+        Route::post('/retry/{id}', [JobController::class, 'retryJob']);
+        Route::post('/flush', [JobController::class, 'flushJobs']);
+        Route::post('/restart', [JobController::class, 'restartQueue']);
+        Route::get('/pending', [JobController::class, 'pendingJobs']);
+        Route::delete('/pending', [JobController::class, 'flushPendingJobs']);
     });
 
     Route::middleware('school')->group(function () {
@@ -200,14 +222,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('attendance-schedule')->group(function () {
             Route::get('/', [AttendanceScheduleController::class, 'index']);
-            Route::post('/get-by-type', [AttendanceScheduleController::class, 'showByType']); 
+            Route::post('/get-by-type', [AttendanceScheduleController::class, 'showByType']);
             Route::post('/', [AttendanceScheduleController::class, 'storeEvent']);
             Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
             Route::put('/{id}', [AttendanceScheduleController::class, 'update']);
             Route::delete('/{id}', [AttendanceScheduleController::class, 'destroy']);
         });
 
-        Route::prefix('day')->group(function() {
+        Route::prefix('day')->group(function () {
             Route::get('/', [DayController::class, 'index']);
             Route::get('/{id}', [DayController::class, 'getById']);
             Route::get('/all-by-school', [DayController::class, 'showAllBySchool']);
@@ -216,9 +238,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('dashboard-statistic')->group(function () {
             Route::get('/static', [DashboardStatistic::class, 'StaticStatistic']);
-            Route::post('/daily', [DashboardStatistic::class, 'DailyStatistic']);
+            Route::get('/daily', [DashboardStatistic::class, 'DailyStatistic']);
         });
     });
-
 });
-

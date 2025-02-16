@@ -14,21 +14,30 @@ use function App\Helpers\current_school_timezone;
 class AttendanceScheduleController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $nullEventSchedules = AttendanceSchedule::whereNull('event_id')->get()->map(function ($item) {
-            unset($item->event_id);
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1'
+        ]);
+
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = AttendanceSchedule::paginate($perPage);
+
+        $modifiedData = $data->getCollection()->map(function ($item) {
+            if (!$item->event_id) {
+                unset($item->event_id);
+            }
             return $item;
         });
 
-        $existingEventSchedules = AttendanceSchedule::whereNotNull('event_id')->get();
-
-        $mergedSchedules = $nullEventSchedules->merge($existingEventSchedules);
+        // Replace the original collection with the modified one
+        $data->setCollection($modifiedData);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance schedule retrieved successfully',
-            'data' => $mergedSchedules
+            'data' => $data
         ]);
     }
 
@@ -103,16 +112,15 @@ class AttendanceScheduleController extends Controller
     {
         $attendanceSchedule = AttendanceSchedule::find($id);
         $validatedData = $request->validate([
-            'event_id' => 'nullable',
-            'name' => 'required|string',
-            'type' => 'required|in:event,default,holiday',
+            'event_id' => 'sometimes|exists:events,id',
+            'name' => 'sometimes|string',
             'date' => [
                 Rule::requiredIf($request->type === 'event'),
                 'date_format:Y-m-d'
             ],
-            'check_in_start_time' => 'required|date_format:H:i:s',
-            'check_in_end_time' => 'required|date_format:H:i:s',
-            'check_out_start_time' => 'required|date_format:H:i:s',
+            'check_in_start_time' => 'sometimes|date_format:H:i:s',
+            'check_in_end_time' => 'sometimes|date_format:H:i:s',
+            'check_out_start_time' => 'sometimes|date_format:H:i:s',
             'check_out_end_time' => 'required|date_format:H:i:s'
         ]);
 

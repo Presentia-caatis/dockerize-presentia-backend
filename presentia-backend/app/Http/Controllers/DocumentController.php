@@ -8,10 +8,15 @@ use App\Models\Document;
 
 class DocumentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = Document::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = Document::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Documents retrieved successfully',

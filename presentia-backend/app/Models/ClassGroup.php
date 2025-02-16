@@ -13,8 +13,7 @@ class ClassGroup extends Model
 
     protected $fillable = [
         'school_id',
-        'class_name',
-        'amount_of_students',
+        'class_name'
     ];
 
     public function students()
@@ -22,7 +21,8 @@ class ClassGroup extends Model
         return $this->hasMany(Student::class);
     }
 
-    public function school() {
+    public function school()
+    {
         return $this->belongsTo(School::class);
     }
 }

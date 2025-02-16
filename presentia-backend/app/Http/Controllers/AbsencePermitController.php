@@ -7,10 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\AbsencePermit;
 class AbsencePermitController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = AbsencePermit::with('attendance', 'document', 'absencePermitType')->get();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = AbsencePermit::with('attendance', 'document', 'absencePermitType')->paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permits retrieved successfully',

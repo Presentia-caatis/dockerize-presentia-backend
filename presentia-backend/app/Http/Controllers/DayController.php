@@ -8,9 +8,15 @@ use Illuminate\Http\Request;
 class DayController extends Controller
 {
     
-    public function index()
+    public function index(Request $request)
     {
-        $data = Day::with('school', 'attendanceSchedule')->get();
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
+
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = Day::with('school', 'attendanceSchedule')->paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Days retrieved successfully',

@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             Route::middleware('web')
-                ->prefix('api')
+                ->prefix('auth')
                 ->group(base_path('routes/auth.php'));
         }
     )
@@ -36,6 +38,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
+        $middleware->alias([
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+        ]);
+        
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'school' => \App\Http\Middleware\SchoolMiddleware::class,
@@ -71,6 +79,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Resource not found',
                 'error' => $e->getMessage(),
             ], 404);  // 404 Not Found status
+        });
+
+        $exceptions->renderable(function (AuthorizationException $e, $request) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Action is not permissible or you are not authorized to perform this action.',
+                'error' => $e->getMessage(),
+            ], 403);  // 403 Forbidden
+        });
+
+        $exceptions->renderable(function (AuthenticationException $e, $request) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'You are not logged in or your session has expired.',
+            ], 401); // Unauthorized
         });
 
         $exceptions->renderable(function (Throwable $e, $request) {

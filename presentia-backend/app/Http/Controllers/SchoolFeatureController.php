@@ -8,10 +8,15 @@ use App\Models\SchoolFeature;
 
 class SchoolFeatureController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = SchoolFeature::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = SchoolFeature::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'School features retrieved successfully',

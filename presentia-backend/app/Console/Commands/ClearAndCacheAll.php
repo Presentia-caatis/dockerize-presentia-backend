@@ -11,7 +11,7 @@ class ClearAndCacheAll extends Command
      *
      * @var string
      */
-    protected $signature = 'call:clear-and-cache-all';
+    protected $signature = 'call:clear-cache-all';
 
     /**
      * The console command description.

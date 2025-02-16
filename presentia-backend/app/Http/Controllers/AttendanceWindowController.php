@@ -13,9 +13,16 @@ use function App\Helpers\current_school_timezone;
 class AttendanceWindowController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $data = AttendanceWindow::all();
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
+
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = AttendanceWindow::paginate($perPage);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance windows retrieved successfully',
