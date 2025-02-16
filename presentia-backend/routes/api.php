@@ -48,8 +48,8 @@ Route::controller(SocialiteController::class)->group(function () {
 });
 
 Route::post('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/login', [AuthController::class, 'login'])->name('login');;
-Route::middleware(['auth:sanctum'])->post('/logout', [AuthController::class, 'logout'])->name('logout');;
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::middleware(['auth:sanctum'])->post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
 Route::post('/attendance-window/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('scheduler');
