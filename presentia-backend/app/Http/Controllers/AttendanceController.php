@@ -48,29 +48,27 @@ class AttendanceController extends Controller
                     }
                 },
             ],
-            'checkInTimeOrderType' => 'sometimes|in:asc,desc',
-            'checkOutTimeOrderType' => 'sometimes|in:asc,desc',
             'perPage' => 'sometimes|integer|min:1',
             'simplify' => 'sometimes|boolean',
-            'attendanceWindowId' => 'sometimes|exists:attendance_windows,id'
+            'attendanceWindowId' => 'sometimes|exists:attendance_windows,id',
+            'type' => 'sometimes|in:in,out'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
 
         $simplify = $validatedData['simplify'] ?? true;
-        if($simplify){
+        $type = $validatedData['type'] ?? null;
+        if ($simplify) {
             $query = Attendance::with([
                 'student:id,student_name,nis,nisn,gender,class_group_id',
-                'student.classGroup:id,class_name',  
+                'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
             ])->select([
                 'id', 'student_id', 'check_in_status_id', 'check_in_time', 'check_out_time'
             ]);
-        } else{
+        } else {
             $query = Attendance::with('student', 'checkInStatus');
         }
-
-        
 
         if (!empty($validatedData['startDate']) && !empty($validatedData['endDate'])) {
             $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
@@ -90,22 +88,13 @@ class AttendanceController extends Controller
             $query->whereIn('check_in_status_id', $checkInStatusIds);
         }
 
-        if (!empty($validatedData['checkInTimeOrderType'])) {
-            $query->orderBy('check_in_time', $validatedData['checkInTimeOrderType']);
-        } elseif (!empty($validatedData['checkOutTimeOrderType'])) {
-            $query->orderBy('check_out_time', $validatedData['checkOutTimeOrderType']);
+        if ($type === 'in') {
+            $query->orderBy('check_in_time', 'desc');
+        } else if ($type === 'out') {
+            $query->whereNotNull('check_out_time')->where('check_out_time', '!=', '')
+                ->orderBy('check_out_time', 'desc');
         }
 
-        if (!empty($validatedData['checkInStatusId']) && $validatedData['checkInStatusId'] !== 'all') {
-            $checkInStatusIds = explode(',', $validatedData['checkInStatusId']);
-            $query->whereIn('check_in_status_id', $checkInStatusIds);
-        }
-
-        if (!empty($validatedData['attendanceWindowId'])) {
-            $query->where('attendance_window_id', $validatedData['attendanceWindowId']);
-        }   
-        
-        $totalAll = $query->count();
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -138,7 +127,7 @@ class AttendanceController extends Controller
 
         $schoolTimeZone = current_school_timezone() ?? 'Asia/Jakarta'; //set the time zone
         $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
-        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025 
+        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025
 
         $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
             ->first(); //get the coressponding window as the input date
@@ -222,7 +211,6 @@ class AttendanceController extends Controller
             'status' => 'success',
             'message' => 'Attendance created successfully',
         ], 201);
-
     }
 
     public function exportAttendance(Request $request)
@@ -275,41 +263,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function getByAttendanceWindow(Request $request)
-    {
-        $request->validate([
-            'attendanceWindowId' => 'required_without:date|exists:attendance_windows,id',
-            'date' => 'required_without:attendanceWindowId|date_format:Y-m-d',
-            'perPage' => 'sometimes|int'
-        ]);
-
-        $perPage = $request->perPage ?? 10;
-
-        $query = Attendance::query();
-        if($request->date){
-            $query->whereHas('attendanceWindow', function ($q) use ($request) {
-                $q->whereDate('date', '=' ,$request->date);
-            });
-        }
-
-        if($request->attendanceWindowId){
-            $query->where('attendance_window_id', $request->attendanceWindowId);
-        }
-
-        $totalAll = $query->count();
-
-        $attendance = $query->paginate($perPage);
-        $attendance['total_all'] = $totalAll;
-
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Attendance window retrieved successfully',
-            'data' => $attendance
-        ]);
-    }
-
-
     public function update(Request $request, $id)
     {
         $attendance = Attendance::find($id);
@@ -319,7 +272,6 @@ class AttendanceController extends Controller
             'message' => 'Attendance updated successfully',
             'data' => $attendance
         ]);
-
     }
 
     public function destroy($id)
@@ -332,4 +284,3 @@ class AttendanceController extends Controller
         ]);
     }
 }
-
