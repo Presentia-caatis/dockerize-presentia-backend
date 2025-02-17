@@ -30,8 +30,7 @@ class ClassGroupController extends Controller
     {
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
-            'class_name' => 'required|string',
-            'amount_of_students' => 'required|integer',
+            'class_name' => 'required|string'
         ]);
 
         $data = ClassGroup::create($validatedData);
