@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId("attendance_window_id")->constrained("attendance_windows")->cascadeOnDelete();
             $table->timestamp("check_in_time")->nullable();
             $table->timestamp("check_out_time")->nullable();
+            $table->unique(['attendance_window_id', 'student_id']);
             $table->timestamps();
         });
     }

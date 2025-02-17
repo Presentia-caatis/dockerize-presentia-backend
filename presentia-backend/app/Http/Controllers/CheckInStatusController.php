@@ -63,10 +63,10 @@ class CheckInStatusController extends Controller
         $checkInStatus = CheckInStatus::findOrFail($id);
         
         $validatedData = $request->validate([
-            'status_name' => 'sometimes|string',
-            'description' => 'sometimes|string',
-            'is_active' => 'sometimes|boolean',
-            'late_duration' => 'sometimes|integer',
+            'status_name' => 'nullable|string',
+            'description' => 'nullable|string',
+            'is_active' => 'nullable|boolean',
+            'late_duration' => 'nullable|integer',
             '*' => 'required_without_all:status_name,description,is_active,late_duration'
         ]);
 
