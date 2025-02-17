@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\School;
 use App\Models\Scopes\SchoolScope;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,15 +19,22 @@ class StudentFactory extends Factory
     public function definition()
     {
         return [
-            'school_id' => \App\Models\School::factory(),     
+            'school_id' => School::factory(),     
+            // 'class_group_id' => function (array $attributes) {
+            //     return \App\Models\ClassGroup::withoutGlobalScope(SchoolScope::class)
+            //         ->firstOrCreate(
+            //             ['school_id' => $attributes['school_id']],
+            //             ['class_name' => 'Default Class Group']        
+            //         )
+            //         ->id;
+            // },
+
             'class_group_id' => function (array $attributes) {
-                return \App\Models\ClassGroup::withoutGlobalScope(SchoolScope::class)
-                    ->firstOrCreate(
-                        ['school_id' => $attributes['school_id']],
-                        ['class_name' => 'Default Class Group']        
-                    )
-                    ->id;
+                return \App\Models\ClassGroup::factory()->create([
+                    'school_id' => $attributes['school_id'],
+                ])->id;
             },
+
 
             'is_active' => true,
             'nis' => $this->faker->unique()->numerify('NIS####'),

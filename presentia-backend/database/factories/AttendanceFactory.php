@@ -2,37 +2,28 @@
 
 namespace Database\Factories;
 
+use App\Models\Attendance;
+use App\Models\Student;
+use App\Models\School;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
-use App\Models\School;
-use App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Attendance>
- */
 class AttendanceFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Attendance::class;
+
     public function definition()
     {
+        $school = School::factory()->create(); // Buat 1 sekolah
+
         return [
-            'school_id' => School::factory(),
-            'student_id' => function (array $attributes) {
-                return Student::factory()->create(['school_id' => $attributes['school_id']])->id;
-            },
-            'check_in_status_id' => function (array $attributes) {
-                return CheckInStatus::factory()->create(['school_id' => $attributes['school_id']])->id;
-            },
-            'attendance_window_id' => function (array $attributes) {
-                return AttendanceWindow::factory()->create(['school_id' => $attributes['school_id']])->id;
-            },
-            'check_in_time' => $this->faker->dateTime,
-            'check_out_time' => $this->faker->dateTime,
+            'school_id' => $school->id,
+            'student_id' => Student::factory()->create(['school_id' => $school->id])->id,
+            'check_in_status_id' => CheckInStatus::factory()->create(['school_id' => $school->id])->id,
+            'attendance_window_id' => AttendanceWindow::factory()->create(['school_id' => $school->id])->id,
+            'check_in_time' => $this->faker->dateTime(),
+            'check_out_time' => $this->faker->dateTime(),
         ];
     }
 }
