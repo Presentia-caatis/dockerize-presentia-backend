@@ -195,7 +195,6 @@ class AttendanceController extends Controller
 
             // Base invalid case
             if (
-                !Student::find($studentId) || // If the student ID is invalid
                 $checkTime->lt($checkInStart) || // If the attendance record session hasn't started
                 $checkTime->gt($checkOutEnd) || // If the attendance session has ended
                 $checkTime->between($checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) // If it's in an intolerant lateness period
@@ -213,6 +212,14 @@ class AttendanceController extends Controller
                 ];
                 continue;
             }
+
+            if(!Student::find($studentId)){
+                $failedRecords[] = [
+                    'student_id' => $studentId,
+                    'reason' => 'Unrecognized student ID'
+                ];
+                continue;
+            } // If the student ID is invalid
 
             // Get the attendance record for the student
             $attendance = Attendance::where("student_id", $studentId)
@@ -244,16 +251,20 @@ class AttendanceController extends Controller
                 }
             } else {
                 // Prevent duplicate check-ins
-                if (
-                    ($attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')))) ||
-                    ($attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd))
-                ) {
+                if ($attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')))) {
                     $failedRecords[] = [
                         'student_id' => $studentId,
-                        'reason' => 'Duplicate check-in or check-out attempt'
+                        'reason' => 'Duplicate check-in attempt'
+                    ];
+                    continue;
+                } else if ($attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)){
+                    $failedRecords[] = [
+                        'student_id' => $studentId,
+                        'reason' => 'Duplicate check-out attempt'
                     ];
                     continue;
                 }
+                
             }
 
             // Determine check-in status

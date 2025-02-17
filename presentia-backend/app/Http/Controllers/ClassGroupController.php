@@ -53,26 +53,6 @@ class ClassGroupController extends Controller
         ]);
     }
 
-    public function getStudentsByClass($id)
-    {
-        $classGroup = ClassGroup::find($id);
-        $classGroup->load('school');
-        $classGroup = ClassGroup::with('students');
-
-        if (!$classGroup) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Class group not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Students retrieved successfully',
-            'data' => $classGroup->students,
-        ]);
-    }
-
     public function update(Request $request, $id)
     {
         $classGroup = ClassGroup::find($id);
