@@ -17,7 +17,17 @@ class AttendanceWindowFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'school_id' => \App\Models\School::factory(),
+            'day_id' => \App\Models\Day::factory(),
+            'name' => $this->faker->word,
+            'total_present' => $this->faker->numberBetween(0, 100),
+            'total_absent' => $this->faker->numberBetween(0, 100),
+            'date' => $this->faker->date,
+            'type' => $this->faker->randomElement(['default', 'event', 'holiday']),
+            'check_in_start_time' => $this->faker->time,
+            'check_in_end_time' => $this->faker->time,
+            'check_out_start_time' => $this->faker->time,
+            'check_out_end_time' => $this->faker->time,
         ];
     }
 }

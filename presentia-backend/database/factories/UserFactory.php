@@ -2,8 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\School;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -18,11 +20,13 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'username' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'fullname' => fake()->unique()->name(),
+            'username' => $this->faker->unique()->userName,
+            'email' => $this->faker->unique()->safeEmail,
+            'fullname' => $this->faker->name,
             'email_verified_at' => now(),
-            'password' => \Illuminate\Support\Facades\Hash::make('123'),
+            'password' => Hash::make('123'), 
+            'school_id' => School::factory(), 
+            'google_id' => $this->faker->optional()->numerify('##############'), 
             'remember_token' => Str::random(10),
         ];
     }

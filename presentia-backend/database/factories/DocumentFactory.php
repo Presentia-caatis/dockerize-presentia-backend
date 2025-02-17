@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\School;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +19,7 @@ class DocumentFactory extends Factory
     {
         return [
             'document_name' => $this->faker->word,
+            'school_id' => School::factory(),
             'path' => $this->faker->filePath,
         ];
     }

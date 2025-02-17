@@ -18,12 +18,13 @@ class StudentFactory extends Factory
     public function definition()
     {
         return [
-            'school_id' => \App\Models\School::factory(),
+            'school_id' => \App\Models\School::factory(),     
             'class_group_id' => function (array $attributes) {
                 return \App\Models\ClassGroup::withoutGlobalScope(SchoolScope::class)
-                    ->where('school_id', $attributes['school_id'])
-                    ->inRandomOrder()
-                    ->first()
+                    ->firstOrCreate(
+                        ['school_id' => $attributes['school_id']],
+                        ['class_name' => 'Default Class Group']        
+                    )
                     ->id;
             },
 

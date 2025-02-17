@@ -39,13 +39,11 @@ class ClassGroupUnitTest extends TestCase
         $classGroup = ClassGroup::create([
             'school_id' => $school->id,
             'class_name' => 'Class A',
-            'amount_of_students' => 25,
         ]);
 
         $this->assertDatabaseHas('class_groups', [
             'id' => $classGroup->id,
             'class_name' => 'Class A',
-            'amount_of_students' => 25,
         ]);
     }
 }

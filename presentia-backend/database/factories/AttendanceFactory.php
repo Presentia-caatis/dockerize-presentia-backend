@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\AttendanceWindow;
+use App\Models\CheckInStatus;
+use App\Models\School;
+use App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +21,16 @@ class AttendanceFactory extends Factory
     public function definition()
     {
         return [
-            'student_id' => \App\Models\Student::factory(),
-            'attendance_late_type_id' => \App\Models\AttendanceLateType::factory(),
+            'school_id' => School::factory(),
+            'student_id' => function (array $attributes) {
+                return Student::factory()->create(['school_id' => $attributes['school_id']])->id;
+            },
+            'check_in_status_id' => function (array $attributes) {
+                return CheckInStatus::factory()->create(['school_id' => $attributes['school_id']])->id;
+            },
+            'attendance_window_id' => function (array $attributes) {
+                return AttendanceWindow::factory()->create(['school_id' => $attributes['school_id']])->id;
+            },
             'check_in_time' => $this->faker->dateTime,
             'check_out_time' => $this->faker->dateTime,
         ];

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use Tests\TestCaseHelpers;
 use App\Models\User;
 use App\Models\School;
 use App\Models\SchoolFeature;
@@ -14,27 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class SchoolTest extends TestCase
 {
-    use RefreshDatabase;
-
-    
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        $user = User::factory()->create();
-        $response = $this->postJson('/login', [
-            'email_or_username' => $user->email,
-            'password' => '123',  
-        ]);
-
-        // Simpan token ke dalam properti
-        $this->token = $response->json('token');
-
-        // Menyimpan token di header untuk semua request berikutnya
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ]);
-    }
+    use RefreshDatabase, TestCaseHelpers;
 
     // School
     #[Test]
@@ -59,9 +40,11 @@ class SchoolTest extends TestCase
 
         $payload = [
             'subscription_plan_id' => $subscriptionPlan->id,
-            'school_name' => 'Test School',
+            'name' => 'Test School',
+            'address' => 'Bandung',
+            'timezone' => 'UTC',
             'latest_subscription' => now()->toDateString(),
-            'end_subscription' => now()->addMonth()->toDateString(),
+            'school_token' => 'asDHvX426xx',
         ];
 
         $response = $this->postJson('/api/school', $payload);
@@ -88,7 +71,7 @@ class SchoolTest extends TestCase
                 'message' => 'School retrieved successfully',
                 'data' => [
                     'id' => $school->id,
-                    'school_name' => $school->school_name,
+                    'name' => $school->name,
                 ],
             ]);
     }
@@ -102,7 +85,8 @@ class SchoolTest extends TestCase
 
         $payload = [
             'subscription_plan_id' => $subscriptionPlan->id,
-            'school_name' => 'Updated School',
+            'name' => 'Updated School',
+            'address' => $school->address,
             'latest_subscription' => now()->toDateString(),
             'end_subscription' => now()->addMonth()->toDateString(),
         ];
@@ -201,7 +185,7 @@ class SchoolTest extends TestCase
         $payload = [
             'school_id' => $school->id,
             'feature_id' => $feature->id,
-            'status' => false,
+            'status' => 0,
         ];
 
         $response = $this->putJson("/api/school-feature/{$schoolFeature->id}", $payload);

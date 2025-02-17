@@ -23,13 +23,6 @@ class AttendanceUnitTest extends TestCase
         $this->assertInstanceOf(Student::class, $attendance->student);
     }
 
-    #[Test]
-    public function an_attendance_belongs_to_an_attendance_late_type()
-    {
-        $attendance = Attendance::factory()->create();
-
-        $this->assertInstanceOf(AttendanceLateType::class, $attendance->attendanceLateType);
-    }
 
     #[Test]
     public function an_attendance_has_many_absence_permits()
@@ -44,11 +37,9 @@ class AttendanceUnitTest extends TestCase
     public function it_can_create_an_attendance_record()
     {
         $student = Student::factory()->create();
-        $lateType = AttendanceLateType::factory()->create();
 
         $attendance = Attendance::create([
             'student_id' => $student->id,
-            'attendance_late_type_id' => $lateType->id,
             'check_in_time' => now(),
             'check_out_time' => now()->addHours(8),
         ]);
@@ -56,7 +47,6 @@ class AttendanceUnitTest extends TestCase
         $this->assertDatabaseHas('attendances', [
             'id' => $attendance->id,
             'student_id' => $student->id,
-            'attendance_late_type_id' => $lateType->id,
         ]);
     }
 }

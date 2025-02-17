@@ -16,7 +16,7 @@ class RegisteredUserControllerTest extends TestCase
     #[Test]
     public function test_registration_successful()
     {
-        $response = $this->postJson('/register', [
+        $response = $this->postJson('api/register', [
             'username' => 'TestUser',
             'email' => 'newuser@example.com',
             'fullname' => 'New User',

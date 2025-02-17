@@ -19,7 +19,6 @@ class ClassGroupFactory extends Factory
         return [
             'school_id' =>  \App\Models\School::factory(), 
             'class_name' => $this->faker->word,
-            'amount_of_students' => $this->faker->numberBetween(10, 30),
         ];
     }
 }

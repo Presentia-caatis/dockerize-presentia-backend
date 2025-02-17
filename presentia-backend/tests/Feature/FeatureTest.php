@@ -7,30 +7,12 @@ use App\Models\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCaseHelpers;
 
 
 class FeatureTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Create a user and login to get the API token
-        $user = User::factory()->create();
-        $response = $this->postJson('/api/login', [
-            'email_or_username' => $user->email,
-            'password' => '123',
-        ]);
-
-        $this->token = $response->json('token');
-
-        // Set token in headers for following requests
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ]);
-    }
+    use RefreshDatabase, TestCaseHelpers;
 
     #[Test]
     public function it_can_retrieve_all_features()
@@ -38,15 +20,27 @@ class FeatureTest extends TestCase
         Feature::factory()->count(5)->create();
 
         $response = $this->getJson('/api/feature');
+        
+        //dd($response->json());
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'status',
-                     'message',
-                     'data' => [
-                         '*' => ['id', 'feature_name', 'description', 'created_at', 'updated_at']
-                     ]
-                 ]);
+        ->assertJsonFragment([
+            'status' => 'success',
+            'message' => 'Features retrieved successfully',
+        ])
+        ->assertJsonStructure([
+            'data' => [
+                'data' => [
+                    '*' => [
+                        'id',
+                        'feature_name',
+                        'description',
+                        'created_at',
+                        'updated_at'
+                    ]
+                ]
+            ]
+        ]);
     }
 
     #[Test]

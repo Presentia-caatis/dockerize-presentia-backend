@@ -20,7 +20,7 @@ class AuthenticatedSessionControllerTest extends TestCase
             'password' => bcrypt('password')
         ]);
 
-        $response = $this->postJson('/login', [
+        $response = $this->postJson('api/login', [
             'email_or_username' => 'test@example.com',
             'password' => 'password',
         ]);
@@ -36,7 +36,7 @@ class AuthenticatedSessionControllerTest extends TestCase
             'password' => bcrypt('password')
         ]);
 
-        $response = $this->postJson('/login', [
+        $response = $this->postJson('api/login', [
             'email' => 'test@example.com',
             'password' => 'wrongpassword',
         ]);
