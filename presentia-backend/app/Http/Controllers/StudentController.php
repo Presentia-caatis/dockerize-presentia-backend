@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExcelFileRequest;
-use App\Jobs\ProcessStudentImport;
+use App\Jobs\ImportStudentJob;
 use App\Models\ClassGroup;
 use Illuminate\Http\Request;
 
@@ -86,7 +86,6 @@ class StudentController extends Controller
         set_time_limit(600);
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls',
-            'method' => 'required|in:post,put'
         ]);
 
         $schoolId = config('school.id');
@@ -137,7 +136,7 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                ProcessStudentImport::dispatch($students, $schoolId, $request->method);
+                ImportStudentJob::dispatch($students, $schoolId)->onQueue('import_student');;
             }
         }
 

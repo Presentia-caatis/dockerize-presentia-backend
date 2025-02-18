@@ -10,12 +10,18 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libzip-dev \
-    procps
+    procps \
+    supervisor \
+    nano
 
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY supervisor-laravel.conf /etc/supervisor/conf.d/laravel-queue.conf
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AttendanceExport;
+use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\ClassGroup;
@@ -111,186 +112,22 @@ class AttendanceController extends Controller
     }
 
 
-
     public function store(Request $request)
     {
-        /*
-            Batching rules:
-            1. The date of all data must be the same.
-            2. The source of all data should come from the same school.
-        */
-
-        set_time_limit(7200);
-
         $jsonInput = $request->all();
 
         if (empty($jsonInput)) {
             return response()->json([
                 'status' => 'failed',
-                'message' => 'data is null',
-                'failed_records' => []
+                'message' => 'Data is null'
             ], 201);
         }
 
-        $studentId = $jsonInput[0]['id']; // Get the student ID
-        $schoolId = Student::withoutGlobalScope(SchoolScope::class)->find($studentId)?->school_id;
-
-        if (!$schoolId) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Invalid student ID',
-                'failed_records' => []
-            ], 400);
-        }
-
-        config(['school.id' => $schoolId]);
-
-        $schoolTimeZone = current_school_timezone() ?? 'Asia/Jakarta';
-
-        // Extract unique dates from input to minimize queries
-        $inputDates = array_unique(array_map(function ($item) use ($schoolTimeZone) {
-            return Carbon::parse($item['date'])
-                ->setTimezone($schoolTimeZone)  // Convert to school timezone
-                ->format('Y-m-d');              // Format as Y-m-d
-        }, $jsonInput));
-
-        // Cache attendance windows for the given dates
-        $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
-            ->get()
-            ->keyBy('date'); // Store in a collection with `date` as the key
-
-        // Cache CheckInStatus to avoid repeated queries
-        $checkInTypes = CheckInStatus::where('is_active', true)
-            ->where('late_duration', '!=', -1)
-            ->orderBy('late_duration', 'asc')
-            ->get();
-
-        $absenceCheckInStatus = CheckInStatus::where('late_duration', -1)->first();
-
-        // Store failed records
-        $failedRecords = [];
-
-        foreach ($jsonInput as $student) {
-            $isInCheckInTimeRange = false;
-            $studentId = $student['id'];
-            $checkTime = Carbon::parse($student['date']);
-            $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimeZone)->format('Y-m-d');
-
-            // Retrieve attendance window from cache
-            $attendanceWindow = $attendanceWindows[$formattedDate] ?? null; 
-
-            if (!$attendanceWindow) {
-                $failedRecords[] = [
-                    'student_id' => $studentId,
-                    'reason' => 'No attendance window found for date ' . $formattedDate
-                ];
-                continue; // Skip if attendance window is not found
-            }
-
-            // Convert times for comparison
-            $checkInStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimeZone);
-            $checkInEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimeZone);
-            $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimeZone);
-            $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimeZone);
-
-            // Base invalid case
-            if (
-                $checkTime->lt($checkInStart) || // If the attendance record session hasn't started
-                $checkTime->gt($checkOutEnd) || // If the attendance session has ended
-                $checkTime->between($checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) // If it's in an intolerant lateness period
-            ) {
-                $failedRecords[] = [
-                    'student_id' => $studentId,
-                    'attendance_window_id' => $attendanceWindow->id ?? null,
-                    'attendance_window_date' => $attendanceWindow->date ?? null,
-                    'check_in_start' => $attendanceWindow->check_in_start_time ?? null,
-                    'check_in_end' => $attendanceWindow->check_in_end_time ?? null,
-                    'check_out_start' => $attendanceWindow->check_out_start_time ?? null,
-                    'check_out_end' => $attendanceWindow->check_out_end_time ?? null,
-                    'failed_check_time' => $checkTime->toDateTimeString(),
-                    'reason' => 'Invalid check-in time or unrecognized student ID'
-                ];
-                continue;
-            }
-
-            if(!Student::find($studentId)){
-                $failedRecords[] = [
-                    'student_id' => $studentId,
-                    'reason' => 'Unrecognized student ID'
-                ];
-                continue;
-            } // If the student ID is invalid
-
-            // Get the attendance record for the student
-            $attendance = Attendance::where("student_id", $studentId)
-                ->where('attendance_window_id', $attendanceWindow->id)
-                ->first();
-
-            // If no attendance record exists, create one
-            if (!$attendance) {
-                if ($checkTime->gt($checkOutStart)) { // The student has not checked in yet
-                    $failedRecords[] = [
-                        'student_id' => $studentId,
-                        'reason' => 'Student has not checked in yet'
-                    ];
-                    continue;
-                }
-                try{
-                    $attendance = Attendance::create([
-                        'school_id' => $schoolId,
-                        'student_id' => $studentId,
-                        'attendance_window_id' => $attendanceWindow->id,
-                        'check_in_status_id' => $absenceCheckInStatus->id
-                    ]);
-                } catch(Exception $e){
-                    $failedRecords[] = [
-                        'student_id' => $studentId,
-                        'reason' => 'Something went wrong: ' . $e->getMessage() 
-                    ];
-                    continue;
-                }
-            } else {
-                // Prevent duplicate check-ins
-                if ($attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')))) {
-                    $failedRecords[] = [
-                        'student_id' => $studentId,
-                        'reason' => 'Duplicate check-in attempt'
-                    ];
-                    continue;
-                } else if ($attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)){
-                    $failedRecords[] = [
-                        'student_id' => $studentId,
-                        'reason' => 'Duplicate check-out attempt'
-                    ];
-                    continue;
-                }
-                
-            }
-
-            // Determine check-in status
-            foreach ($checkInTypes as $cit) {
-                if ($checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($cit->late_duration))) {
-                    $isInCheckInTimeRange = true;
-                    $attendance->update([
-                        'check_in_status_id' => $cit->id,
-                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
-                    ]);
-                    break;
-                }
-            }
-
-            // If the student is not in check-in range, mark check-out time
-            if (!$isInCheckInTimeRange) {
-                $attendance->update([
-                    'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
-                ]);
-            }
-        }
+        StoreAttendanceJob::dispatch($jsonInput)->onQueue('attendance');
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance processed successfully',
-            'failed_records' => $failedRecords
+            'message' => 'Attendance processing has started'
         ], 201);
     }
 
