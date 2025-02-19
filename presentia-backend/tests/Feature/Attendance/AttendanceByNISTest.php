@@ -7,10 +7,11 @@ use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\TestCaseHelpers;
 
 class AttendanceByNISTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, TestCaseHelpers;
 
     public function test_input_attendance_with_valid_NIS()
     {

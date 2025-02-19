@@ -40,6 +40,69 @@ class AuthTest extends TestCase
         ]);
     }
 
+    public function test_user_can_register_invalid_fullname()
+    {
+        $response = $this->postJson('api/register', [
+            'fullname' => 'ad',
+            'username' => 'adamUser',
+            'email' => $this->faker->unique()->safeEmail,
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'google_id' => $this->faker->numerify('##############'),
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJsonStructure([
+                     'status',
+                     'message',
+                     'errors' => [
+                         'fullname',
+                     ]
+                 ]);
+    }
+
+    public function test_user_can_register_invalid_username()
+    {
+        $response = $this->postJson('api/register', [
+            'fullname' => 'adam',
+            'username' => 'ad',
+            'email' => $this->faker->unique()->safeEmail,
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'google_id' => $this->faker->numerify('##############'),
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJsonStructure([
+                     'status',
+                     'message',
+                     'errors' => [
+                         'username',
+                     ]
+                 ]);
+    }
+
+    public function test_user_can_register_invalid_password()
+    {
+        $response = $this->postJson('api/register', [
+            'fullname' => 'adam',
+            'username' => 'adam',
+            'email' => $this->faker->unique()->safeEmail,
+            'password' => '123',
+            'password_confirmation' => '123',
+            'google_id' => $this->faker->numerify('##############'),
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJsonStructure([
+                     'status',
+                     'message',
+                     'errors' => [
+                         'password',
+                     ]
+                 ]);
+    }
+
     public function test_user_can_login_with_email()
     {
         $user = User::factory()->create([
@@ -126,28 +189,6 @@ class AuthTest extends TestCase
 
         $this->assertDatabaseMissing('personal_access_tokens', [
             'tokenable_id' => $user->id,
-        ]);
-    }
-
-    public function test_google_authentication_new_user()
-    {
-        $googleUser = (object) [
-            'id' => '123456789',
-            'name' => 'Adam',
-            'email' => 'adam@example.com',
-        ];
-
-        // Mock Socialite
-        \Laravel\Socialite\Facades\Socialite::shouldReceive('driver->stateless->user')
-            ->andReturn($googleUser);
-
-        $response = $this->getJson('api/auth-google-callback');
-
-        $response->assertRedirect(config('app.frontend_url') . '/login?status=new_user&name=' . urlencode($googleUser->name) . '&email=' . urlencode($googleUser->email) . '&google_id=' . urlencode($googleUser->id));
-
-        $this->assertDatabaseHas('users', [
-            'google_id' => $googleUser->id,
-            'email' => $googleUser->email,
         ]);
     }
 

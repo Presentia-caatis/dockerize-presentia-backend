@@ -19,15 +19,6 @@ class AttendanceTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 
-    // protected function setUp(): void
-    // {
-    //     parent::setUp();
-
-    //     $this->school = School::factory()->create();
-    //     $this->classGroup = ClassGroup::factory()->create(['school_id' => $this->school->id]);
-    //     $this->student = Student::factory()->create(['school_id' => $this->school->id]);
-    // }
-
     #[Test]
     public function it_can_retrieve_all_attendances()
     {
