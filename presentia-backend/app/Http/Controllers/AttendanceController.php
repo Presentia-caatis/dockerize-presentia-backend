@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AttendanceExport;
+use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\ClassGroup;
 use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 
 use App\Models\Attendance;
@@ -16,6 +18,7 @@ use function App\Helpers\convert_timezone_to_utc;
 use function App\Helpers\convert_utc_to_timezone;
 use function App\Helpers\current_school_timezone;
 use function App\Helpers\stringify_convert_timezone_to_utc;
+use function App\Helpers\stringify_convert_utc_to_timezone;
 
 class AttendanceController extends Controller
 {
@@ -64,8 +67,12 @@ class AttendanceController extends Controller
                 'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
             ])->select([
-                'id', 'student_id', 'check_in_status_id', 'check_in_time', 'check_out_time'
-            ]);
+                        'id',
+                        'student_id',
+                        'check_in_status_id',
+                        'check_in_time',
+                        'check_out_time'
+                    ]);
         } else {
             $query = Attendance::with('student', 'checkInStatus');
         }
@@ -105,113 +112,26 @@ class AttendanceController extends Controller
     }
 
 
-
     public function store(Request $request)
     {
-        /*
-            Batching rules
-            1. the date of all data is same
-            2. the source of all date should come from same school
-        */
-        $jsonInput = $request->all(); //get the data
+        $jsonInput = $request->all();
 
         if (empty($jsonInput)) {
             return response()->json([
                 'status' => 'failed',
-                'message' => 'data is null',
+                'message' => 'Data is null'
             ], 201);
         }
 
-        $studentId = $jsonInput[0]['id']; //get the student id
-        config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($studentId)->school_id]); // config the global variable
-
-        $schoolTimeZone = current_school_timezone() ?? 'Asia/Jakarta'; //set the time zone
-        $firstDate = convert_utc_to_timezone(Carbon::parse($jsonInput[0]['date']), $schoolTimeZone); //get the current date by taking first data
-        $formattedFirstDate = Carbon::parse($firstDate)->format('Y-m-d'); //format it into like: 29-01-2025
-
-        $attendanceWindow = AttendanceWindow::where('date', $formattedFirstDate)
-            ->first(); //get the coressponding window as the input date
-
-        if (!$attendanceWindow) {
-            abort(404, "Attendance window not found");
-        }
-        $checkInTypes = CheckInStatus::where('is_active', true)
-            ->where('late_duration', '!=', -1)
-            ->orderBy('late_duration', 'asc')
-            ->get(); //get all check in status without the default -1 CheckInType and asc order by late_duration
-
-        //get and parse the time limit
-        $checkInStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimeZone);
-        $checkInEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimeZone);
-        $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimeZone);
-        $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimeZone);
-
-        foreach ($jsonInput as $student) {
-            $isInCheckInTimeRange = false; //the boolean value that chech if the student present in check in time duration
-            $studentId = $student['id'];
-            $checkTime = Carbon::parse($student['date']);
-
-            // base invalid case
-            if (
-                !Student::find($studentId) || // if the id is invalid
-                $checkTime->lt($checkInStart) || //if the attendance record session has not started
-                $checkTime->gt($checkOutEnd) || //if the attendance record session has ended
-                $checkTime->between($checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')), $checkOutStart) //if is in intolerant lateness time
-            ) {
-                continue;
-            }
-
-            // get the attendance data for desired student
-            $attendance = Attendance::where("student_id", $studentId)
-                ->whereHas("attendanceWindow", function ($query) use ($formattedFirstDate) {
-                    $query->where("date", $formattedFirstDate);
-                })
-                ->first();
-
-            //create new one if its not exist
-            if (!$attendance) {
-                if ($checkTime->gt($checkOutStart)) { //the student has not check in yet
-                    continue;
-                }
-                $attendance = Attendance::Create([
-                    'school_id' => $attendanceWindow->school_id,
-                    'student_id' => $studentId,
-                    'attendance_window_id' => $attendanceWindow->id,
-                    'check_in_status_id' => CheckInStatus::where('late_duration', -1)->first()->id
-                ]);
-            } else {
-                //check if the student is a fucking uneducated orphan attention seeker wannabe  with no friends
-                if (
-                    $attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration'))) ||
-                    $attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)
-                ) {
-                    continue;
-                }
-            }
-            //iterate each $checkInTypes late duration to decide whether the students is on time or not
-            foreach ($checkInTypes as $cit) {
-                if ($checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($cit->late_duration))) {
-                    $isInCheckInTimeRange = true;
-                    $attendance->update([
-                        'check_in_status_id' => $cit->id,
-                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
-                    ]);
-                    break;
-                }
-            }
-
-            if (!$isInCheckInTimeRange) {
-                $attendance->update([
-                    'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimeZone)
-                ]);
-            }
-        }
+        StoreAttendanceJob::dispatch($jsonInput)->onQueue('attendance');
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance created successfully',
+            'message' => 'Attendance processing has started'
         ], 201);
     }
+
+
 
     public function exportAttendance(Request $request)
     {
@@ -266,13 +186,41 @@ class AttendanceController extends Controller
     public function update(Request $request, $id)
     {
         $attendance = Attendance::find($id);
-        $attendance->update($request->all());
+
+        if (!$attendance) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Attendance not found'
+            ], 404);
+        }
+
+        $validatedData = $request->validate([
+            'check_in_time' => 'nullable|date',
+            'check_out_time' => 'nullable|date',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses,id',
+        ]);
+
+
+        if (!empty($validatedData['check_in_time'])) {
+            $validatedData['check_in_time'] = Carbon::parse($validatedData['check_in_time'])
+                ->format('Y-m-d H:i:s');
+        }
+
+        if (!empty($validatedData['check_out_time'])) {
+            $validatedData['check_out_time'] = Carbon::parse($validatedData['check_out_time'])
+                ->format('Y-m-d H:i:s');
+        }
+
+        $attendance->update($validatedData);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance updated successfully',
             'data' => $attendance
         ]);
     }
+
+
 
     public function destroy($id)
     {

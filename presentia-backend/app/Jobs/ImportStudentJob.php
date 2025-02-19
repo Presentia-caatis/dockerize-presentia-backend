@@ -10,17 +10,16 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-class ProcessStudentImport implements ShouldQueue
+class ImportStudentJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $students, $schoolId, $method;
 
-    public function __construct($students, $schoolId, $method)
+    public function __construct($students, $schoolId)
     {
         $this->students = $students;
         $this->schoolId = $schoolId;
-        $this->method = $method;
     }
 
     public function handle()

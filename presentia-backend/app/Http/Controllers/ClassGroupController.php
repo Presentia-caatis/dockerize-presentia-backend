@@ -16,7 +16,8 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = ClassGroup::paginate($perPage);
+        $data = ClassGroup::withCount('students')->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Class groups retrieved successfully',
@@ -24,12 +25,12 @@ class ClassGroupController extends Controller
         ]);
     }
 
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
-            'class_name' => 'required|string',
-            'amount_of_students' => 'required|integer',
+            'class_name' => 'required|string'
         ]);
 
         $data = ClassGroup::create($validatedData);
