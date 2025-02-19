@@ -3,14 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Hash;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
+    #[Test]
     public function test_user_can_register()
     {
         $response = $this->postJson('api/register', [
@@ -40,6 +43,7 @@ class AuthTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function test_user_can_register_invalid_fullname()
     {
         $response = $this->postJson('api/register', [
@@ -61,6 +65,7 @@ class AuthTest extends TestCase
                  ]);
     }
 
+    #[Test]
     public function test_user_can_register_invalid_username()
     {
         $response = $this->postJson('api/register', [
@@ -82,6 +87,7 @@ class AuthTest extends TestCase
                  ]);
     }
 
+    #[Test]
     public function test_user_can_register_invalid_password()
     {
         $response = $this->postJson('api/register', [
@@ -103,6 +109,7 @@ class AuthTest extends TestCase
                  ]);
     }
 
+    #[Test]
     public function test_user_can_login_with_email()
     {
         $user = User::factory()->create([
@@ -128,6 +135,7 @@ class AuthTest extends TestCase
                  ]);
     }
 
+    #[Test]
     public function test_user_can_login_with_username()
     {
         $user = User::factory()->create([
@@ -153,11 +161,12 @@ class AuthTest extends TestCase
                  ]);
     }
 
+    #[Test]
     public function test_user_cannot_login_with_invalid_credentials()
     {
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => bcrypt('Password123!'),
+            'password' => Hash::make('Password123!'),
         ]);
 
         $response = $this->postJson('api/login', [
@@ -165,13 +174,14 @@ class AuthTest extends TestCase
             'password' => 'WrongPassword!',
         ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(status: 200)
                  ->assertJson([
                      'status' => 'failed',
                      'message' => 'The provided credentials are incorrect',
                  ]);
     }
 
+    #[Test]
     public function test_user_can_logout()
     {
         $user = User::factory()->create();
@@ -192,6 +202,7 @@ class AuthTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function test_google_authentication_existing_user()
     {
         $googleUser = (object) [
@@ -221,6 +232,7 @@ class AuthTest extends TestCase
         ]);
     }
 
+    #[Test]
     public function test_google_authentication_error()
     {
         // Mock Socialite untuk melempar exception
