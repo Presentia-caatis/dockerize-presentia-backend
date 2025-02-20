@@ -112,7 +112,7 @@ class StoreAttendanceJob implements ShouldQueue
                     continue;
                 }
                 try {
-                    Attendance::create([
+                    $attendance = Attendance::create([
                         'school_id' => $schoolId,
                         'student_id' => $studentId,
                         'attendance_window_id' => $attendanceWindow->id,
