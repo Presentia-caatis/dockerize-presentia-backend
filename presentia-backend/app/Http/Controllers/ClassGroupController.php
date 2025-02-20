@@ -20,7 +20,7 @@ class ClassGroupController extends Controller
 
         $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::withCount('students')->paginate($perPage);
+        $data = $query->withCount('students')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

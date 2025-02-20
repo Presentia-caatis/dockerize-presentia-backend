@@ -21,7 +21,7 @@ class CheckInStatusController extends Controller
 
         $query = $this->applyFilters(CheckInStatus::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::orderBy('late_duration')->paginate($perPage);
+        $data = $query->orderBy('late_duration')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

@@ -26,7 +26,7 @@ class AttendanceScheduleController extends Controller
 
         $query = $this->applyFilters(AttendanceSchedule::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::paginate($perPage);
+        $data = $query->paginate($perPage);
 
         $modifiedData = $data->getCollection()->map(function ($item) {
             if (!$item->event_id) {

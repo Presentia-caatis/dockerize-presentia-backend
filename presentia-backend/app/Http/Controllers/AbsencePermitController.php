@@ -19,7 +19,7 @@ class AbsencePermitController extends Controller
 
         $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+        $data = $query->with('attendance', 'document', 'absencePermitType')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

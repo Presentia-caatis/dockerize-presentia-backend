@@ -20,7 +20,7 @@ class DocumentController extends Controller
 
         $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::paginate($perPage);
+        $data = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

@@ -26,7 +26,7 @@ class AttendanceWindowController extends Controller
 
         $query = $this->applyFilters(AttendanceWindow::query(), $request->input('filter', []), ['school']);
 
-        $data = $query::paginate($perPage);
+        $data = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

@@ -20,7 +20,7 @@ class AdmsCredentialController extends Controller
     
         $query = $this->applyFilters(AdmsCredential::query(),  $request->input('filter', []), ['school']);
 
-        $data = $query::paginate($perPage);
+        $data = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
