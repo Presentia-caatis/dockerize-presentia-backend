@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->foreignId('day_id')->constrained('days');
             $table->string('name');
-            $table->integer('total_present');
-            $table->integer('total_absent');
             $table->date('date');
             $table->enum('type', ['default', 'event' , 'holiday'])->default('event');
             $table->time('check_in_start_time')->nullable();

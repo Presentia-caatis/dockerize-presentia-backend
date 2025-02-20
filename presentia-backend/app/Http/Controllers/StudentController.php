@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use App\Http\Requests\ExcelFileRequest;
 use App\Jobs\ImportStudentJob;
 use App\Models\ClassGroup;
@@ -12,6 +13,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
+    use Filterable;
+    
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -23,6 +26,9 @@ class StudentController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
         $search = $validatedData['search'] ?? null;
         $query = Student::with('classGroup');
+
+        $query = $this->applyFilters($query,  $request->input('filter', []), ['school']);
+
 
         if ($request->has('class_group_id')) {
             $query->where('class_group_id', $request->class_group_id);

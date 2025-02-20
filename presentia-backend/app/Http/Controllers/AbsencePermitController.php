@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
 class AbsencePermitController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -15,7 +17,10 @@ class AbsencePermitController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = AbsencePermit::with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+        $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query::with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permits retrieved successfully',

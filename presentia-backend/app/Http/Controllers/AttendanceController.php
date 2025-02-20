@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AttendanceExport;
+use App\Filterable;
 use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
@@ -22,6 +23,7 @@ use function App\Helpers\stringify_convert_utc_to_timezone;
 
 class AttendanceController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -57,6 +59,7 @@ class AttendanceController extends Controller
             'type' => 'sometimes|in:in,out'
         ]);
 
+
         $perPage = $validatedData['perPage'] ?? 10;
 
         $simplify = $validatedData['simplify'] ?? true;
@@ -76,6 +79,8 @@ class AttendanceController extends Controller
         } else {
             $query = Attendance::with('student', 'checkInStatus');
         }
+
+        $query = $this->applyFilters($query,  $request->input('filter', []), ['school']);
 
         if (!empty($validatedData['startDate']) && !empty($validatedData['endDate'])) {
             $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
@@ -130,6 +135,17 @@ class AttendanceController extends Controller
             'message' => 'Attendance processing has started'
         ], 201);
     }
+
+    public function storeManualAttendance(Request $request)
+    {
+        $request->validate([
+            'attendance_window_id' => 'required|exists:attendance_windows,id',
+            'student_id' => 'required|exists:students,id',
+            'date' => 'required|date_format:Y-m-d H:i:s',
+            'check_in_status_id' => 'nullable|exists:'
+        ]);
+    }
+
 
 
 

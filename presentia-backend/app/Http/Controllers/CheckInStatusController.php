@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
@@ -9,6 +10,7 @@ use App\Models\CheckInStatus;
 
 class CheckInStatusController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -17,7 +19,10 @@ class CheckInStatusController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = CheckInStatus::orderBy('late_duration')->paginate($perPage);
+        $query = $this->applyFilters(CheckInStatus::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query::orderBy('late_duration')->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance late types retrieved successfully',

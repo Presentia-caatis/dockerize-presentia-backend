@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Document;
 
 class DocumentController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -16,7 +18,10 @@ class DocumentController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = Document::paginate($perPage);
+        $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query::paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Documents retrieved successfully',

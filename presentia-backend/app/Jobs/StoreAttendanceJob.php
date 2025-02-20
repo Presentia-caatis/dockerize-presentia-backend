@@ -108,7 +108,7 @@ class StoreAttendanceJob implements ShouldQueue
 
             if (!$attendance) {
                 if ($checkTime->gt($checkOutStart)) {
-                    $this->logFailure($studentId, 'Student has not checked in yet');
+                    $this->logFailure($studentId, "Student has not checked in yet, check time: $checkTime");
                     continue;
                 }
                 try {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use App\Models\AttendanceSchedule;
 use App\Models\Event;
 use App\Models\School;
@@ -13,6 +14,7 @@ use function App\Helpers\current_school_timezone;
 
 class AttendanceScheduleController extends Controller
 {
+    use Filterable;
 
     public function index(Request $request)
     {
@@ -22,7 +24,9 @@ class AttendanceScheduleController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = AttendanceSchedule::paginate($perPage);
+        $query = $this->applyFilters(AttendanceSchedule::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query::paginate($perPage);
 
         $modifiedData = $data->getCollection()->map(function ($item) {
             if (!$item->event_id) {
@@ -30,8 +34,7 @@ class AttendanceScheduleController extends Controller
             }
             return $item;
         });
-
-        // Replace the original collection with the modified one
+        
         $data->setCollection($modifiedData);
 
         return response()->json([

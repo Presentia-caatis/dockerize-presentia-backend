@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\ClassGroup;
 
 class ClassGroupController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -16,7 +18,9 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = ClassGroup::withCount('students')->paginate($perPage);
+        $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query::withCount('students')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

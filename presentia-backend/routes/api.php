@@ -180,6 +180,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
             Route::get('/export-attendance', [AttendanceController::class, 'exportAttendance']);
             Route::get('/{id}', [AttendanceController::class, 'getById']);
+            Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
             Route::put('/{id}', [AttendanceController::class, 'update']);
             Route::delete('/{id}', [AttendanceController::class, 'destroy']);
         });
