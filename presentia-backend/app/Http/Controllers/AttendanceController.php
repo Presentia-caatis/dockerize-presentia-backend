@@ -147,7 +147,51 @@ class AttendanceController extends Controller
     }
 
 
+    public function markAbsentStudents(Request $request){
+        $request->validate([
+            'attendance_window_ids' => 'required|array|min:1|exists:attendance_windows,id'
+        ]);
+        
+        $absenceStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
 
+        $validAttendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)
+        ->where('type', '!=', 'holiday')
+        ->pluck('id')
+        ->toArray();
+
+        foreach($validAttendanceWindowIds as $attendanceWindowId){
+
+            $existingAttendance = Attendance::where("attendance_window_id", $attendanceWindowId)
+                ->pluck('student_id')
+                ->toArray();
+    
+            $studentIds = Student::pluck('id')->toArray();
+    
+            $missingStudentIds = array_diff($studentIds, $existingAttendance);
+    
+            $absentRecords = [];
+            foreach ($missingStudentIds as $studentId) {
+                $absentRecords[] = [
+                    'school_id' => config('school.id'),
+                    'student_id' => $studentId,
+                    'attendance_window_id' => $attendanceWindowId,
+                    'check_in_status_id' => $absenceStatusId,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+
+            if (!empty($absentRecords)) {
+                Attendance::insert($absentRecords);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Absent students marked successfully'
+        ]);
+
+    }
 
     public function exportAttendance(Request $request)
     {

@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\AttendanceWindow;
+use App\Models\CheckInStatus;
+use App\Models\Scopes\SchoolScope;
+use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -10,6 +14,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Console\Scheduling\Schedule;
 use function App\Helpers\convert_time_timezone_to_utc;
+use function App\Helpers\convert_timezone_to_utc;
+use function App\Helpers\convert_utc_to_timezone;
+use function App\Helpers\stringify_convert_timezone_to_utc;
+use function App\Helpers\stringify_convert_utc_to_timezone;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -43,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
-        
+
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'school' => \App\Http\Middleware\SchoolMiddleware::class,
@@ -108,12 +116,37 @@ return Application::configure(basePath: dirname(__DIR__))
         if (!Schema::hasTable('schools')) {
             return;
         }
-    
-        $schools = App\Models\School::where('is_task_scheduling_active', true)->get();
-        foreach ($schools as $school) {
-            $schedule->command("call:generate-window-api {$school->id}")
+
+        $schoolsQuery = App\Models\School::where('is_task_scheduling_active', true);
+
+        $maxLateDurations = CheckInStatus::withoutGlobalScope(SchoolScope::class)
+            ->selectRaw('school_id, MAX(late_duration) as max_late_duration')
+            ->whereIn('school_id', (clone $schoolsQuery)->pluck('id')->toArray())
+            ->groupBy('school_id')
+            ->pluck('max_late_duration', 'school_id');
+
+        foreach ($schoolsQuery->get() as $school) {
+            $maxLateDuration = $maxLateDurations[$school->id] ?? null;
+            $checkInEnds = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
+                ->where('date', stringify_convert_utc_to_timezone(now(), $school->timezone, 'Y-m-d'))
+                ->where('type', '!=', 'holiday')
+                ->pluck('check_in_end_time', 'id')
+                ->toArray();
+
+            $schedule->command("call:generate-window-api $school->id")
                 ->timezone($school->timezone)
                 ->dailyAt('00:00');
+
+            foreach ($checkInEnds as $attendanceWindowId => $checkInEnd) {
+                $scheduleTime = Carbon::parse($checkInEnd, $school->timezone)
+                    ->addMinutes($maxLateDuration)
+                    ->format('H:i');
+
+                $schedule->command("call:mark-absent-students $school->id $attendanceWindowId")
+                    ->timezone($school->timezone)
+                    ->dailyAt($scheduleTime);
+            }
+
         }
     })
     ->create();

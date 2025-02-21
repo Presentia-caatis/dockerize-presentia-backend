@@ -6,10 +6,10 @@ use Illuminate\Validation\ValidationException;
 
 trait Filterable
 {
-    public function applyFilters($query, $filters, $forbiddenRelations = [])
+    public function applyFilters($query, $filters, $forbiddenRelations = [], $exactMatchColumns = [])
     {
-        // untuk kolom yang sama dengan bukan pake like
-        $exactMatchColumns = ['gender', 'class_group_id', 'school_id', 'is_active'];
+
+        $exactMatchColumns = array_merge(['gender', 'class_group_id', 'school_id', 'is_active'], $exactMatchColumns);
 
         foreach ($filters as $column => $value) {
             if (strpos($column, '.') !== false) {
