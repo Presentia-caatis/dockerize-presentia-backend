@@ -8,6 +8,9 @@ trait Filterable
 {
     public function applyFilters($query, $filters, $forbiddenRelations = [])
     {
+        // untuk kolom yang sama dengan bukan pake like
+        $exactMatchColumns = ['gender', 'class_group_id', 'school_id', 'is_active'];
+
         foreach ($filters as $column => $value) {
             if (strpos($column, '.') !== false) {
                 // Split the relation chain
@@ -29,7 +32,15 @@ trait Filterable
                 });
             } else {
                 // Apply simple where filter
-                $query->where($column, 'LIKE', "%$value%");
+                if (is_numeric($value)) {
+                    $query->where($column, $value);
+                } else {
+                    if (in_array($column, $exactMatchColumns)) {
+                        $query->where($column, $value);
+                    } else {
+                        $query->where($column, 'LIKE', "%$value%");
+                    }
+                }
             }
         }
 
