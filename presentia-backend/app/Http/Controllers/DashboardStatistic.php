@@ -19,7 +19,7 @@ class DashboardStatistic extends Controller
 {
     public function StaticStatistic()
     {
-        $school = School::find(current_school_id())->load('subscriptionPlan');
+        $school = School::findOrFail(current_school_id())->load('subscriptionPlan');
         $data = [
             'active_students' => Student::where('is_active', true)->count(),
             'inactive_students' => Student::where('is_active', false)->count(),

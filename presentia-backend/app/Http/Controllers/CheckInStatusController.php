@@ -7,6 +7,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
 use App\Models\CheckInStatus;
+use Illuminate\Validation\ValidationException;
 
 class CheckInStatusController extends Controller
 {
@@ -25,7 +26,7 @@ class CheckInStatusController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance late types retrieved successfully',
+            'message' => 'Check in statuses retrieved successfully',
             'data' => $data
         ]);
     }
@@ -36,26 +37,26 @@ class CheckInStatusController extends Controller
         $validatedData = $request->validate([
             'status_name' => 'required|string',
             'description' => 'required|string',
-            'is_active' => 'required|boolean',
             'late_duration' => 'required|integer'
         ]);
 
+        $validatedData['is_active'] = true;
         $validatedData['school_id'] = config('school.id');
 
         $data = CheckInStatus::create($validatedData);
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance late type created successfully',
+            'message' => 'Check in status created successfully',
             'data' => $data
         ]);
     }
 
     public function getById($id)
     {
-        $checkInStatus = CheckInStatus::find($id);
+        $checkInStatus = CheckInStatus::findOrFail($id);
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance late type retrieved successfully',
+            'message' => 'Check in status retrieved successfully',
             'data' => $checkInStatus
         ]);
     }
@@ -65,32 +66,42 @@ class CheckInStatusController extends Controller
         $checkInStatus = CheckInStatus::findOrFail($id);
 
         $validatedData = $request->validate([
-            'status_name' => 'nullable|string',
-            'description' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
-            'late_duration' => 'nullable|integer',
-            '*' => 'required_without_all:status_name,description,is_active,late_duration'
+            'status_name' => 'string',
+            'description' => 'string',
+            'is_active' => 'boolean',
+            'late_duration' => 'integer',
         ]);
 
+        if (empty($validatedData)) {
+            throw ValidationException::withMessages([
+                'error' => 'At least one field (status_name, description, is_active, or late_duration) is required.'
+            ]);
+        }
+
         if (isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)) {
-            throw new AuthorizationException('You are not allowed to update late_duration column for this id');
+            abort(403, 'You are not allowed to update late_duration column for this id');
         }
 
         $checkInStatus->update($validatedData);
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance late type updated successfully',
+            'message' => 'Check in status updated successfully',
             'data' => $checkInStatus
         ]);
     }
 
     public function destroy($id)
     {
-        $checkInStatus = CheckInStatus::find($id);
+        $checkInStatus = CheckInStatus::findOrFail($id);
+
+        if ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) {
+            abort(403, 'You are not allowed to delete check in status from this id');
+        }
+        
         $checkInStatus->delete();
         return response()->json([
             'status' => 'success',
-            'message' => 'Attendance late type deleted successfully'
+            'message' => 'Check in status deleted successfully'
         ]);
     }
 }

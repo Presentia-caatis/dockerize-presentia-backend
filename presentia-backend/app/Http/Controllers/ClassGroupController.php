@@ -48,7 +48,7 @@ class ClassGroupController extends Controller
 
     public function getById($id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $classGroup->load('school');
         return response()->json([
             'status' => 'success',
@@ -59,7 +59,7 @@ class ClassGroupController extends Controller
 
     public function update(Request $request, $id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_name' => 'required|string'
@@ -76,7 +76,7 @@ class ClassGroupController extends Controller
 
     public function destroy($id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $classGroup->delete();
         return response()->json([
             'status' => 'success',

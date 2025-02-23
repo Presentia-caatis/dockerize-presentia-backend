@@ -46,7 +46,7 @@ class AttendanceScheduleController extends Controller
 
     public function getById($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance windows retrieved successfully',
@@ -113,7 +113,7 @@ class AttendanceScheduleController extends Controller
 
     public function update(Request $request, $id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         $validatedData = $request->validate([
             'event_id' => 'sometimes|exists:events,id',
             'name' => 'sometimes|string',
@@ -139,7 +139,7 @@ class AttendanceScheduleController extends Controller
 
     public function destroy($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         if ($attendanceSchedule->type === 'holiday' || $attendanceSchedule->type === 'default') {
             abort(403, 'Cannot delete attendance schedule of type "holiday" or "default".');
         }

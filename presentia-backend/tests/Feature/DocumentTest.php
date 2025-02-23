@@ -103,7 +103,7 @@ class DocumentTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('documents', ['document_name' => 'Updated Document']);
-        Storage::disk('public')->assertExists(Document::find($document->id)->path);
+        Storage::disk('public')->assertExists(Document($document->id)->path);
     }
 
     #[Test]

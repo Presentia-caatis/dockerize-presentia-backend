@@ -28,7 +28,7 @@ class DayController extends Controller
     
     public function getById($id)
     {
-        $day=Day::find($id);
+        $day=Day::findOrFail($id);
         $data = $day->load('school', 'attendanceSchedule');
         return response()->json([
             'status' => 'success',
@@ -40,7 +40,7 @@ class DayController extends Controller
     
     public function update(Request $request, $id)
     {
-        $day=Day::find($id);
+        $day=Day::findOrFail($id);
         $validatedData = $request->validate([
             'attendance_schedule_id' => 'nullable|exists:attendance_schedules,id',
         ]);

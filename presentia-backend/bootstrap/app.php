@@ -56,7 +56,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'school' => \App\Http\Middleware\SchoolMiddleware::class,
             'valid-adms' => \App\Http\Middleware\ADMSMiddleware::class,
-            'scheduler' => \App\Http\Middleware\EnsureSchedulerRequest::class
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -75,8 +74,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->renderable(function (ValidationException $e, $request) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
+                'status' => 'failed',
+                'message' => 'Unprocessable Content',
                 'errors' => $e->errors(),
             ], 422);
         });
@@ -89,12 +88,14 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 404);  // 404 Not Found status
         });
 
-        $exceptions->renderable(function (AuthorizationException $e, $request) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Action is not permissible or you are not authorized to perform this action.',
-                'error' => $e->getMessage(),
-            ], 403);  // 403 Forbidden
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+            if ($e->getStatusCode() === 403) {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'You are not allowed to perform this action.',
+                    'error' => $e->getMessage(),
+                ], 403);
+            }
         });
 
         $exceptions->renderable(function (AuthenticationException $e, $request) {

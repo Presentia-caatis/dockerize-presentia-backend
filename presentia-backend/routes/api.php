@@ -215,7 +215,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         Route::prefix('attendance-window')->group(function () {
-            Route::post('/client-generate-window', [AttendanceWindowController::class, 'generateWindow']);
+            Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow']);
             Route::get('/', [AttendanceWindowController::class, 'index']);
             Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
             Route::get('/{id}', [AttendanceWindowController::class, 'getById']);

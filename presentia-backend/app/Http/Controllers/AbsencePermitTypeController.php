@@ -49,7 +49,7 @@ class AbsencePermitTypeController extends Controller
 
     public function getById($id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type retrieved successfully',
@@ -59,7 +59,7 @@ class AbsencePermitTypeController extends Controller
 
     public function update(Request $request, $id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         $validatedData = $request->validate([
             'permit_name' => 'required|string',
             'is_active' => 'required|boolean',
@@ -77,7 +77,7 @@ class AbsencePermitTypeController extends Controller
 
     public function destroy($id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         $absencePermitType->delete();
         return response()->json([
             'status' => 'success',

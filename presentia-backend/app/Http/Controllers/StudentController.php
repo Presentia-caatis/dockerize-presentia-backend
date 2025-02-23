@@ -62,7 +62,7 @@ class StudentController extends Controller
 
 
         $data = Student::create($validatedData);
-        $data->load(['classGroup', 'school']);
+        $data->load(['classGroup']);
         return response()->json([
             'status' => 'success',
             'message' => 'Student created successfully',
@@ -158,7 +158,7 @@ class StudentController extends Controller
 
     public function getById($id)
     {
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $student->load(['classGroup', 'school']);
         return response()->json([
             'status' => 'success',
@@ -169,19 +169,18 @@ class StudentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $validatedData = $request->validate([
-            'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
-            'nis' => 'required|string',
-            'nisn' => 'required|string',
-            'student_name' => 'required|string',
-            'gender' => 'required|in:male,female',
+            'nis' => 'nullable|string',
+            'nisn' => 'nullable|string',
+            'student_name' => 'nullable|string',
+            'gender' => 'nullable|in:male,female',
         ]);
 
         $student->update($validatedData);
-        $student->load(['classGroup', 'school']);
+        $student->load(['classGroup']);
 
         return response()->json([
             'status' => 'success',
@@ -192,7 +191,7 @@ class StudentController extends Controller
 
     public function destroy($id)
     {
-        $student = Student::find($id);
+        $student = Student::findOrFail($id);
         $student->delete();
         return response()->json([
             'status' => 'success',

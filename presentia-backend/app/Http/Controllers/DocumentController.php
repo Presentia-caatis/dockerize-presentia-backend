@@ -56,7 +56,7 @@ class DocumentController extends Controller
 
     public function getById($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Document retrieved successfully',
@@ -66,7 +66,7 @@ class DocumentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
         $validatedData = $request->validate([
             'document_name' => 'sometimes|required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
@@ -97,7 +97,7 @@ class DocumentController extends Controller
 
     public function destroy($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
         if ($document->path) {
             Storage::disk('public')->delete($document->path);
         }
