@@ -89,7 +89,7 @@ class StoreAttendanceJob implements ShouldQueue
             $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimezone);
             $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimezone);
 
-            if ($checkTime->lt($checkInStart) || $checkTime->gt($checkOutEnd) || $checkTime->between($checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')), $checkOutStart)) {
+            if ($checkTime->lt($checkInStart) || $checkTime->gt($checkOutEnd)) {
                 $this->logFailure($studentId,$checkTime, "Invalid check time: $checkTime for attendance window id : ".$attendanceWindow->id);
                 continue;
             }
@@ -106,10 +106,6 @@ class StoreAttendanceJob implements ShouldQueue
                 ->first();
 
             if (!$attendance) {
-                if ($checkTime->gt($checkOutStart)) {
-                    $this->logFailure($studentId,$checkTime, "Student has not checked in yet, check time: $checkTime");
-                    continue;
-                }
                 try {
                     $attendance = Attendance::create([
                         'school_id' => $schoolId,
@@ -117,13 +113,21 @@ class StoreAttendanceJob implements ShouldQueue
                         'attendance_window_id' => $attendanceWindow->id,
                         'check_in_status_id' => $absenceCheckInStatus->id
                     ]);
+
+                    if ($checkTime->gt($checkOutStart)) {
+                        $attendance->update([
+                            'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                        ]);
+                        $this->logFailure($studentId,$checkTime, "Student has not checked in yet, check time: $checkTime");
+                        continue;
+                    }
                 } catch (Exception $e) {
                     $this->logFailure($studentId,$checkTime, 'Something went wrong: ' . $e->getMessage());
                     continue;
                 }
             } else {
                 // Prevent duplicate check-ins
-                if ($attendance->check_in_time && $checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($checkInTypes->max('late_duration')))) {
+                if ($attendance->check_in_time && $checkTime->gt($checkInStart) && $checkTime->lt($checkOutStart)) {
                     $this->logFailure($studentId,$checkTime, 'Duplicate check-in attempt');
                     continue;
                 } else if ($attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)){
@@ -145,9 +149,16 @@ class StoreAttendanceJob implements ShouldQueue
 
             // If the student is not in check-in range, mark check-out time
             if (!$isInCheckInTimeRange) {
-                $attendance->update([
-                    'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
-                ]);
+                if($checkTime->lt($checkOutStart)){
+                    $attendance->update([
+                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                    ]);
+                } else {
+                    $attendance->update([
+                        'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                    ]);
+                }
+                
             }
         }
     }

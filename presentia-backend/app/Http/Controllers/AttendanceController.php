@@ -8,20 +8,15 @@ use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\ClassGroup;
-use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Http\Request;
 
 use App\Models\Attendance;
-use function App\Helpers\convert_timezone_to_utc;
-use function App\Helpers\convert_utc_to_timezone;
-use function App\Helpers\current_school;
 use function App\Helpers\current_school_id;
 use function App\Helpers\current_school_timezone;
 use function App\Helpers\stringify_convert_timezone_to_utc;
-use function App\Helpers\stringify_convert_utc_to_timezone;
+
 
 class AttendanceController extends Controller
 {

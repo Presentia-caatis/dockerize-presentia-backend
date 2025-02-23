@@ -70,8 +70,11 @@ class CheckInStatusController extends Controller
             'description' => 'string',
             'is_active' => 'boolean',
             'late_duration' => 'integer',
+            'adjust_attendance' => 'nullable|boolean',
+            'startDate' => 'required_with:adjust_attendance|date_format:Y-m-d',
+            'endDate' => 'required_with:adjust_attendance|date_format:Y-m-d',
+            'attendance_window_id' => 'required_with:adjust_attendance|'
         ]);
-
 
         if (isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)) {
             abort(403, 'You are not allowed to update late_duration column for this id');
