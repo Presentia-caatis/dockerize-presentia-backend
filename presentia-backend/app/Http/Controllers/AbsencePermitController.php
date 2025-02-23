@@ -6,6 +6,7 @@ use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
+use Illuminate\Validation\ValidationException;
 class AbsencePermitController extends Controller
 {
     use Filterable;
@@ -62,12 +63,12 @@ class AbsencePermitController extends Controller
     public function update(Request $request, $id)
     {
         $absencePermit=AbsencePermit::findOrFail($id);
-        $validatedData = $validatedData = $request->validate([
-            'attendance_id' => 'sometimes|exists:attendances,id',
-            'remove_document' => 'sometimes|boolean',
-            'document_id' => 'sometimes|nullable|exists:documents,id',
-            'absence_permit_type_id' => 'sometimes|exists:absence_permit_types,id',
-            'description' => 'sometimes|string',
+        $validatedData = $request->validate([
+            'attendance_id' => 'exists:attendances,id',
+            'remove_document' => 'boolean',
+            'document_id' => 'exists:documents,id',
+            'absence_permit_type_id' => 'exists:absence_permit_types,id',
+            'description' => 'string',
         ]);
     
         if ($request->boolean('remove_document')) {

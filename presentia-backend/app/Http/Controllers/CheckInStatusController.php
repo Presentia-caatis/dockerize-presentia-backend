@@ -72,11 +72,6 @@ class CheckInStatusController extends Controller
             'late_duration' => 'integer',
         ]);
 
-        if (empty($validatedData)) {
-            throw ValidationException::withMessages([
-                'error' => 'At least one field (status_name, description, is_active, or late_duration) is required.'
-            ]);
-        }
 
         if (isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)) {
             abort(403, 'You are not allowed to update late_duration column for this id');

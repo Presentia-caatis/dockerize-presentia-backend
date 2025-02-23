@@ -6,6 +6,7 @@ use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermitType;
+use Illuminate\Validation\ValidationException;
 
 class AbsencePermitTypeController extends Controller
 {
@@ -34,8 +35,7 @@ class AbsencePermitTypeController extends Controller
     {
         $validatedData = $request->validate([
             'permit_name' => 'required|string',
-            'is_active' => 'required|boolean',
-            'school_id' => 'required|exists:schools,id',
+            'is_active' => 'required|boolean', 
         ]);
 
 
@@ -61,9 +61,8 @@ class AbsencePermitTypeController extends Controller
     {
         $absencePermitType=AbsencePermitType::findOrFail($id);
         $validatedData = $request->validate([
-            'permit_name' => 'required|string',
-            'is_active' => 'required|boolean',
-            'school_id' => 'required|exists:schools,id',
+            'permit_name' => 'string',
+            'is_active' => 'boolean',
         ]);
 
         $absencePermitType->update($validatedData);

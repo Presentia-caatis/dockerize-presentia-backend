@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 use App\Models\School;
+use Illuminate\Support\Facades\Storage;
 use Str;
 use function App\Helpers\convert_utc_to_timezone;
 
@@ -23,7 +24,14 @@ class SchoolController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = School::paginate(10);
+        $data = School::paginate($perPage);
+
+        $data->getCollection()->transform(function ($school) {
+            if($school->logo_image_path){
+                $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+            }
+            return $school;
+        });
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',
@@ -47,14 +55,20 @@ class SchoolController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string',
             'address' => 'required|string',
-            'timezone' => 'required|timezone'
+            'timezone' => 'required|timezone',
+            'logo_image' => 'nullable|file|mimes:jpg,jpeg,png'
         ]);
+
+        if($request->hasFile('logo_image')){
+            $validatedData['logo_image_path'] = $request->file('logo_image')->store($request->file('logo_image')->extension(),'public');
+        };
+        
         $validatedData['subscription_plan_id'] = SubscriptionPlan::where('billing_cycle_month', 0)->first()->id;
         $validatedData['school_token'] = Str::uuid();
         $validatedData['latest_subscription'] = convert_utc_to_timezone(Carbon::now(), $validatedData['timezone']);
         
-        $school = School::create($validatedData);
 
+        $school = School::create($validatedData);
 
         $defaultAttendanceSchedule = AttendanceSchedule::create([
             'event_id' => null,
@@ -107,8 +121,8 @@ class SchoolController extends Controller
         ]);
 
         CheckInStatus::create([
-            'status_name' => 'Absence',
-            'description' => 'Absence',
+            'status_name' => 'Absent',
+            'description' => 'Absent',
             'late_duration' => -1,
             'is_active' => true,
             'school_id' => $school->id,
@@ -125,6 +139,9 @@ class SchoolController extends Controller
     public function getById($id)
     {
         $school = School::findOrFail($id); 
+        if($school->logo_image_path){
+            $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+        }
         return response()->json([
             'status' => 'success',
             'message' => 'School retrieved successfully',
@@ -133,29 +150,49 @@ class SchoolController extends Controller
 
     }
 
-    public function update(Request $request, School $School)
+    public function update(Request $request, $id)
     {
+        $school=School::findOrFail($id);
 
         $validatedData = $request->validate([
-            'subscription_plan_id' => 'required|exists:subscription_plans,id',
-            'school_name' => 'required|string',
-            'address' => 'required|string',
-            'latest_subscription' => 'required|date',
-            'end_subscription' => 'required|date',
+            'subscription_plan_id' => 'nullable|exists:subscription_plans,id',
+            'school_name' => 'nullable|string',
+            'address' => 'nullable|string',
+            'remove_image' => 'sometimes|boolean',
+            'logo_image' => 'nullable|file|mimes:jpg,jpeg,png'
         ]);
 
-        $School->update($validatedData);
+
+        if(isset($validatedData['remove_image']) && $validatedData['remove_image']){
+            if ($school->logo_image_path) {
+                Storage::disk('public')->delete($school->logo_image_path);
+            }
+            $school->logo_image_path = null;
+        } else if ($request->hasFile('logo_image')) {
+            if ($school->logo_image_path) {
+                Storage::disk('public')->delete($school->logo_image_path);
+            }
+
+            $school->logo_image_path = $request->file('logo_image')->store($request->file('logo_image')->extension(),'public');
+        }
+
+
+        $school->update($validatedData);
         return response()->json([
             'status' => 'success',
             'message' => 'School updated successfully',
-            'data' => $School
+            'data' => $school
         ]);
 
     }
 
-    public function destroy(School $School)
+    public function destroy($id)
     {
-        $School->delete();
+        $school=School::findOrFail($id);
+        if ($school->logo_image_path) {
+            Storage::disk('public')->delete($school->logo_image_path);
+        }
+        $school->delete();
         return response()->json([
             'status' => 'success',
             'message' => 'School deleted successfully'
