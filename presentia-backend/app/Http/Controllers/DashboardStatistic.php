@@ -71,6 +71,8 @@ class DashboardStatistic extends Controller
             ]);
         }
 
+        $absentStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+
         // Get attendance counts grouped by check_in_status_id
         $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
             ->where('attendances.attendance_window_id', $attendanceWindowId)
@@ -90,7 +92,7 @@ class DashboardStatistic extends Controller
             $presentCounter += $data[$statusName];
         }
 
-        $absentStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+        $presentCounter -= $data[$absentStatusName];
 
 
         if ($summarize) {

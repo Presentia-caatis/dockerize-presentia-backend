@@ -128,6 +128,8 @@ class SchoolController extends Controller
             'school_id' => $school->id,
         ]);
 
+        $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+
         return response()->json([
             'status' => 'success',
             'message' => 'School created successfully',
@@ -178,6 +180,9 @@ class SchoolController extends Controller
 
 
         $school->update($validatedData);
+
+        $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'School updated successfully',
