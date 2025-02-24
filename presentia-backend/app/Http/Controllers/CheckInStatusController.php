@@ -7,6 +7,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
 use App\Models\CheckInStatus;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 class CheckInStatusController extends Controller
@@ -34,22 +35,39 @@ class CheckInStatusController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'status_name' => 'required|string',
-            'description' => 'required|string',
-            'late_duration' => 'required|integer'
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'status_name' => 'required|string',
+                'description' => 'required|string',
+                'late_duration' => 'required|integer'
+            ]);
 
-        $validatedData['is_active'] = true;
-        $validatedData['school_id'] = config('school.id');
+            $validatedData['is_active'] = true;
+            $validatedData['school_id'] = config('school.id');
 
-        $data = CheckInStatus::create($validatedData);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Check in status created successfully',
-            'data' => $data
-        ]);
+            $data = CheckInStatus::create($validatedData);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Status check-in berhasil dibuat',
+                'data' => $data
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() == 23000) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Durasi keterlambatan tidak boleh sama dengan status yang lain'
+                ], 400);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat menyimpan status check-in',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function getById($id)
     {
@@ -76,11 +94,24 @@ class CheckInStatusController extends Controller
             'attendance_window_id' => 'required_with:adjust_attendance|'
         ]);
 
-        if (isset($validatedData['late_duration']) && ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1)) {
-            abort(403, 'You are not allowed to update late_duration column for this id');
+        if (
+            $request->has('late_duration') &&
+            ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) &&
+            $request->late_duration != $checkInStatus->late_duration
+        ) {
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Durasi keterlambatan tidak boleh diubah'
+            ], 403);
+        }
+
+        if ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) {
+            $validatedData = $request->only(['status_name', 'description']);
         }
 
         $checkInStatus->update($validatedData);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Check in status updated successfully',
@@ -93,9 +124,12 @@ class CheckInStatusController extends Controller
         $checkInStatus = CheckInStatus::findOrFail($id);
 
         if ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) {
-            abort(403, 'You are not allowed to delete check in status from this id');
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Status presensi ini tidak boleh dihapus'
+            ], 403);
         }
-        
+
         $checkInStatus->delete();
         return response()->json([
             'status' => 'success',
