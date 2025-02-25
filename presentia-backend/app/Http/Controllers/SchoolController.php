@@ -156,7 +156,7 @@ class SchoolController extends Controller
 
         $validatedData = $request->validate([
             'subscription_plan_id' => 'nullable|exists:subscription_plans,id',
-            'school_name' => 'nullable|string',
+            'name' => 'nullable|string',
             'address' => 'nullable|string',
             'remove_image' => 'sometimes|boolean',
             'logo_image' => 'nullable|file|mimes:jpg,jpeg,png'
@@ -179,8 +179,10 @@ class SchoolController extends Controller
 
         $school->update($validatedData);
 
-        $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
-        
+        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
+            $school->logo_image_path = $school->logo_image_path ? asset('storage/' . $school->logo_image_path) : null;
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'School updated successfully',

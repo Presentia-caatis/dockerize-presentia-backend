@@ -68,7 +68,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/link-to-school/{id}', [UserController::class, 'linkToSchool']);
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
         Route::get('/{id}', [UserController::class, 'getById']);
-        Route::put('/{id}', [UserController::class, 'update']);
+        Route::post('/{id}', [UserController::class, 'update']);
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
