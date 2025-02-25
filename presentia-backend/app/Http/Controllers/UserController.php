@@ -14,7 +14,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1' 
+            'perPage' => 'sometimes|integer|min:1'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -22,7 +22,7 @@ class UserController extends Controller
         $data = User::paginate($perPage);
 
         $data->getCollection()->transform(function ($user) {
-            if($user->profile_image_path){
+            if ($user->profile_image_path) {
                 $user->profile_image_path =  asset('storage/' . $user->profile_image_path);
             }
             return $user;
@@ -34,7 +34,6 @@ class UserController extends Controller
             'message' => 'Schools retrieved successfully',
             'data' => $data->load('school')
         ]);
-
     }
 
     public function linkToSchool(Request $request, $id)
@@ -45,14 +44,13 @@ class UserController extends Controller
         ]);
 
         $user->school_id = $request->school_id;
-        
+
         $user->save();
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',
             'data' => $user->load('school')
         ], 201);
-
     }
 
     public function store(Request $request)
@@ -66,8 +64,8 @@ class UserController extends Controller
             'profile_image' => 'nullable|file|mimes:jpg,jpeg,png'
         ]);
 
-        if($request->hasFile('profile_image')){
-            $validatedData['profile_image_path'] = $request->file('profile_image')->store($request->file('profile_image')->extension(),'public');
+        if ($request->hasFile('profile_image')) {
+            $validatedData['profile_image_path'] = $request->file('profile_image')->store($request->file('profile_image')->extension(), 'public');
         };
 
         $validatedData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
@@ -81,14 +79,13 @@ class UserController extends Controller
             'message' => 'User created successfully',
             'data' => $user
         ], 201);
-
     }
 
     public function getById($id)
     {
         $user = User::findOrFail($id);
 
-        if($user->profile_image_path){
+        if ($user->profile_image_path) {
             $user->profile_image_path =  asset('storage/' . $user->profile_image_path);
         }
         return response()->json([
@@ -96,7 +93,6 @@ class UserController extends Controller
             'message' => 'User retrieved successfully',
             'data' => $user->load('school')
         ]);
-
     }
 
     public function getByToken(Request $request)
@@ -107,8 +103,8 @@ class UserController extends Controller
             throw new UnauthorizedHttpException('Bearer', 'User not authenticated');
         }
 
-        if($user->profile_image_path){
-            $$user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        if ($user->profile_image_path) {
+            $user->profile_image_path = asset('storage/' . $user->profile_image_path);
         };
 
         return response()->json([
@@ -130,7 +126,7 @@ class UserController extends Controller
         ]);
 
 
-        if(isset($validatedData['remove_image']) && $validatedData['remove_image']){
+        if (isset($validatedData['remove_image']) && $validatedData['remove_image']) {
             if ($user->profile_image_path) {
                 Storage::disk('public')->delete($user->profile_image_path);
             }
@@ -140,21 +136,22 @@ class UserController extends Controller
                 Storage::disk('public')->delete($user->profile_image_path);
             }
 
-            $user->profile_image_path = $request->file('profile_image')->store($request->file('profile_image')->extension(),'public');
+            $user->profile_image_path = $request->file('profile_image')->store($request->file('profile_image')->extension(), 'public');
         }
 
         $validatedData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
 
         $user->update($validatedData);
 
-        $user->profile_image_path =  asset('storage/' . $user->profile_image_path);
-        
+        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
+            $user->profile_image_path = $user->profile_image_path ? asset('storage/' . $user->profile_image_path) : null;
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'User updated successfully',
             'data' => $user
         ]);
-
     }
 
     public function destroy($id)
@@ -168,6 +165,5 @@ class UserController extends Controller
             'status' => 'success',
             'message' => 'User deleted successfully'
         ]);
-
     }
 }
