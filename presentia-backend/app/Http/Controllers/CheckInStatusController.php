@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
+use App\Models\AttendanceWindow;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 
@@ -88,22 +89,41 @@ class CheckInStatusController extends Controller
             'description' => 'string',
             'is_active' => 'boolean',
             'late_duration' => 'integer',
-            'adjust_attendance' => 'nullable|boolean',
-            'startDate' => 'required_with:adjust_attendance|date_format:Y-m-d',
-            'endDate' => 'required_with:adjust_attendance|date_format:Y-m-d',
-            'attendance_window_id' => 'required_with:adjust_attendance|'
+            'adjust_attendance' => 'required|boolean',
+            'start_date' => 'required_with:end_date|date_format:Y-m-d',
+            'end_date' => 'required_with:start_date|date_format:Y-m-d',
+            'attendance_window_ids' => 'sometimes|array|min:1',
+            'attendance_window_ids.*' => 'exists:attendance_windows,id'
         ]);
+
+        $attendanceWindows = AttendanceWindow::query();
+
+        if($request->boolean("adjust_attendance")){
+            if(isset($validatedData['start_date'])){
+                $attendanceWindows->whereBetween('date', [$validatedData['start_date'], $validatedData['end_date']]);
+            } else if (isset($validatedData['attendance_window_ids'])){
+                $attendanceWindows->whereIn('id', $validatedData['attendance_window_ids']);
+            } else {
+                throw ValidationException::withMessages([
+                    'start_date' => [
+                        "The start_date field is required when adjust_attendance is true and attendance_window_ids is not provided."
+                    ],
+                    'end_date' => [
+                        "The end_date field is required when adjust_attendance is true and attendance_window_ids is not provided."
+                    ], 
+                    'attendance_window_ids' => [
+                        "The attendance_window_ids field is required when adjust_attendance is true and startDate & endDate are missing."
+                    ]
+                ]);
+            }
+        }
 
         if (
             $request->has('late_duration') &&
             ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) &&
             $request->late_duration != $checkInStatus->late_duration
         ) {
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Durasi keterlambatan tidak boleh diubah'
-            ], 403);
+            abort(403, 'Durasi keterlambatan tidak boleh diubah');
         }
 
         if ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) {
