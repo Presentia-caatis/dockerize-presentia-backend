@@ -74,6 +74,8 @@ class UserController extends Controller
 
         $user = User::create($validatedData);
 
+        $user->profile_image_path =  asset('storage/' . $user->profile_image_path);
+
         return response()->json([
             'status' => 'success',
             'message' => 'User created successfully',
@@ -144,6 +146,9 @@ class UserController extends Controller
         $validatedData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
 
         $user->update($validatedData);
+
+        $user->profile_image_path =  asset('storage/' . $user->profile_image_path);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'User updated successfully',
