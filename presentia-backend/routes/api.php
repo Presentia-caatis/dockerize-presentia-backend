@@ -105,7 +105,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [SchoolController::class, 'store']);
         Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
         Route::get('/{id}', [SchoolController::class, 'getById']);
-        Route::put('/{id}', [SchoolController::class, 'update']);
+        Route::post('/{id}', [SchoolController::class, 'update']);
         Route::delete('/{id}', [SchoolController::class, 'destroy']);
     });
 
