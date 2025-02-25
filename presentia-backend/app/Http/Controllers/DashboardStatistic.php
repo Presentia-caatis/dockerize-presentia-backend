@@ -106,7 +106,7 @@ class DashboardStatistic extends Controller
             ]);
         }
 
-        $data['total_hadir'] = $presentCounter;
+        $data = array_merge(['Total Hadir' => $presentCounter], $data);
         return response()->json([
             'status' => 'success',
             'message' => 'Daily statistic retrieved successfully',
