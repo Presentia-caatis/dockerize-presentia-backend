@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\ClassGroup;
 
 class ClassGroupController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -16,7 +18,9 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = ClassGroup::withCount('students')->paginate($perPage);
+        $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query->withCount('students')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
@@ -44,7 +48,7 @@ class ClassGroupController extends Controller
 
     public function getById($id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $classGroup->load('school');
         return response()->json([
             'status' => 'success',
@@ -55,7 +59,7 @@ class ClassGroupController extends Controller
 
     public function update(Request $request, $id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'class_name' => 'required|string'
@@ -72,7 +76,7 @@ class ClassGroupController extends Controller
 
     public function destroy($id)
     {
-        $classGroup = ClassGroup::find($id);
+        $classGroup = ClassGroup::findOrFail($id);
         $classGroup->delete();
         return response()->json([
             'status' => 'success',

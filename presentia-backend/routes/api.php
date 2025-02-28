@@ -41,7 +41,7 @@ use App\Http\Controllers\{
     AuthController
 };
 
-
+//AUTH API
 Route::controller(SocialiteController::class)->group(function () {
     Route::get('auth-google', 'googleLogin');
     Route::get('auth-google-callback', 'googleAuthentication');
@@ -51,9 +51,10 @@ Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::middleware(['auth:sanctum'])->post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+//ADMS API
 Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
-Route::post('/attendance-window/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('scheduler');
 
+//USER API
 Route::middleware(['auth:sanctum'])->group(function () {
     // Time Routes
     Route::prefix('time')->group(function () {
@@ -67,7 +68,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/link-to-school/{id}', [UserController::class, 'linkToSchool']);
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
         Route::get('/{id}', [UserController::class, 'getById']);
-        Route::put('/{id}', [UserController::class, 'update']);
+        Route::post('/{id}', [UserController::class, 'update']);
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
@@ -104,7 +105,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [SchoolController::class, 'store']);
         Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
         Route::get('/{id}', [SchoolController::class, 'getById']);
-        Route::put('/{id}', [SchoolController::class, 'update']);
+        Route::post('/{id}', [SchoolController::class, 'update']);
         Route::delete('/{id}', [SchoolController::class, 'destroy']);
     });
 
@@ -180,6 +181,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
             Route::get('/export-attendance', [AttendanceController::class, 'exportAttendance']);
             Route::get('/{id}', [AttendanceController::class, 'getById']);
+            Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+            Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
             Route::put('/{id}', [AttendanceController::class, 'update']);
             Route::delete('/{id}', [AttendanceController::class, 'destroy']);
         });
@@ -212,7 +215,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         Route::prefix('attendance-window')->group(function () {
-            Route::post('/client-generate-window', [AttendanceWindowController::class, 'generateWindow']);
+            Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow']);
             Route::get('/', [AttendanceWindowController::class, 'index']);
             Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
             Route::get('/{id}', [AttendanceWindowController::class, 'getById']);

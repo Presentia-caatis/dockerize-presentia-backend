@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
+use Illuminate\Validation\ValidationException;
 class AbsencePermitController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -15,7 +18,10 @@ class AbsencePermitController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = AbsencePermit::with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+        $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query->with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permits retrieved successfully',
@@ -45,7 +51,7 @@ class AbsencePermitController extends Controller
 
     public function getById($id)
     {
-        $absencePermit=AbsencePermit::find($id);
+        $absencePermit=AbsencePermit::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit retrieved successfully',
@@ -56,13 +62,13 @@ class AbsencePermitController extends Controller
 
     public function update(Request $request, $id)
     {
-        $absencePermit=AbsencePermit::find($id);
-        $validatedData = $validatedData = $request->validate([
-            'attendance_id' => 'sometimes|exists:attendances,id',
-            'remove_document' => 'sometimes|boolean',
-            'document_id' => 'sometimes|nullable|exists:documents,id',
-            'absence_permit_type_id' => 'sometimes|exists:absence_permit_types,id',
-            'description' => 'sometimes|string',
+        $absencePermit=AbsencePermit::findOrFail($id);
+        $validatedData = $request->validate([
+            'attendance_id' => 'exists:attendances,id',
+            'remove_document' => 'boolean',
+            'document_id' => 'exists:documents,id',
+            'absence_permit_type_id' => 'exists:absence_permit_types,id',
+            'description' => 'string',
         ]);
     
         if ($request->boolean('remove_document')) {
@@ -81,7 +87,7 @@ class AbsencePermitController extends Controller
 
     public function destroy($id)
     {
-        $absencePermit=AbsencePermit::find($id);
+        $absencePermit=AbsencePermit::findOrFail($id);
         $absencePermit->delete();
         return response()->json([
             'status' => 'success',

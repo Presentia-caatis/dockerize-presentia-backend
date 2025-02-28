@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Document;
 
 class DocumentController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -16,7 +18,15 @@ class DocumentController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = Document::paginate($perPage);
+        $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query->paginate($perPage);
+
+        $data->getCollection()->transform(function ($document) {
+            $document->path = asset('storage/' . $document->path); // ✅ Full URL
+            return $document;
+        });
+
         return response()->json([
             'status' => 'success',
             'message' => 'Documents retrieved successfully',
@@ -27,11 +37,10 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'document_name' => 'required|string',
             'file' => 'required|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
-
 
         $path = $request->file('file')->store($request->file('file')->extension(),'public');
 
@@ -51,7 +60,8 @@ class DocumentController extends Controller
 
     public function getById($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
+        $document->path = asset('storage/' . $document->path);
         return response()->json([
             'status' => 'success',
             'message' => 'Document retrieved successfully',
@@ -61,8 +71,8 @@ class DocumentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $document = Document::find($id);
-        $validatedData = $request->validate([
+        $document = Document::findOrFail($id);
+        $request->validate([
             'document_name' => 'sometimes|required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
@@ -92,7 +102,7 @@ class DocumentController extends Controller
 
     public function destroy($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
         if ($document->path) {
             Storage::disk('public')->delete($document->path);
         }

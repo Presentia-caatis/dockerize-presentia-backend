@@ -19,7 +19,7 @@ class DashboardStatistic extends Controller
 {
     public function StaticStatistic()
     {
-        $school = School::find(current_school_id())->load('subscriptionPlan');
+        $school = School::findOrFail(current_school_id())->load('subscriptionPlan');
         $data = [
             'active_students' => Student::where('is_active', true)->count(),
             'inactive_students' => Student::where('is_active', false)->count(),
@@ -39,7 +39,7 @@ class DashboardStatistic extends Controller
     public function DailyStatistic(Request $request)
     {
         $validatedData = $request->validate([
-            'date' => 'sometimes|date|date_format:Y-m-d',
+            'date' => 'sometimes|date_format:Y-m-d',
             'summarize' => 'sometimes|boolean'
         ]);
 
@@ -60,8 +60,8 @@ class DashboardStatistic extends Controller
                 'status' => 'success',
                 'message' => 'No attendance data available for the selected date.',
                 'data' => ($summarize ? [
-                    'presence' => 0,
-                    'absence' => $studentCounter,
+                    'present' => 0,
+                    'absent' => $studentCounter,
                 ] : (function () use ($checkInStatuses, $studentCounter) {
                     return array_merge([
                         $checkInStatuses->values()->first() => $studentCounter
@@ -71,11 +71,12 @@ class DashboardStatistic extends Controller
             ]);
         }
 
+        $absentStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+
         // Get attendance counts grouped by check_in_status_id
         $attendanceCounts = Attendance::withoutGlobalScope(SchoolScope::class)
             ->where('attendances.attendance_window_id', $attendanceWindowId)
             ->join('check_in_statuses', 'attendances.check_in_status_id', '=', 'check_in_statuses.id')
-            ->where('check_in_statuses.late_duration', '!=', -1)
             ->where('attendances.school_id', config('school.id'))
             ->selectRaw('attendances.check_in_status_id, COUNT(*) as count')
             ->groupBy('attendances.check_in_status_id')
@@ -83,31 +84,29 @@ class DashboardStatistic extends Controller
             ->toArray();
 
         $data = [];
-        $presenceCounter = 0;
+        $presentCounter = 0;
 
         //map the status name with the counter
         foreach ($checkInStatuses as $id => $statusName) {
             $data[$statusName] = $attendanceCounts[$id] ?? 0;
-            $presenceCounter += $data[$statusName];
+            $presentCounter += $data[$statusName];
         }
 
-        $absenceStatusName = CheckInStatus::where('late_duration', -1)->first()->status_name;
+        $presentCounter -= $data[$absentStatusName];
 
-        // Get the total active students
-        $totalActiveStudents = Student::where('is_active', true)->count();
-        $data[$absenceStatusName] = max(0, $totalActiveStudents - $presenceCounter);
 
         if ($summarize) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'Daily statistic retrieved successfully',
                 'data' => [
-                    'presence' => $presenceCounter,
-                    'absence' => $data[$absenceStatusName]
+                    'present' => $presentCounter,
+                    'absent' => $data[$absentStatusName]
                 ]
             ]);
         }
 
+        $data = array_merge(['Total Hadir' => $presentCounter], $data);
         return response()->json([
             'status' => 'success',
             'message' => 'Daily statistic retrieved successfully',

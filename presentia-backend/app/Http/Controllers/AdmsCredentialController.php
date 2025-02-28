@@ -2,21 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 use \App\Models\AdmsCredential;
 use Str;
 
 class AdmsCredentialController extends Controller
 {
+    use Filterable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1' 
         ]);
 
-        $perPage = $validatedData['perPage'] ?? 10;
-        
-        $data = AdmsCredential::paginate($perPage);
+        $perPage = $validatedData['perPage'] ?? 10;    
+    
+        $query = $this->applyFilters(AdmsCredential::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',

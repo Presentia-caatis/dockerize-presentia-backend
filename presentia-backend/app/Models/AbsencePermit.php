@@ -12,6 +12,7 @@ class AbsencePermit extends Model
     use BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'attendance_id',
         'document_id',
         'absence_permit_type_id',

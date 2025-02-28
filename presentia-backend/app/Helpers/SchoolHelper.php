@@ -13,7 +13,7 @@ if (!function_exists('current_school_id')) {
 if (!function_exists('current_school')) {
     function current_school()
     {
-        return \App\Models\School::find(current_school_id());
+        return \App\Models\School::findOrFail(current_school_id());
     }
 }
 

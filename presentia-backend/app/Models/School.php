@@ -16,7 +16,8 @@ class School extends Model
         'latest_subscription',
         'end_subscription',
         'timezone',
-        'school_token'
+        'school_token',
+        'logo_image_path'
     ];
 
 

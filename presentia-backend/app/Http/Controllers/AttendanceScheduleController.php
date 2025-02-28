@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use App\Models\AttendanceSchedule;
 use App\Models\Event;
 use App\Models\School;
@@ -13,6 +14,7 @@ use function App\Helpers\current_school_timezone;
 
 class AttendanceScheduleController extends Controller
 {
+    use Filterable;
 
     public function index(Request $request)
     {
@@ -22,7 +24,9 @@ class AttendanceScheduleController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = AttendanceSchedule::paginate($perPage);
+        $query = $this->applyFilters(AttendanceSchedule::query(),  $request->input('filter', []), ['school']);
+
+        $data = $query->paginate($perPage);
 
         $modifiedData = $data->getCollection()->map(function ($item) {
             if (!$item->event_id) {
@@ -30,8 +34,7 @@ class AttendanceScheduleController extends Controller
             }
             return $item;
         });
-
-        // Replace the original collection with the modified one
+        
         $data->setCollection($modifiedData);
 
         return response()->json([
@@ -43,7 +46,7 @@ class AttendanceScheduleController extends Controller
 
     public function getById($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance windows retrieved successfully',
@@ -110,7 +113,7 @@ class AttendanceScheduleController extends Controller
 
     public function update(Request $request, $id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         $validatedData = $request->validate([
             'event_id' => 'sometimes|exists:events,id',
             'name' => 'sometimes|string',
@@ -136,7 +139,7 @@ class AttendanceScheduleController extends Controller
 
     public function destroy($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         if ($attendanceSchedule->type === 'holiday' || $attendanceSchedule->type === 'default') {
             abort(403, 'Cannot delete attendance schedule of type "holiday" or "default".');
         }

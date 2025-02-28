@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId("school_id")->nullable()->constrained("schools");
             $table->string('email')->unique();
+            $table->string('profile_image_path')->nullable();
             $table->string('username')->unique();
             $table->string('fullname');
             $table->string('password');

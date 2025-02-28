@@ -8,6 +8,7 @@ class FailedStoreAttendanceJob extends Model
 {
     protected $fillable = [
         'student_id',
+        'date',
         'message'
     ];
 }
