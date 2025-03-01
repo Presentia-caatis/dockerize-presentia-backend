@@ -7,6 +7,7 @@ use App\Filterable;
 use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
+use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
 use App\Models\Student;
 use Carbon\Carbon;
@@ -246,8 +247,8 @@ class AttendanceController extends Controller
             'attendance_window_ids' => 'required|array|min:1|exists:attendance_windows,id'
         ]);
 
-        $absenceStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
-
+        $absenceCheckInStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
+        $absenceCheckOutStatusId = CheckOutStatus::where('late_duration', -1)->first()->id;
         $validAttendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)
             ->where('type', '!=', 'holiday')
             ->pluck('id')
@@ -269,7 +270,8 @@ class AttendanceController extends Controller
                     'school_id' => config('school.id'),
                     'student_id' => $studentId,
                     'attendance_window_id' => $attendanceWindowId,
-                    'check_in_status_id' => $absenceStatusId,
+                    'check_in_status_id' => $absenceCheckInStatusId,
+                    'check_out_status_id' => $absenceCheckOutStatusId, 
                     'created_at' => now(),
                     'updated_at' => now()
                 ];

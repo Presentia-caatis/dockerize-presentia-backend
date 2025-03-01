@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('failed_store_attendance_jobs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->nullable()->constrained('students')->cascadeOnDelete();
+            $table->foreignId('attendance_window_id')->nullable()->constrained('students')->cascadeOnDelete();
             $table->dateTime('date');
             $table->text('message');
             $table->timestamps();
