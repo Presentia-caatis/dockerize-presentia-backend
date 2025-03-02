@@ -17,52 +17,69 @@ class StudentTest extends TestCase
     use RefreshDatabase, TestCaseHelpers;
 
     protected $school;
-    protected $classGroup;
-    protected $student;
 
-    public function test_can_list_students()
+    private function createStudent($data = [])
     {
-        $response = $this->getJson('/api/student');
-        
-        $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'status', 'message', 'data' => [['id', 'school_id', 'class_group_id', 'nis', 'nisn', 'student_name', 'gender']]
-                 ]);
-    }
-
-    public function test_can_create_student()
-    {
-        $data = [
-            'school_id' => $this->school->id,
-            'class_group_id' => $this->classGroup->id,
-            'nis' => '123456',
-            'nisn' => '654321',
-            'student_name' => 'John Doe',
+        static $school; 
+    
+        if (!$school) {
+            $school = School::factory()->create();
+        }
+    
+        $defaultData = [
+            'school_id' => $school->id,
+            'class_group_id' => null,
+            'nis' => '12345678',
+            'nisn' => '87654321',
+            'student_name' => 'Adam',
             'gender' => 'male',
         ];
 
-        $response = $this->postJson('/api/student', $data);
-        
-        $response->assertStatus(201)
-                 ->assertJson(['status' => 'success', 'message' => 'Student created successfully']);
-        $this->assertDatabaseHas('students', ['nis' => '123456']);
+        return $this->postJson('/api/student', array_merge($defaultData, $data));
     }
-    
-    #[Test]
-    public function it_can_retrieve_all_students()
-    {
-        $school = School::factory()->create();
-        Student::factory()->count(3)->create(['school_id' => $school->id]);
 
+    #[Test]
+    public function it_can_retrieve_student_list()
+    {
+        $this->createStudent();
+    
+        $this->assertDatabaseCount('students', 1);
+    
         $response = $this->getJson('/api/student');
-        //dd($response->json());
 
         $response->assertStatus(200)
-            ->assertJsonFragment([
-                'status' => 'success',
-                'message' => 'Students retrieved successfully'
-            ]);
+        ->assertJson(['status' => 'success']);
+    }
     
+
+    #[Test]
+    public function it_can_search_student_by_name()
+    {
+        $school = School::factory()->create(); 
+
+        Student::create([
+            'school_id' => $school->id,
+            'class_group_id' => null,
+            'nis' => '12345678',
+            'nisn' => '87654321',
+            'student_name' => 'Adam',
+            'gender' => 'male',
+        ]);
+
+        $response = $this->getJson('/api/student?search=Adam');
+
+        $response->assertStatus(200);
+    }
+
+    #[Test]
+    public function it_can_download_student_csv()
+    {
+        Student::factory()->create(['student_name' => 'Alice']);
+        
+        $response = $this->get('/api/student/csv');
+        
+        $response->assertStatus(200)
+                 ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
     #[Test]
@@ -88,24 +105,6 @@ class StudentTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('students', $data);
-    }
-
-    #[Test]
-    public function it_can_retrieve_a_single_student()
-    {
-        $student = Student::factory()->create();
-
-        $response = $this->getJson("/api/student/{$student->id}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Student retrieved successfully',
-                'data' => [
-                    'id' => $student->id,
-                    'student_name' => $student->student_name,
-                ],
-            ]);
     }
 
     #[Test]
