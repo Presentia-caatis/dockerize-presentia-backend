@@ -8,14 +8,20 @@ use Illuminate\Database\Eloquent\Scope;
 
 class SchoolScope implements Scope
 {
+    protected $schoolId;
+
+    public function __construct($schoolId)
+    {
+        $this->schoolId = $schoolId;
+    }
+
     public function apply(Builder $builder, Model $model)
     {
-        $schoolId = config('school.id');
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($model->getTable(), 'school_id')) {
-            $builder->where('school_id', $schoolId);
+            $builder->where('school_id', $this->schoolId);
         } else {
-            $builder->whereHas('schools', function ($query) use ($schoolId) {
-                $query->where('school_id', $schoolId);
+            $builder->whereHas('schools', function ($query) {
+                $query->where('school_id', $this->schoolId);
             });
         }
     }

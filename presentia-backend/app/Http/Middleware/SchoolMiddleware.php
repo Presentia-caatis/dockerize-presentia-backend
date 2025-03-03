@@ -17,12 +17,9 @@ class SchoolMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $schoolId = auth()->user()->school_id;
-
-        School::findOrFail($schoolId);
-        validate_school_access($schoolId, auth()->user());
+        config(['school.id' => auth()->user()->school_id]);
+        validate_school_access(config('school.id'), auth()->user());
         
-        config(['school.id' => $schoolId]);
         return $next($request);
     }
 }

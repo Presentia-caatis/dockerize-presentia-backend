@@ -9,6 +9,7 @@ use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
+use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -125,7 +126,7 @@ class AttendanceController extends Controller
                 'message' => 'Data is null'
             ], 201);
         }
-
+        
         StoreAttendanceJob::dispatch($jsonInput)->onQueue('attendance');
 
         return response()->json([

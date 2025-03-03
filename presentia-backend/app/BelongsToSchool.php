@@ -2,14 +2,18 @@
 
 namespace App;
 
-use App\Models\School;
 use App\Models\Scopes\SchoolScope;
-use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToSchool
 {
-    protected static function bootBelongsToSchool()
+    public static function bootBelongsToSchool()
     {
-        static::addGlobalScope(new SchoolScope);
+        static::addGlobalScope(new SchoolScope(self::getCurrentSchoolId()));
     }
+
+    protected static function getCurrentSchoolId()
+    {
+        return config('school.id');
+    }
+    
 }

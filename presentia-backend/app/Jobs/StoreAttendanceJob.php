@@ -9,12 +9,14 @@ use App\Models\CheckOutStatus;
 use App\Models\FailedStoreAttendanceJob;
 use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
+use App\Services\BelongsToSchoolService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use function App\Helpers\convert_timezone_to_utc;
 use function App\Helpers\convert_utc_to_timezone;
+use function App\Helpers\current_school_id;
 use function App\Helpers\current_school_timezone;
 
 class StoreAttendanceJob implements ShouldQueue
@@ -36,85 +38,44 @@ class StoreAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // check if the given data is empty<<
-        if (empty($this->jsonInput)) {
-            $this->logFailure(null, now(), 'Data is empty');
-            return;
-        }
-        //>>
+        config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
+        $schoolId = current_school_id();
+        (new BelongsToSchoolService($schoolId))->apply();
 
-        //Get the school id from given jsonInput <<
-        $students = [];
-        $validatedStudents = [];
         $inputDates = [];
 
         foreach ($this->jsonInput as $student) {
-            $studentId = $student['id'];
-
-            if (isset($students[$studentId])) {
-                $validatedStudents[] = $student;
-            } else {
-                $studentSchoolId = Student::withoutGlobalScope(SchoolScope::class)->find($studentId)?->school_id;
-
-                if ($studentSchoolId) {
-                    $validatedStudents[] = $student;
-                    $students = array_merge($students, Student::withoutGlobalScope(SchoolScope::class)->where('school_id', $studentSchoolId)->pluck('school_id', 'id')->toArray());
-                } else {
-                    $this->logFailure(null, Carbon::parse($this->jsonInput[0]['date']), 'Unrecognized student ID : ' . $studentId . ' for any school');
-                }
-            }
-
-
             $inputDates[Carbon::parse($student['date'])->format('Y-m-d')] = true;
         }
 
         $inputDates = array_keys($inputDates);
 
-        if (!$students) {
-            $this->logFailure(null, Carbon::parse($this->jsonInput[0]['date']), 'None of the data has valid student Id for any school');
-            return;
-        }
-
-        $schoolId = reset($students);
-        //>>
-
-
-        $schoolTimezone = \App\Models\School::findOrFail($schoolId)->timezone; //get the school's timezone 
-
+        $schoolTimezone = current_school_timezone(); //get the school's timezone 
         //get all attendance windows
-        $attendanceWindows = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->whereIn('date', $inputDates)
+        $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
             ->get()
             ->groupBy('date');
         //>>
-
+        
         //get all check in statuses except the absence once <<
-        $checkInStatuses = CheckInStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->where('is_active', true)
+        $checkInStatuses = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
             ->get();
         //>>
 
         //get all the absence check in status <<
-        $absenceCheckInStatus = CheckInStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->where('late_duration', -1)
+        $absenceCheckInStatus = CheckInStatus::where('late_duration', -1)
             ->first();
         //>>
 
         //get all check out statuses <<
-        $checkOutStatuses = CheckOutStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->pluck('id', 'late_duration')
+        $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
             ->toArray();
         //>>
 
 
-
-        foreach ($validatedStudents as $student) {
+        foreach ($this->jsonInput as $student) {
             $studentId = $student['id']; //get student id
             $checkTime = Carbon::parse($student['date']); //get the time where the student is triggering the adms
             $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d'); // get the date only from student
@@ -147,9 +108,7 @@ class StoreAttendanceJob implements ShouldQueue
 
                 $isInAttendanceSession = true;
 
-                $attendance = Attendance::withoutGlobalScope(SchoolScope::class)
-                    ->where('school_id', $schoolId)
-                    ->where("student_id", $studentId)
+                $attendance = Attendance::where("student_id", $studentId)
                     ->where('attendance_window_id', $attendanceWindow->id)
                     ->first();
 
