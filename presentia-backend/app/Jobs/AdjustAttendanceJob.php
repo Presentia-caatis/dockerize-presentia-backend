@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
+use App\Models\CheckOutStatus;
+use App\Models\SchoolDataModel;
 use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,7 +18,7 @@ class AdjustAttendanceJob implements ShouldQueue
     use Queueable;
 
     private $attendanceWindowIds;
-    private Request $request;
+    private $validatedUpdatedAttendanceWindowData;
 
     private $context;
     private $attendances;
@@ -26,17 +28,19 @@ class AdjustAttendanceJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($attendanceWindowIds, Request $request, $context, $schoolId)
+    public function __construct($attendanceWindowIds, $validatedUpdatedAttendanceWindowData, $context, $schoolId)
     {
         $this->attendanceWindowIds = $attendanceWindowIds;
-        $this->request = $request;
+        $this->validatedUpdatedAttendanceWindowData = $validatedUpdatedAttendanceWindowData;
         $this->context = $context;
         /*
             0 = 'Adjust Attendance'
             1 = 'WitAttendance Window Changes or Attendance Schedule Changes ;',
             2 = 'Check In Status Changes'
         */
-        $this->attendances = Attendance::whereIn('attendance_window_id', $this->attendanceWindowIds)->get()->keyBy('attendance_window_id');
+        $this->attendances = Attendance::withoutGlobalScope(SchoolScope::class)
+            ->where('school_id', $schoolId)
+            ->whereIn('attendance_window_id', $this->attendanceWindowIds)->get()->groupBy('attendance_window_id');
         $this->schoolId = $schoolId;
     }
 
@@ -45,7 +49,9 @@ class AdjustAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $attendanceWindows = AttendanceWindow::whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
+        $attendanceWindows = AttendanceWindow::Attendance::withoutGlobalScope(SchoolScope::class)
+            ->where('school_id', $schoolId)
+            ->whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
 
         if ($this->context == 0) {
             foreach ($attendanceWindows as $id => $attendanceWindow) {
@@ -53,11 +59,13 @@ class AdjustAttendanceJob implements ShouldQueue
             }
         } else if ($this->context == 1) {
             foreach ($attendanceWindows as $id => $attendanceWindow) {
-
+                $attendanceWindow->update($this->validatedUpdatedAttendanceWindowData);
+                $this->adjustAttendance($id, $attendanceWindow);
             }
         } else if ($this->context == 2) {
+            $checkInStatuses = CheckInStatus::
             foreach ($attendanceWindows as $id => $attendanceWindow) {
-
+                $this->adjustAttendance($id, $attendanceWindow);
             }
         }
 
@@ -74,6 +82,13 @@ class AdjustAttendanceJob implements ShouldQueue
         $maxLateDuration = max(array_keys($checkInStatuses));
 
         $absenceCheckInStatusId = $checkInStatuses["-1"] ?? null;
+
+        //get all check out statuses <<
+        $checkOutStatuses = CheckOutStatus::withoutGlobalScope(SchoolScope::class)
+            ->where('school_id', $this->schoolId)
+            ->pluck('id', 'late_duration')
+            ->toArray();
+        //>>
 
         if ($absenceCheckInStatusId !== null) {
             unset($checkInStatuses["-1"]);
@@ -108,12 +123,12 @@ class AdjustAttendanceJob implements ShouldQueue
                 ]);
             }
 
-            //Check Out Status
-            if ($checkInTime->between($checkOutStartTime, $checkOutEndTime)) {
-                $attendance->update([
-                    'check_in_status_id' => $id,
-                ]);
-            }
+            $attendance->update([
+                'check_out_status_id' => $checkOutTime->between($checkOutStartTime, $checkOutEndTime) 
+                    ? $checkOutStatuses['0'] 
+                        : $checkOutStatuses['-1'],
+            ]);
+            
         }
     }
 }

@@ -37,6 +37,11 @@ class Attendance extends Model
         return $this->belongsTo(CheckInStatus::class);
     }
 
+    public function checkOutStatus()
+    {
+        return $this->belongsTo(CheckOutStatus::class);
+    }
+
     public function absencePermits()
     {
         return $this->hasMany(AbsencePermit::class);

@@ -185,6 +185,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
             Route::put('/{id}', [AttendanceController::class, 'update']);
             Route::delete('/{id}', [AttendanceController::class, 'destroy']);
+            Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
         });
 
         // Document Routes

@@ -38,28 +38,39 @@ class StoreAttendanceJob implements ShouldQueue
     {
         // check if the given data is empty<<
         if (empty($this->jsonInput)) {
-            $this->logFailure(null, now(), 'Data is empty'); 
+            $this->logFailure(null, now(), 'Data is empty');
             return;
         }
         //>>
 
         //Get the school id from given jsonInput <<
-        $students = null;
+        $students = [];
+        $validatedStudents = [];
+        $inputDates = [];
 
-        foreach ($this->jsonInput as $val) {
-            $studentId = $val['id'];
+        foreach ($this->jsonInput as $student) {
+            $studentId = $student['id'];
 
-            $student = Student::withoutGlobalScope(SchoolScope::class)->find($studentId);
+            if (isset($students[$studentId])) {
+                $validatedStudents[] = $student;
+            } else {
+                $studentSchoolId = Student::withoutGlobalScope(SchoolScope::class)->find($studentId)?->school_id;
 
-            if ($student) {
-                $students = $student->pluck('school_id', 'id')->toArray();
-                break;
+                if ($studentSchoolId) {
+                    $validatedStudents[] = $student;
+                    $students = array_merge($students, Student::withoutGlobalScope(SchoolScope::class)->where('school_id', $studentSchoolId)->pluck('school_id', 'id')->toArray());
+                } else {
+                    $this->logFailure(null, Carbon::parse($this->jsonInput[0]['date']), 'Unrecognized student ID : ' . $studentId . ' for any school');
+                }
             }
-            
-            $this->logFailure($studentId, Carbon::parse($this->jsonInput[0]['date']), 'Unrecognize student Id for any school');
+
+
+            $inputDates[Carbon::parse($student['date'])->format('Y-m-d')] = true;
         }
 
-        if(!$students){
+        $inputDates = array_keys($inputDates);
+
+        if (!$students) {
             $this->logFailure(null, Carbon::parse($this->jsonInput[0]['date']), 'None of the data has valid student Id for any school');
             return;
         }
@@ -67,14 +78,8 @@ class StoreAttendanceJob implements ShouldQueue
         $schoolId = reset($students);
         //>>
 
-        
-        $schoolTimezone = \App\Models\School::findOrFail($schoolId)->timezone; //get the school's timezone 
 
-        //get all the dates from jsonInput and put it into array 
-        $inputDates = array_unique(array_map(function ($item) use ($schoolTimezone) {
-            return Carbon::parse($item['date'])->setTimezone($schoolTimezone)->format('Y-m-d');
-        }, $this->jsonInput));
-        //>>
+        $schoolTimezone = \App\Models\School::findOrFail($schoolId)->timezone; //get the school's timezone 
 
         //get all attendance windows
         $attendanceWindows = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
@@ -109,43 +114,39 @@ class StoreAttendanceJob implements ShouldQueue
 
 
 
-        foreach ($this->jsonInput as $student) {
+        foreach ($validatedStudents as $student) {
             $studentId = $student['id']; //get student id
             $checkTime = Carbon::parse($student['date']); //get the time where the student is triggering the adms
             $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d'); // get the date only from student
             $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null; //get all attendance window for desired date
-
-            if($students[$studentId]){
-                $this->logFailure(null, $checkTime, 'Unrecognized student ID for this school id:' . $schoolId);
-                continue;
-            }
 
             if (!$attendanceWindowsPerDate) {
                 $this->logFailure($studentId, $checkTime, "No attendance window found for date $formattedDate");
                 continue;
             }
 
-            foreach($attendanceWindows as $attendanceWindow){
+            foreach ($attendanceWindowsPerDate as $attendanceWindow) {
                 $checkInStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimezone);
                 $checkInEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimezone);
                 $checkOutStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimezone);
                 $checkOutEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimezone);
-                
+
                 $lateCutoffTime = $checkInEndTime->copy()->addMinutes($checkInStatuses->max('late_duration'));
                 $isInAttendanceSession = false;
-                
-                if ($checkTime->lt($checkInStartTime) || 
-                    $checkTime->gt($checkOutEndTime) || 
-                        (   
-                            $checkTime->gt($lateCutoffTime) &&
-                            $checkTime->lt($checkOutStartTime)
-                        )
-                    ) {
+
+                if (
+                    $checkTime->lt($checkInStartTime) ||
+                    $checkTime->gt($checkOutEndTime) ||
+                    (
+                        $checkTime->gt($lateCutoffTime) &&
+                        $checkTime->lt($checkOutStartTime)
+                    )
+                ) {
                     continue;
                 }
 
                 $isInAttendanceSession = true;
-                
+
                 $attendance = Attendance::withoutGlobalScope(SchoolScope::class)
                     ->where('school_id', $schoolId)
                     ->where("student_id", $studentId)
@@ -185,7 +186,7 @@ class StoreAttendanceJob implements ShouldQueue
                     }
                 }
 
-                if($checkTime->between($checkInStartTime, $lateCutoffTime)){
+                if ($checkTime->between($checkInStartTime, $lateCutoffTime)) {
                     foreach ($checkInStatuses as $cit) {
                         if ($checkTime->between($checkInStartTime, $checkInEndTime->copy()->addMinutes($cit->late_duration))) {
                             $attendance->update([
@@ -197,10 +198,10 @@ class StoreAttendanceJob implements ShouldQueue
                     }
                 } else {
                     $attendance->update([
-                        'check_out_status_id' =>  $checkOutStatuses["0"],
+                        'check_out_status_id' => $checkOutStatuses["0"],
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
-                    if(!$attendance->check_in_time) {
+                    if (!$attendance->check_in_time) {
                         $attendance->update(['check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)]);
                         $this->logFailure($studentId, $checkTime, 'Student has not checked in yet', $attendanceWindow->id);
                     }
@@ -210,13 +211,11 @@ class StoreAttendanceJob implements ShouldQueue
 
             if (!$isInAttendanceSession) {
                 $this->logFailure(
-                    $studentId, 
-                    $checkTime, 
-                    "No attendance session found for this check time.", 
+                    $studentId,
+                    $checkTime,
+                    "No attendance session found for this check time.",
                 );
-                continue;
             }
-            
         }
     }
 

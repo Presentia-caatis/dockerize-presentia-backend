@@ -60,7 +60,7 @@ class AttendanceController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $simplify = $validatedData['simplify'] ?? true;
+        $simplify = $validatedData['simplify'] ?? false;
         $type = $validatedData['type'] ?? null;
         if ($simplify) {
             $query = Attendance::with([
@@ -71,6 +71,7 @@ class AttendanceController extends Controller
                         'id',
                         'student_id',
                         'check_in_status_id',
+                        'attendance_window_id',
                         'check_in_time',
                         'check_out_time'
                     ]);
@@ -175,13 +176,13 @@ class AttendanceController extends Controller
             'check_in_time' => 'required_without_all:absence_permit_id,check_out_time|date_format:Y-m-d H:i:s',
             'check_out_time' => 'required_without_all:absence_permit_id,check_in_time||date_format:Y-m-d H:i:s',
         ]);
-        
+
 
         // Validate check-in and check-out time using the new function
         $timeValidationResponse = $this->validateAttendanceTime(
             $validatedData['check_in_time'] ?? null,
             $validatedData['check_out_time'] ?? null,
-            $validatedData['attendance_window_id']?? null,
+            $validatedData['attendance_window_id'] ?? null,
             $validatedData
         );
 
@@ -271,7 +272,7 @@ class AttendanceController extends Controller
                     'student_id' => $studentId,
                     'attendance_window_id' => $attendanceWindowId,
                     'check_in_status_id' => $absenceCheckInStatusId,
-                    'check_out_status_id' => $absenceCheckOutStatusId, 
+                    'check_out_status_id' => $absenceCheckOutStatusId,
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
@@ -326,6 +327,17 @@ class AttendanceController extends Controller
         );
 
         return (new AttendanceExport($startDate, $endDate, $classGroup))->download($filename);
+    }
+
+    public function clearAttendanceRecords($attendanceWindowId)
+    {
+        $deletedCount = Attendance::where('attendance_window_id', $attendanceWindowId)->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance deleted successfully',
+            'deleted_records' => $deletedCount
+        ]);
     }
 
     public function getById($id)
