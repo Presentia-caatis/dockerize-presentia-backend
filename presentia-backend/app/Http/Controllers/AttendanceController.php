@@ -9,7 +9,6 @@ use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
-use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -113,6 +112,14 @@ class AttendanceController extends Controller
             'status' => 'success',
             'message' => 'Attendances retrieved successfully',
             'data' => $data
+        ]);
+    }
+
+    public function hai(Request $request){
+        return response()->json([
+            'status' => 'success',
+            'request' => $request->all(),
+            'message' => Attendance::first()->id
         ]);
     }
 
@@ -243,18 +250,22 @@ class AttendanceController extends Controller
         return null;
     }
 
+    
     public function markAbsentStudents(Request $request)
     {
         $request->validate([
             'attendance_window_ids' => 'required|array|min:1|exists:attendance_windows,id'
         ]);
 
-        $absenceCheckInStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
+        \Log::info('School ID Config:', ['school_id' => config('school.id')]);
+
+        
         $absenceCheckOutStatusId = CheckOutStatus::where('late_duration', -1)->first()->id;
         $validAttendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)
             ->where('type', '!=', 'holiday')
             ->pluck('id')
             ->toArray();
+        $absenceCheckInStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
 
         foreach ($validAttendanceWindowIds as $attendanceWindowId) {
 

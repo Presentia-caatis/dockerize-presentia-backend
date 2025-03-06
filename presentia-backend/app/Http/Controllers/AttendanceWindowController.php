@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Filterable;
 use App\Models\Attendance;
-use App\Models\AttendanceSchedule;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
+use App\Models\CheckOutStatus;
 use App\Models\Day;
-use App\Models\Scopes\SchoolScope;
+use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\current_school_timezone;
@@ -66,7 +66,6 @@ class AttendanceWindowController extends Controller
         ]);
 
         $day = strtolower(Carbon::parse($request->date)->format('l'));
-
 
         $dayData = Day::where('name', $day)
             ->first();

@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
-    use BelongsToSchool;
     use HasFactory;
-
+    use BelongsToSchool;
+    
     protected $fillable = [
         'school_id',
         'id',

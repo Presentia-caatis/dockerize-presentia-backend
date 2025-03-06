@@ -10,14 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceWindow extends Model
 {
-
-    use HasFactory;
     use BelongsToSchool;
-
+    use HasFactory;
+    
     protected $fillable = [
+        'school_id',
         'day_id',
         'name',
-        'school_id',
         'type',
         'date',
         'check_in_start_time',

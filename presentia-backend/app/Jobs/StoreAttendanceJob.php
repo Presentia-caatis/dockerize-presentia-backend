@@ -40,7 +40,7 @@ class StoreAttendanceJob implements ShouldQueue
     {
         config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
         $schoolId = current_school_id();
-        (new BelongsToSchoolService($schoolId))->apply();
+        // (new BelongsToSchoolService($schoolId))->apply();
 
         $inputDates = [];
 

@@ -18,10 +18,10 @@ class SchoolScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($model->getTable(), 'school_id')) {
-            $builder->where('school_id', $this->schoolId);
+            $builder->where('school_id', config('school.id') ?? $this->schoolId);
         } else {
             $builder->whereHas('schools', function ($query) {
-                $query->where('school_id', $this->schoolId);
+                $query->where('school_id', config('school.id') ?? $this->schoolId);
             });
         }
     }
