@@ -49,8 +49,8 @@ class AdjustAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $attendanceWindows = AttendanceWindow::Attendance::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
+        $attendanceWindows = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
+            ->where('school_id', $  $this->schoolId)
             ->whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
 
         if ($this->context == 0) {
@@ -63,7 +63,7 @@ class AdjustAttendanceJob implements ShouldQueue
                 $this->adjustAttendance($id, $attendanceWindow);
             }
         } else if ($this->context == 2) {
-            $checkInStatuses = CheckInStatus::
+            $checkInStatuses = CheckInStatus::all();
             foreach ($attendanceWindows as $id => $attendanceWindow) {
                 $this->adjustAttendance($id, $attendanceWindow);
             }
