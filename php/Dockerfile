@@ -29,7 +29,7 @@ autorestart=true\n\
 stopasgroup=true\n\
 killasgroup=true\n\
 user=www-data\n\
-numprocs=2\n\
+numprocs=5\n\
 redirect_stderr=true\n\
 stdout_logfile=/var/log/laravel-queue-attendance.log\n\
 \n\
@@ -48,8 +48,10 @@ stdout_logfile=/var/log/laravel-queue-import-student.log\n" > /etc/supervisor/co
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
+# Start Supervisor
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Start Supervisor
-CMD supervisord -c /etc/supervisor/supervisord.conf
+
