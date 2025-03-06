@@ -23,7 +23,7 @@ RUN mkdir -p /etc/supervisor/conf.d
 # Add Laravel queue worker configurations
 RUN echo "[program:attendance-queue]\n\
 process_name=%(program_name)s_%(process_num)02d\n\
-command=php /var/www/html/artisan queue:work redis --queue=attendance --tries=3\n\
+command=php /var/www/html/artisan queue:work --queue=attendance --tries=3\n\
 autostart=true\n\
 autorestart=true\n\
 stopasgroup=true\n\
@@ -35,7 +35,7 @@ stdout_logfile=/var/log/laravel-queue-attendance.log\n\
 \n\
 [program:import-student-queue]\n\
 process_name=%(program_name)s_%(process_num)02d\n\
-command=php /var/www/html/artisan queue:work redis --queue=import_student --tries=3\n\
+command=php /var/www/html/artisan queue:work --queue=import_student --tries=3\n\
 autostart=true\n\
 autorestart=true\n\
 stopasgroup=true\n\
