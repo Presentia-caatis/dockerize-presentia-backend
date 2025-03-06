@@ -8,12 +8,6 @@ trait BelongsToSchool
 {
     public static function bootBelongsToSchool()
     {
-        static::addGlobalScope(new SchoolScope(self::getCurrentSchoolId()));
+        static::addGlobalScope(new SchoolScope());
     }
-
-    protected static function getCurrentSchoolId()
-    {
-        return config('school.id');
-    }
-    
 }
