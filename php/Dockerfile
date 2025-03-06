@@ -48,12 +48,9 @@ stdout_logfile=/var/log/laravel-queue-import-student.log\n" > /etc/supervisor/co
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Ensure Supervisor runs properly
-RUN echo "[supervisord]\n\
-nodaemon=true\n\
-" > /etc/supervisor/supervisord.conf
-
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+
 
 
