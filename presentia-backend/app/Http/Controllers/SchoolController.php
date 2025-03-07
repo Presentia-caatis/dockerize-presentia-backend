@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceSchedule;
 use App\Models\CheckInStatus;
+use App\Models\CheckOutStatus;
 use App\Models\Day;
 use App\Models\SubscriptionPlan;
 use Carbon\Carbon;
@@ -106,7 +107,7 @@ class SchoolController extends Controller
 
         CheckInStatus::create([
             'status_name' => 'Late',
-            'description' => 'Late',
+            'description' => 'Student checked in after the allowed time with a grace period of 15 minutes.',
             'late_duration' => 15,
             'is_active' => true,
             'school_id' => $school->id,
@@ -114,7 +115,7 @@ class SchoolController extends Controller
 
         CheckInStatus::create([
             'status_name' => 'On Time',
-            'description' => 'On Time',
+            'description' => 'Student checked in within the designated time frame.',
             'late_duration' => 0,
             'is_active' => true,
             'school_id' => $school->id,
@@ -122,9 +123,23 @@ class SchoolController extends Controller
 
         CheckInStatus::create([
             'status_name' => 'Absent',
-            'description' => 'Absent',
+            'description' => 'Student did not check in and is considered absent for the day.',
             'late_duration' => -1,
             'is_active' => true,
+            'school_id' => $school->id,
+        ]);
+
+        CheckOutStatus::create([
+            'status_name' => 'absent',
+            'description' => 'Student did not check out, indicating absence for the day.',
+            'late_duration' => -1,
+            'school_id' => $school->id,
+        ]);
+
+        CheckOutStatus::create([
+            'status_name' => 'present',
+            'description' => 'Student successfully checked out within the allowed time.',
+            'late_duration' => 0,
             'school_id' => $school->id,
         ]);
 
