@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AbsencePermitType;
 use App\Models\AttendanceSchedule;
 use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
@@ -143,7 +144,22 @@ class SchoolController extends Controller
             'school_id' => $school->id,
         ]);
 
+        AbsencePermitType::create([
+            'school_id' => 1,
+            'permit_name' => 'Sick',
+            'is_active' => true,
+        ]);
+
+        AbsencePermitType::create([
+            'school_id' => 1,
+            'permit_name' => 'Dispensation',
+            'is_active' => true,
+        ]);
+
+
         $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+
+        
 
         return response()->json([
             'status' => 'success',

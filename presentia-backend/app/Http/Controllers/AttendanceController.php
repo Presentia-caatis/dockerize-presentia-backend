@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Exports\AttendanceExport;
 use App\Filterable;
+use App\Jobs\AdjustAttendanceJob;
 use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
+use App\Models\Event;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -115,12 +117,17 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function hai(Request $request){
+    public function adjustAttendance(){
+        $attendanceWindowIds = AttendanceWindow::where('date', '>=', now()->toDateString())->pluck('id')->toArray();
+        $schoolId = current_school_id();
+        $context = 0;
+
+        AdjustAttendanceJob::dispatch($attendanceWindowIds, $schoolId, $context)->onQueue('attendance');
+
         return response()->json([
             'status' => 'success',
-            'request' => $request->all(),
-            'message' => Attendance::first()->id
-        ]);
+            'message' => 'Attendance adjustment has started'
+        ], 201);
     }
 
     public function store(Request $request)
@@ -304,6 +311,9 @@ class AttendanceController extends Controller
 
     public function exportAttendance(Request $request)
     {
+        set_time_limit(3600);
+        ini_set('memory_limit', '1024M');
+
         $validated = $request->validate([
             'startDate' => ['sometimes', 'date_format:Y-m-d'],
             'endDate' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:startDate'],
@@ -320,6 +330,20 @@ class AttendanceController extends Controller
                     }
                 },
             ],
+            'event' => [
+                'sometimes',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all') {
+                        $ids = explode(',', $value);
+                        $validIds = Event::whereIn('id', $ids)->pluck('id')->toArray();
+
+                        if (array_diff($ids, $validIds)) {
+                            $fail("The selected $attribute contains invalid event IDs.");
+                        }
+                    }
+                },
+            ],
+            'isCheckOutStatusInluded' => 'sometimes|boolean',
         ]);
 
 

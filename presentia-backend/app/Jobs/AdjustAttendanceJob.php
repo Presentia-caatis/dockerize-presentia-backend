@@ -35,12 +35,10 @@ class AdjustAttendanceJob implements ShouldQueue
         $this->context = $context;
         /*
             0 = 'Adjust Attendance'
-            1 = 'WitAttendance Window Changes or Attendance Schedule Changes ;',
+            1 = 'With Attendance Window Changes or Attendance Schedule Changes ;',
             2 = 'Check In Status Changes'
         */
-        $this->attendances = Attendance::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->whereIn('attendance_window_id', $this->attendanceWindowIds)->get()->groupBy('attendance_window_id');
+        $this->attendances = Attendance::whereIn('attendance_window_id', $this->attendanceWindowIds)->get()->groupBy('attendance_window_id');
         $this->schoolId = $schoolId;
     }
 
@@ -49,9 +47,7 @@ class AdjustAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $attendanceWindows = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $  $this->schoolId)
-            ->whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
+        $attendanceWindows = AttendanceWindow::whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
 
         if ($this->context == 0) {
             foreach ($attendanceWindows as $id => $attendanceWindow) {
@@ -65,7 +61,7 @@ class AdjustAttendanceJob implements ShouldQueue
         } else if ($this->context == 2) {
             $checkInStatuses = CheckInStatus::all();
             foreach ($attendanceWindows as $id => $attendanceWindow) {
-                $this->adjustAttendance($id, $attendanceWindow);
+                $this->adjustAttendance($id, $attendanceWindow, $checkInStatuses);
             }
         }
 
@@ -73,9 +69,7 @@ class AdjustAttendanceJob implements ShouldQueue
 
     private function adjustAttendance($attendanceWindowId, $attendanceWindow, $checkInStatuses = [])
     {
-        $checkInStatuses = $checkInStatuses ?? CheckInStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $this->schoolId)
-            ->where('late_duration', '!=', '-1')
+        $checkInStatuses = $checkInStatuses ?? CheckInStatus::where('late_duration', '!=', '-1')
             ->orderBy('late_duration')
             ->pluck('id', 'late_duration')
             ->toArray();
