@@ -76,7 +76,7 @@ class AttendanceController extends Controller
                         'check_out_time'
                     ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus');
+            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup');
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school']);
