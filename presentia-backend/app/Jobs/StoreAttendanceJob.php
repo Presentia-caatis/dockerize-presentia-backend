@@ -40,17 +40,19 @@ class StoreAttendanceJob implements ShouldQueue
     {
         config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
         $schoolId = current_school_id();
+        $schoolTimezone = current_school_timezone(); //get the school's timezone 
+        
         // (new BelongsToSchoolService($schoolId))->apply();
 
         $inputDates = [];
 
         foreach ($this->jsonInput as $student) {
-            $inputDates[Carbon::parse($student['date'])->format('Y-m-d')] = true;
+            $inputDates[Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d')] = true;
         }
 
         $inputDates = array_keys($inputDates);
 
-        $schoolTimezone = current_school_timezone(); //get the school's timezone 
+        
         //get all attendance windows
         $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
             ->get()
@@ -73,7 +75,11 @@ class StoreAttendanceJob implements ShouldQueue
         $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
             ->toArray();
         //>>
+        \Log::info('Input dates:', [$inputDates]);
+        \Log::info('Attendance Windows:', [$attendanceWindows]);
+        \Log::info('Attendance Windows 2025-09-03', [$attendanceWindows]);
 
+        $isInAttendanceSession = false;
 
         foreach ($this->jsonInput as $student) {
             $studentId = $student['id']; //get student id
