@@ -28,8 +28,9 @@ class AdjustAttendanceJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($attendanceWindowIds, $validatedUpdatedAttendanceWindowData, $context, $schoolId)
+    public function __construct($attendanceWindowIds, $context, $schoolId, $validatedUpdatedAttendanceWindowData = null)
     {
+        config(['school.id' => $schoolId]);
         $this->attendanceWindowIds = $attendanceWindowIds;
         $this->validatedUpdatedAttendanceWindowData = $validatedUpdatedAttendanceWindowData;
         $this->context = $context;
@@ -47,7 +48,7 @@ class AdjustAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $attendanceWindows = AttendanceWindow::whereIn('id', $this->attendanceWindowIds)->get()->keyBy('id');
+        $attendanceWindows = AttendanceWindow::whereIn('id', $this->attendanceWindowIds)->get()->groupBy('id');
 
         if ($this->context == 0) {
             foreach ($attendanceWindows as $id => $attendanceWindow) {

@@ -179,13 +179,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Attendance Routes
         Route::prefix('attendance')->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
-            Route::get('/export-attendance', [AttendanceController::class, 'exportAttendance']);
-            Route::get('/{id}', [AttendanceController::class, 'getById']);
+            Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+            Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
             Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
             Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
+            Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
+            Route::get('/{id}', [AttendanceController::class, 'getById']);
             Route::put('/{id}', [AttendanceController::class, 'update']);
             Route::delete('/{id}', [AttendanceController::class, 'destroy']);
-            Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
         });
 
         // Document Routes
