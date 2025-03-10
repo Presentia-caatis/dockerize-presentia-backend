@@ -19,16 +19,13 @@ class AdjustAttendanceJob implements ShouldQueue
 
     private $attendanceWindowIds;
     private $validatedUpdatedAttendanceWindowData;
-
     private $context;
     private $attendances;
-
-    private $schoolId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($attendanceWindowIds, $context, $schoolId, $validatedUpdatedAttendanceWindowData = null)
+    public function __construct($attendanceWindowIds = [], $context, $schoolId, $validatedUpdatedAttendanceWindowData = null)
     {
         config(['school.id' => $schoolId]);
         $this->attendanceWindowIds = $attendanceWindowIds;
@@ -40,7 +37,6 @@ class AdjustAttendanceJob implements ShouldQueue
             2 = 'Check In Status Changes'
         */
         $this->attendances = Attendance::whereIn('attendance_window_id', $this->attendanceWindowIds)->get()->groupBy('attendance_window_id');
-        $this->schoolId = $schoolId;
     }
 
     /**
@@ -79,9 +75,7 @@ class AdjustAttendanceJob implements ShouldQueue
         $absenceCheckInStatusId = $checkInStatuses["-1"] ?? null;
 
         //get all check out statuses <<
-        $checkOutStatuses = CheckOutStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $this->schoolId)
-            ->pluck('id', 'late_duration')
+        $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
             ->toArray();
         //>>
 

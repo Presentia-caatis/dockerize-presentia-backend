@@ -117,23 +117,23 @@ class AttendanceController extends Controller
         ]);
     }
 
-    // public function adjustAttendance(Request $request){
+    public function adjustAttendance(Request $request){
 
-    //     $request->validate([
-    //         'attendance_window_ids' => 'required|array|min:1',
-    //         'attendance_window_ids.*' => 'exists:attendance_windows,id'
-    //     ]);
+        $request->validate([
+            'attendance_window_ids' => 'required|array|min:1',
+            'attendance_window_ids.*' => 'exists:attendance_windows,id'
+        ]);
 
-    //     $attendanceWindowIds = AttendanceWindow::whereIn('id',  $request->attendance_window_ids)->pluck('id')->toArray();
-    //     $schoolId = current_school_id();
+        $attendanceWindowIds = AttendanceWindow::whereIn('id',  $request->attendance_window_ids)->pluck('id')->toArray();
+        $schoolId = current_school_id();
 
-    //     AdjustAttendanceJob::dispatch($attendanceWindowIds, 0, $schoolId)->onQueue('adjust-attendance');
+        AdjustAttendanceJob::dispatch($attendanceWindowIds, 0, $schoolId)->onQueue('adjust-attendance');
 
-    //     return response()->json([
-    //         'status' => 'success',
-    //         'message' => 'Attendance adjustment has started'
-    //     ], 201);
-    // }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance adjustment has started'
+        ], 201);
+    }
 
     public function store(Request $request)
     {

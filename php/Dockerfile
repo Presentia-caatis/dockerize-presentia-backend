@@ -21,9 +21,9 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /etc/supervisor/conf.d
 
 # Add Laravel queue worker configurations
-RUN echo "[program:attendance-queue]\n\
+RUN echo "[program:store-attendance-queue]\n\
 process_name=%(program_name)s_%(process_num)02d\n\
-command=php /var/www/html/artisan queue:work --queue=attendance --tries=3\n\
+command=php /var/www/html/artisan queue:work --queue=store-attendance --tries=3\n\
 autostart=true\n\
 autorestart=true\n\
 stopasgroup=true\n\

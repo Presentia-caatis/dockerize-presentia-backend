@@ -119,7 +119,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $validatedData = $request->validate([
             'fullname' => 'nullable|string|min:3|max:100|regex:/^[a-zA-Z \'\\\\]+$/',
-            'username' => 'nullable|string|alpha_dash|min:3|max:50|unique:users,username',
+            'username' => 'nullable|string|alpha_dash|min:3|max:50|unique:users,username,'.$user->id,
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'remove_image' => 'sometimes|boolean',
             'profile_image' => 'nullable|file|mimes:jpg,jpeg,png'
@@ -139,7 +139,7 @@ class UserController extends Controller
             $user->profile_image_path = $request->file('profile_image')->store($request->file('profile_image')->extension(), 'public');
         }
 
-        $validatedData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+        if (isset($validatedData['password'])) $validatedData['password'] = \Illuminate\Support\Facades\Hash::make($validatedData['password']);
 
         $user->update($validatedData);
 
