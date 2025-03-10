@@ -22,7 +22,7 @@ class CheckInStatusController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(CheckInStatus::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(CheckInStatus::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->orderBy('late_duration')->paginate($perPage);
 

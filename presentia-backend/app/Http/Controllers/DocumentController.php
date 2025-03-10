@@ -18,7 +18,7 @@ class DocumentController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->paginate($perPage);
 

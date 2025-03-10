@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
-            $table->boolean('is_holiday')->default(false);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_scheduler_active')->default(true);
             

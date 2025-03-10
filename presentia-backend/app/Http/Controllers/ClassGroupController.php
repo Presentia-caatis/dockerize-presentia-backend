@@ -18,7 +18,7 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->withCount('students')->paginate($perPage);
 

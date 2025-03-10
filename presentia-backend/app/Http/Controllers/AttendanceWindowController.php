@@ -24,7 +24,7 @@ class AttendanceWindowController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AttendanceWindow::query(), $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(AttendanceWindow::query(), $request->input('filter', []), ['school_id']);
 
         $data = $query->paginate($perPage);
 
@@ -96,24 +96,39 @@ class AttendanceWindowController extends Controller
 
     public function getById($id)
     {
-        $attendanceWindow = AttendanceWindow::findOrFail($id);
+        $attendanceWindow = AttendanceWindow::findOrFail($id)->toArray();
 
         $checkInStatuses = CheckInStatus::orderBy('late_duration')->pluck('id', 'status_name')->toArray();
 
-        $attendances = Attendance::where('attendance_window_id', $id)
+        $checkInStatusesData = Attendance::where('attendance_window_id', $id)
             ->selectRaw('check_in_status_id, COUNT(*) as total')
             ->groupBy('check_in_status_id')
             ->pluck('total', 'check_in_status_id')
             ->toArray();
 
+        $checkOutStatuses = CheckOutStatus::orderBy('late_duration')->pluck('id', 'status_name')->toArray();
+
+        $checkOutStatusesData = Attendance::where('attendance_window_id', $id)
+            ->selectRaw('check_out_status_id, COUNT(*) as total')
+            ->groupBy('check_out_status_id')
+            ->pluck('total', 'check_out_status_id')
+            ->toArray();
+
         $totalAll = 0;
 
+        $attendanceWindow["check_in_status"] = [];
         foreach ($checkInStatuses as $name => $statusId) {
-            $attendanceWindow[$name] = $attendances[$statusId] ?? 0;
-            $totalAll += $attendanceWindow[$name];
+            $attendanceWindow["check_in_status"][$name] = $checkInStatusesData[$statusId] ?? 0;
+            $totalAll += $attendanceWindow['check_in_status'][$name];
         }
+
+        $attendanceWindow["check_out_status"] = [];
+        foreach ($checkOutStatuses as $name => $statusId) {
+            $attendanceWindow["check_out_status"][$name] = $checkOutStatusesData[$statusId] ?? 0;
+        }
+
         
-        $attendanceWindow->total_all = $totalAll;
+        $attendanceWindow["total_all"] = $totalAll;
 
         return response()->json([
             'status' => 'success',
@@ -127,12 +142,12 @@ class AttendanceWindowController extends Controller
         $attendanceWindow = AttendanceWindow::findOrFail($id);
 
         $validatedData = $validatedData = $request->validate([
-            'name' => 'required|string',
-            'date' => 'required|date_format:Y-m-d',
-            'check_in_start_time' => 'required|date_format:H:i:s',
-            'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
-            'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',
-            'check_out_end_time' => 'required|date_format:H:i:s|after:check_out_start_time',
+            'name' => 'nullable|string',
+            'date' => 'nullable|date_format:Y-m-d',
+            'check_in_start_time' => 'required_with:check_in_end_time|date_format:H:i:s',
+            'check_in_end_time' => 'required_with:check_in_start_time|date_format:H:i:s|after:check_in_start_time',
+            'check_out_start_time' => 'required_with:check_out_end_time|date_format:H:i:s|after:check_in_end_time',
+            'check_out_end_time' => 'required_with:check_out_start_time|date_format:H:i:s|after:check_out_start_time',
         ]);
 
         $attendanceWindow->update($validatedData);

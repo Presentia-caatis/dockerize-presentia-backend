@@ -137,7 +137,7 @@ class StoreAttendanceJob implements ShouldQueue
                     if (
                         $attendance->check_in_time &&
                         $attendance->check_in_status_id != $absenceCheckInStatus->id &&
-                        $checkTime->between($checkInStartTime, $checkOutStartTime)
+                        $checkTime->between($checkInStartTime, $checkInEndTime)
                     ) {
                         $this->logFailure($studentId, $checkTime, 'Duplicate check-in attempt', $attendanceWindow->id);
                         continue;

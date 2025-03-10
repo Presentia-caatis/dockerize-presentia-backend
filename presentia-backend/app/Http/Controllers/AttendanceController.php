@@ -12,6 +12,7 @@ use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
 use App\Models\Event;
 use App\Models\Student;
+use App\Sortable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,8 @@ use function App\Helpers\stringify_convert_timezone_to_utc;
 
 class AttendanceController extends Controller
 {
-    use Filterable;
+    use Filterable, Sortable;
+
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -56,13 +58,15 @@ class AttendanceController extends Controller
             'perPage' => 'sometimes|integer|min:1',
             'simplify' => 'sometimes|boolean',
             'attendanceWindowId' => 'sometimes|exists:attendance_windows,id',
-            'type' => 'sometimes|in:in,out'
+            'type' => 'sometimes|in:in,out',
+            'isExcludeCheckInAbsentStudent' => 'nullable|boolean'
         ]);
 
 
         $perPage = $validatedData['perPage'] ?? 10;
 
         $simplify = $validatedData['simplify'] ?? false;
+        $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
         $type = $validatedData['type'] ?? null;
         if ($simplify) {
             $query = Attendance::with([
@@ -81,7 +85,8 @@ class AttendanceController extends Controller
             $query = Attendance::with('student', 'checkInStatus', 'student.classGroup');
         }
 
-        $query = $this->applyFilters($query, $request->input('filter', []), ['school']);
+        $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []));
 
         if (!empty($validatedData['startDate']) && !empty($validatedData['endDate'])) {
             $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
@@ -106,6 +111,10 @@ class AttendanceController extends Controller
         } else if ($type === 'out') {
             $query->whereNotNull('check_out_time')->where('check_out_time', '!=', '')
                 ->orderBy('check_out_time', 'desc');
+        }
+
+        if ($isExcludeCheckInAbsentStudent) {
+            $query->where('check_in_status_id', '!=', CheckInStatus::where('late_duration', -1)->first()->id);
         }
 
         $data = $query->paginate($perPage);

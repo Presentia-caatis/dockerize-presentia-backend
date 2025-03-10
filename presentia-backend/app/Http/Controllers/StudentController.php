@@ -27,7 +27,7 @@ class StudentController extends Controller
         $search = $validatedData['search'] ?? null;
         $query = Student::with('classGroup');
 
-        $query = $this->applyFilters($query,  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
 
 
         if ($request->has('class_group_id')) {

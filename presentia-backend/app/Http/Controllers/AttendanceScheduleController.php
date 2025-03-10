@@ -24,7 +24,7 @@ class AttendanceScheduleController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AttendanceSchedule::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(AttendanceSchedule::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->paginate($perPage);
 
