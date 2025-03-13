@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('attendance_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete()->unique();
+            $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
             $table->string('name');
             $table->date('date')->nullable();
             $table->enum('type', ['default', 'event' , 'holiday'])->default('event');

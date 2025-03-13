@@ -30,8 +30,10 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'day_of_month' => 'array', // Store JSON as an array
+        'days_of_month' => 'array',
         'days_of_week' => 'array',
+        'weeks_of_month' => 'array',
+        'yearly_dates' => 'array',
     ];
 
     public function attendanceSchedule()
@@ -42,13 +44,10 @@ class Event extends Model
     public function isOccurringOn($date)
     {
         $date = Carbon::parse($date);
-
-        // ✅ 1. Check if scheduler is active
         if (!$this->is_active) {
             return false;
         }
 
-        // ✅ 2. Check event duration
         if ($this->occurrences === 0 && !$date->isSameDay($this->start_date)) {
             return false; // One-time event
         }
@@ -100,7 +99,10 @@ class Event extends Model
     private function isValidInterval($date, $unit, $interval)
     {
         $startDate = Carbon::parse($this->start_date);
-        return $startDate->diffInUnits($date, $unit) % $interval === 0;
+        return match($unit) {
+            'weeks' => $startDate->diffInWeeks($date) % $interval === 0,
+            'months' => $startDate->diffInMonths($date) % $interval === 0
+        };
     }
 
     /**
@@ -118,7 +120,7 @@ class Event extends Model
             if ($day > 0 && $day == $dayOfMonth)
                 return true;
             if ($day < 0 && ($lastDayOfMonth + $day + 1) == $dayOfMonth)
-                return true; // Counting from end
+                return true; 
         }
 
         return $this->isValidInterval($date, 'months', $this->months_interval);

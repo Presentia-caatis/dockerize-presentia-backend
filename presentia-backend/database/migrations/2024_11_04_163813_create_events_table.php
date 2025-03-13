@@ -18,17 +18,17 @@ return new class extends Migration {
             $table->boolean('is_scheduler_active')->default(true);
             
             // EVENT DURATION ; (occurancences = 0 && start_date) => one time event 
-            $table->integer('occurrences'); // -1 : never end , 0 : end after current_date > end_date , n : end after n occurrences
+            $table->integer('occurrences')->nullable(); //n : end after n occurrences
             $table->date('start_date');
-            $table->date('end_date')->nullable();
+            $table->date('end_date');
 
             // RECURRING EVENT
-            $table->enum('recurring_frequency', ['daily', 'daily_exclude_holiday','weekly', 'monthly', 'none'])->default('none');
-            $table->json('day_of_month')->nullable();  // Specific day (1st, 2nd, etc.) negative value is for the date that is counted from the end of the month
+            $table->enum('recurring_frequency', ['daily', 'daily_exclude_holiday','weekly', 'monthly', 'yearly'])->default('none');
+            $table->json('days_of_month')->nullable();  // Specific day (1st, 2nd, etc.) negative value is for the date that is counted from the end of the month
             $table->json('days_of_week')->nullable();  // Store multiple days as JSON ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-            $table->integer('weeks_interval')->default(1); // Repeat every X weeks
-            $table->integer('months_interval')->default(1); // Repeat every X months
-
+            $table->integer('interval')->default(1); // Repeat every X requrrings
+            $table->json('weeks_of_month')->nullable(); // Repeat every Yst,nd,rd days of week
+            $table->json('yearly_dates')->nullable();
             $table->timestamps();
         });
     }

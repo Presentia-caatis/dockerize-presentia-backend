@@ -167,7 +167,6 @@ class StoreAttendanceJob implements ShouldQueue
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
                     if (!$attendance->check_in_time) {
-                        $attendance->update(['check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)]);
                         $this->logFailure($studentId, $checkTime, 'Student has not checked in yet', $attendanceWindow->id);
                     }
                 }

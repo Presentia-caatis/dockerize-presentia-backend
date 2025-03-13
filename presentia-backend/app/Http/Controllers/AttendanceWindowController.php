@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Filterable;
 use App\Models\Attendance;
+use App\Models\AttendanceSchedule;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
 use App\Models\Day;
+use App\Models\Event;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -58,6 +60,7 @@ class AttendanceWindowController extends Controller
             'data' => $data
         ]);
     }
+
 
     public function generateWindow(Request $request)
     {
