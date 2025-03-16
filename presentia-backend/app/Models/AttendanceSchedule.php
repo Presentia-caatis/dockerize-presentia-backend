@@ -26,9 +26,7 @@ class AttendanceSchedule extends Model
 
     public static function validateOverlap($schoolId, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $ignoreId = null)
     {
-        $overlappingWindows = self::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->when($ignoreId, function ($query) use ($ignoreId) {
+        $overlappingWindows = self::when($ignoreId, function ($query) use ($ignoreId) {
                 return $query->where('id', '!=', $ignoreId);
             })
             ->get();
@@ -87,6 +85,11 @@ class AttendanceSchedule extends Model
         if (!empty($errors)) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    public function days() 
+    {
+        return $this->hasMany(Day::class);
     }
 
     public function event()

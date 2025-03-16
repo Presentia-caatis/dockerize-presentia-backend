@@ -77,7 +77,7 @@ class AttendanceWindowController extends Controller
 
         $attendanceWindow = AttendanceWindow::create([
             'day_id' => $dayData->id,
-            'name' => $dataSchedule->name . ' ' . Carbon::parse($request->date)->format('d-m-Y'),
+            'name' => $dataSchedule->name,
             'school_id' => $dayData->school_id,
             'total_present' => 0,
             'total_absent' => 0,

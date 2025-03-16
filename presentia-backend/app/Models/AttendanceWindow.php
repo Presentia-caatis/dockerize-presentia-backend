@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\BelongsToSchool;
 use App\Models\Scopes\SchoolScope;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -26,24 +27,24 @@ class AttendanceWindow extends Model
         'scheduler_active'
     ];
 
-    public static function validateOverlap($schoolId, $date, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $ignoreId = null, $isValidateDefaultSchedule = false)
+    public static function validateOverlap($date, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $ignoreId = null, $isValidateDefaultSchedule = false)
     {
-        $overlappingWindows = self::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->where('date', $date)
+        $overlappingWindows = self::where('date', $date)
             ->when($ignoreId, function ($query) use ($ignoreId) {
                 return $query->where('id', '!=', $ignoreId);
             })
             ->get();
         
         if ($isValidateDefaultSchedule) {
-            $overlappingDefaultSchedule = AttendanceSchedule::withoutGlobalScope(SchoolScope::class)
-                ->where('school_id', $schoolId)
-                ->where('type', 'default')
-                ->get();
+            $overlappingDefaultSchedule = AttendanceSchedule::
+                whereHas('days', function ($query) use ($date) {
+                    $query->where('name', Carbon::parse($date)->format('l'))->first();
+                })
+                ->first();
 
-            $overlappingWindows = $overlappingWindows->merge($overlappingDefaultSchedule);
+            if($overlappingDefaultSchedule) $overlappingWindows = $overlappingWindows->merge([$overlappingDefaultSchedule]);
         }
+
         $errors = [];
 
         foreach ($overlappingWindows as $window) {

@@ -31,7 +31,7 @@ killasgroup=true\n\
 user=www-data\n\
 numprocs=5\n\
 redirect_stderr=true\n\
-stdout_logfile=/var/log/laravel-queue-attendance.log\n\
+stdout_logfile=/var/log/laravel-queue-store-attendance.log\n\
 \n\
 [program:import-student-queue]\n\
 process_name=%(program_name)s_%(process_num)02d\n\

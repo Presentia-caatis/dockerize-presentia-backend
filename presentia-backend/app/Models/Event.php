@@ -14,19 +14,18 @@ class Event extends Model
     use BelongsToSchool;
 
     protected $fillable = [
-        'name',
         'school_id',
-        'is_holiday',
-        'scheduler_active',
+        'is_active',
+        'is_scheduler_active',
         'occurrences',
         'start_date',
-        'is_active',
         'end_date',
         'recurring_frequency',
-        'day_of_month',
+        'days_of_month',
         'days_of_week',
-        'weeks_interval',
-        'months_interval'
+        'interval',
+        'weeks_of_month',
+        'yearly_dates'
     ];
 
     protected $casts = [

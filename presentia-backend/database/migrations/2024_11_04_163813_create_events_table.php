@@ -12,7 +12,6 @@ return new class extends Migration {
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_scheduler_active')->default(true);
@@ -20,10 +19,10 @@ return new class extends Migration {
             // EVENT DURATION ; (occurancences = 0 && start_date) => one time event 
             $table->integer('occurrences')->nullable(); //n : end after n occurrences
             $table->date('start_date');
-            $table->date('end_date');
+            $table->date('end_date')->nullable();
 
             // RECURRING EVENT
-            $table->enum('recurring_frequency', ['daily', 'daily_exclude_holiday','weekly', 'monthly', 'yearly'])->default('none');
+            $table->enum('recurring_frequency', ['daily', 'daily_exclude_holiday','weekly', 'monthly', 'yearly', 'one_time'])->default('one_time');
             $table->json('days_of_month')->nullable();  // Specific day (1st, 2nd, etc.) negative value is for the date that is counted from the end of the month
             $table->json('days_of_week')->nullable();  // Store multiple days as JSON ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
             $table->integer('interval')->default(1); // Repeat every X requrrings
@@ -38,6 +37,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('events');
+        Schema::enableForeignKeyConstraints();
     }
 };
