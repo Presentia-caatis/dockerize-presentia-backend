@@ -36,6 +36,7 @@ use App\Http\Controllers\{
     AttendanceScheduleController,
     DayController,
     AdmsCredentialController,
+    EventController,
     SocialiteController,
     JobController,
     AuthController
@@ -227,10 +228,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('attendance-schedule')->group(function () {
             Route::get('/', [AttendanceScheduleController::class, 'index']);
-            Route::post('/event', [AttendanceScheduleController::class, 'storeEvent']);
             Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
             Route::put('/{id}', [AttendanceScheduleController::class, 'update']);
             Route::delete('/{id}', [AttendanceScheduleController::class, 'destroy']);
+        });
+
+        Route::prefix('event')->group(function () {
+            Route::post('/', [EventController::class, 'store']);
+            Route::delete('/{id}', [EventController::class, 'destroy']);
         });
 
         Route::prefix('day')->group(function () {

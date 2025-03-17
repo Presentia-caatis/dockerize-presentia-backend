@@ -35,6 +35,11 @@ class Event extends Model
         'yearly_dates' => 'array',
     ];
 
+    public function attendanceWindows()
+    {
+        return $this->hasMany(AttendanceWindow::class);
+    }
+
     public function attendanceSchedule()
     {
         return $this->hasOne(AttendanceSchedule::class);
