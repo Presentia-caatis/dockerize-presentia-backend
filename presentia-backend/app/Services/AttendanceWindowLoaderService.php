@@ -15,8 +15,6 @@ class AttendanceWindowLoaderService
     protected $event;
     protected $attendanceSchedule;
 
-
-
     public function __construct(Event $event, AttendanceSchedule $attendanceSchedule)
     {
         $this->event = $event;

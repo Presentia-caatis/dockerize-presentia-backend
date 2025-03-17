@@ -16,6 +16,7 @@ class AttendanceWindow extends Model
     
     protected $fillable = [
         'school_id',
+        'event_id', 
         'day_id',
         'name',
         'type',
