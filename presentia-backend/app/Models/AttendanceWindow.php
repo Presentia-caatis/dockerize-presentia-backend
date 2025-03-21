@@ -13,10 +13,10 @@ class AttendanceWindow extends Model
 {
     use BelongsToSchool;
     use HasFactory;
-    
+
     protected $fillable = [
         'school_id',
-        'event_id', 
+        'event_id',
         'day_id',
         'name',
         'type',
@@ -34,71 +34,91 @@ class AttendanceWindow extends Model
             ->when($ignoreId, function ($query) use ($ignoreId) {
                 return $query->where('id', '!=', $ignoreId);
             })
-            ->get();
-        
-        if ($isValidateDefaultSchedule) {
-            $overlappingDefaultSchedule = AttendanceSchedule::
-                whereHas('days', function ($query) use ($date) {
-                    $query->where('name', Carbon::parse($date)->format('l'))->first();
-                })
-                ->first();
-
-            if($overlappingDefaultSchedule) $overlappingWindows = $overlappingWindows->merge([$overlappingDefaultSchedule]);
-        }
+            ->get()->toArray();
 
         $errors = [];
 
-        foreach ($overlappingWindows as $window) {
-            $overlapDetails = [];
+        if ($isValidateDefaultSchedule) {
+            $defaultSchedule = AttendanceSchedule::
+                whereHas('days', function ($query) use ($date) {
+                    $query->where('name', Carbon::parse($date)->format('l'));
+                })
+                ->where('type', '=', 'default')
+                ?->first();
 
-            // Check for new check-in time overlapping existing check-in time
-            if (!is_null($window->check_in_start_time) && !is_null($window->check_in_end_time)) {
-                if ($checkInStart < $window->check_in_end_time && $checkInEnd > $window->check_in_start_time) {
-                    $overlapDetails['check_in_range'][] = [
-                        'message' => "Overlapped with check-in range of Attendance Window ID {$window->id}.",
+            if ($defaultSchedule) {
+                self::checkOverlap($defaultSchedule, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $errors);
+            };
+        }
+
+        $maxCheckInLateDuration = CheckInStatus::max('late_duration');
+
+        foreach ($overlappingWindows as $window) {
+
+            self::checkOverlap($window, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $errors, $maxCheckInLateDuration);
+
+            
+        }
+
+
+    }
+
+    private static function checkOverlap($window, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, &$errors, $maxCheckInLateDuration = 0){
+        $recentWindowlateCutoffTime = Carbon::parse($window['check_in_end_time'])->copy()->addMinutes($maxCheckInLateDuration)->format('Y-m-d');
+
+            if ($window['check_in_start_time'] && $recentWindowlateCutoffTime) {
+                if ($checkInStart < $recentWindowlateCutoffTime && $checkInEnd > $window['check_in_start_time']) {
+                    $errors['check_in_range'][] = [
+                        'message' => "Overlapped with check-in range of Attendance Window ID {$window['id']}.",
                         'data' => $window
                     ];
                 }
             }
 
             // Check for new check-out time overlapping existing check-out time
-            if (!is_null($window->check_out_start_time) && !is_null($window->check_out_end_time)) {
-                if ($checkOutStart < $window->check_out_end_time && $checkOutEnd > $window->check_out_start_time) {
-                    $overlapDetails['check_out_range'][] = [
-                        'message' => "Overlapped with check-out range of Attendance Window ID {$window->id}.",
+            if ($window['check_out_start_time'] && $window['check_out_end_time']) {
+                if ($checkOutStart < $window['check_out_end_time'] && $checkOutEnd > $window['check_out_start_time']) {
+                    $errors['check_out_range'][] = [
+                        'message' => "Overlapped with check-out range of Attendance Window ID {$window['id']}.",
                         'data' => $window
                     ];
                 }
             }
 
             // Check for new check-in time overlapping existing check-out time
-            if (!is_null($window->check_out_start_time) && !is_null($window->check_out_end_time)) {
-                if ($checkInStart < $window->check_out_end_time && $checkInEnd > $window->check_out_start_time) {
-                    $overlapDetails['check_in_range'][] = [
-                        'message' => "Check-in range overlaps with check-out range of Attendance Window ID {$window->id}.",
+            if ($window['check_out_start_time'] && $window['check_out_end_time']) {
+                if ($checkInStart < $window['check_out_end_time'] && $checkInEnd > $window['check_out_start_time']) {
+                    $errors['check_in_range'][] = [
+                        'message' => "Check-in range overlaps with check-out range of Attendance Window ID {$window['id']}.",
                         'data' => $window
                     ];
                 }
             }
 
             // Check for new check-out time overlapping existing check-in time
-            if (!is_null($window->check_in_start_time) && !is_null($window->check_in_end_time)) {
-                if ($checkOutStart < $window->check_in_end_time && $checkOutEnd > $window->check_in_start_time) {
-                    $overlapDetails['check_out_range'][] = [
-                        'message' => "Check-out range overlaps with check-in range of Attendance Window ID {$window->id}.",
+            if ($window['check_in_start_time'] && $recentWindowlateCutoffTime) {
+                if ($checkOutStart < $recentWindowlateCutoffTime && $checkOutEnd > $window['check_in_start_time']) {
+                    $errors['check_out_range'][] = [
+                        'message' => "Check-out range overlaps with check-in range of Attendance Window ID {$window['id']}.",
                         'data' => $window
                     ];
                 }
             }
 
-            // Merge overlap details into errors if there are any
-            if (!empty($overlapDetails)) {
-                $errors = array_merge_recursive($errors, $overlapDetails);
-            }
-        }
+            Self::errorThrow($errors);
+    }
 
+    private static function errorThrow($errors){
         if (!empty($errors)) {
             throw ValidationException::withMessages($errors);
         }
     }
+
+
+
+
+
+
+
+
 }

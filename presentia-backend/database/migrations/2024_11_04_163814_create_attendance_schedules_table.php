@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
             $table->string('name');
-            $table->date('date')->nullable();
-            $table->enum('type', ['default', 'event' , 'holiday'])->default('event');
+            $table->enum('type', ['default', 'event' , 'holiday', 'event_holiday'])->default('event');
             $table->time('check_in_start_time')->nullable();
             $table->time('check_in_end_time')->nullable();
             $table->time('check_out_start_time')->nullable();

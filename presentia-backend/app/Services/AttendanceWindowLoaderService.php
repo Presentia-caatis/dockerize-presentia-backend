@@ -8,6 +8,7 @@ use App\Models\Day;
 use App\Models\Event;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Validation\ValidationException;
 
 
 class AttendanceWindowLoaderService
@@ -26,7 +27,6 @@ class AttendanceWindowLoaderService
         $event = $this->event;
         $attendanceSchedule = $this->attendanceSchedule;
 
-
         $currentDate = Carbon::parse($event->start_date);
         $endDate = $event->end_date ? Carbon::parse($event->end_date) : null;
 
@@ -43,6 +43,15 @@ class AttendanceWindowLoaderService
 
         if (!$dryRun) {
             foreach ($datesToProcess as $date) {
+                AttendanceWindow::validateOverlap($date, 
+                    $attendanceSchedule->check_in_start_time, 
+                    $attendanceSchedule->check_in_end_time, 
+                    $attendanceSchedule->check_out_start_time, 
+                    $attendanceSchedule->check_out_end_time, 
+                    null, 
+                    $attendanceSchedule->event->is_scheduler_active
+                );   
+
                 AttendanceWindow::create([
                     'event_id' => $event->id,
                     'school_id' => $event->school_id,
@@ -55,11 +64,21 @@ class AttendanceWindowLoaderService
                     'check_out_start_time' => $attendanceSchedule->check_out_start_time,
                     'check_out_end_time' => $attendanceSchedule->check_out_end_time,
                 ]);
+
+                
+            }
+        } else {
+            foreach ($datesToProcess as $date) {
+                AttendanceWindow::validateOverlap($date, 
+                    $attendanceSchedule->check_in_start_time, 
+                    $attendanceSchedule->check_in_end_time, 
+                    $attendanceSchedule->check_out_start_time, 
+                    $attendanceSchedule->check_out_end_time, 
+                    null, 
+                    $attendanceSchedule->event->is_scheduler_active
+                );                
             }
         }
-
-        $currentDate = $this->getNextRecurrenceDate($currentDate);
-        // }
 
         return $datesToProcess;
     }

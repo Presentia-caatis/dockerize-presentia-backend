@@ -41,7 +41,7 @@ class StoreAttendanceJob implements ShouldQueue
         config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
         $schoolId = current_school_id();
         $schoolTimezone = current_school_timezone(); //get the school's timezone 
-        
+
         // (new BelongsToSchoolService($schoolId))->apply();
 
         $inputDates = [];
@@ -52,13 +52,13 @@ class StoreAttendanceJob implements ShouldQueue
 
         $inputDates = array_keys($inputDates);
 
-        
+
         //get all attendance windows
         $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
             ->get()
             ->groupBy('date');
         //>>
-        
+
         //get all check in statuses except the absence once <<
         $checkInStatuses = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
@@ -152,13 +152,20 @@ class StoreAttendanceJob implements ShouldQueue
                 }
 
                 if ($checkTime->between($checkInStartTime, $lateCutoffTime)) {
-                    foreach ($checkInStatuses as $cit) {
-                        if ($checkTime->between($checkInStartTime, $checkInEndTime->copy()->addMinutes($cit->late_duration))) {
-                            $attendance->update([
-                                'check_in_status_id' => $cit->id,
-                                'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
-                            ]);
-                            break;
+                    if ($attendanceWindow->type == 'event' && $checkTime->lte($attendanceWindow->check_in_end_time)) {
+                        $attendance->update([
+                            'check_in_status_id' => $absenceCheckInStatus->id,
+                            'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                        ]);
+                    } else {
+                        foreach ($checkInStatuses as $cit) {
+                            if ($checkTime->between($checkInStartTime, $checkInEndTime->copy()->addMinutes($cit->late_duration))) {
+                                $attendance->update([
+                                    'check_in_status_id' => $cit->id,
+                                    'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                                ]);
+                                break;
+                            }
                         }
                     }
                 } else {

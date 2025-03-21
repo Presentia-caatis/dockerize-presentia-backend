@@ -128,21 +128,28 @@ return Application::configure(basePath: dirname(__DIR__))
 
         foreach ($schoolsQuery->get() as $school) {
             $maxLateDuration = $maxLateDurations[$school->id] ?? null;
+
+            /**
+             * @Schedule Generate window API for the school
+             * */
+            $schedule->command("call:generate-window-api $school->id")
+                ->timezone($school->timezone)
+                ->dailyAt('00:00');
+
+            /**
+             * @Schedule mark absent students
+             * */
+            //Get check in end times for today
             $checkInEnds = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
                 ->where('date', stringify_convert_utc_to_timezone(now(), $school->timezone, 'Y-m-d'))
                 ->where('type', '!=', 'holiday')
                 ->pluck('check_in_end_time', 'id')
                 ->toArray();
 
-            $schedule->command("call:generate-window-api $school->id")
-                ->timezone($school->timezone)
-                ->dailyAt('00:00');
-
             foreach ($checkInEnds as $attendanceWindowId => $checkInEnd) {
                 $scheduleTime = Carbon::parse($checkInEnd, $school->timezone)
                     ->addMinutes($maxLateDuration)
                     ->format('H:i');
-
                 $schedule->command("call:mark-absent-students $school->id $attendanceWindowId")
                     ->timezone($school->timezone)
                     ->dailyAt($scheduleTime);
