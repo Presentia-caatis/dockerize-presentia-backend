@@ -25,7 +25,7 @@ class PermissionController extends Controller
         $query = $this->applySort($query, $request->input('sort', []));
 
         if($request->pluckName ?? false){
-            $data = $query->pluck('name');
+            $data = $query->pluck('name', 'id');
         }else{
             $perPage = $validatedData['perPage'] ?? 10;
             $data = $query->paginate($perPage);
@@ -96,38 +96,38 @@ class PermissionController extends Controller
     }
 
 
-    public function assignPermissionToRole(Request $request)
+    public function assignToRole(Request $request)
     {
         $request->validate([
             'role' => 'required|string|exists:roles,name',
             'permission' => 'required|string|exists:permissions,name',
         ]);
 
-        $role = Role::findByName($request->role);
+        $role = Role::where('name',$request->role)->first();
         $role->givePermissionTo($request->permission);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Permission assigned to role successfully',
-            'data' => $role
+            'data' => $role->load('permissions')
         ]);
     }
 
 
-    public function removePermissionFromRole(Request $request)
+    public function removeFromRole(Request $request)
     {
         $request->validate([
             'role' => 'required|string|exists:roles,name',
             'permission' => 'required|string|exists:permissions,name',
         ]);
 
-        $role = Role::findByName($request->role);
+        $role = Role::where('name',$request->role)->first();
         $role->revokePermissionTo($request->permission);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Permission removed from role successfully',
-            'data' => $role
+            'data' => $role->load('permissions')
         ]);
     }
 

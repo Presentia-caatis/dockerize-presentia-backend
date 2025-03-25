@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
+use App\Models\School;
 use App\Models\User;
 use App\Sortable;
 use Illuminate\Http\Request;
@@ -70,6 +71,41 @@ class UserController extends Controller
             'message' => 'User assigned to school successfully',
             'data' => $user->load('school')
         ], 201);
+    }
+
+    public function assignToSchoolViaToken(Request $request)
+    {
+        $request->validate([
+            'school_token' => 'required|exists:schools,school_token'
+        ], [
+            'school_token.exists' => 'Invalid school token'
+        ]);
+
+        $user = $request->user();
+        $user->school_id = School::where("school_token", $request->school_token)->first()?->id;
+        $user->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User assigned to school successfully',
+            'data' => $user->load('school')
+        ], 201);
+    }
+
+    public function removeFromSchool($id)
+    {
+        $user = User::findOrFail($id);
+        if($user->school_id != auth()->user()->school_id){
+            abort(403, 'You do not have the authority to remove a user from a school that does not assign to you.');
+        }
+
+        $user->school_id = null;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User removed from school successfully',
+        ]);
     }
 
     public function store(Request $request)

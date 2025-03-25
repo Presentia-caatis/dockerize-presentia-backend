@@ -15,16 +15,21 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1' 
+            'perPage' => 'sometimes|integer|min:1',
+            'pluckName' => 'sometimes|boolean'
         ]);
-        
-        $perPage = $validatedData['perPage'] ?? 10;
 
         $query = Role::query(); 
         $query = $this->applyFilters($query, $request->input('filter', []));
         $query = $this->applySort($query, $request->input('sort', []));
 
-        $data = $query->with('permissions')->paginate($perPage);
+        if($request->pluckName ?? false){
+            $data = $query->pluck('name', 'id');
+        }else{
+            $perPage = $validatedData['perPage'] ?? 10;
+            $data = $query->with('permissions')->paginate($perPage);
+        }
+        
 
         return response()->json([
             'status' => 'success',
@@ -99,7 +104,7 @@ class RoleController extends Controller
     /**
      * Assign a role to a user.
      */
-    public function assignRoleToUser(Request $request)
+    public function assignToUser(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -120,7 +125,7 @@ class RoleController extends Controller
     /**
      * Remove a role from a user.
      */
-    public function removeRoleToUser(Request $request)
+    public function removeFromUser(Request $request)
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',

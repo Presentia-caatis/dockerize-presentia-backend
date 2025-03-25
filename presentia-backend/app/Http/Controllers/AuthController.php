@@ -49,7 +49,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'The provided credentials are incorrect'
-            ]);
+            ],401);
         }
 
         if ($user->profile_image_path) {

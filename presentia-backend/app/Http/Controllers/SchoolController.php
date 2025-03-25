@@ -32,6 +32,7 @@ class SchoolController extends Controller
             if ($school->logo_image_path) {
                 $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
             }
+            $this->validateRole($school);
             return $school;
         });
         return response()->json([
@@ -41,6 +42,27 @@ class SchoolController extends Controller
         ]);
     }
 
+    public function getById($id)
+    {
+        $school = School::findOrFail($id);
+        if ($school->logo_image_path) {
+            $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+        }
+
+        $this->validateRole($school);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'School retrieved successfully',
+            'data' => $school
+        ]);
+    }
+
+    private function validateRole(School &$school){
+        if (!auth()->user()->hasRole(['super_admin', 'school_admin'])){
+            unset($school->school_token);
+        }
+    }
     public function taskSchedulerToogle($id)
     {
         $school = School::findOrFail($id);
@@ -69,7 +91,11 @@ class SchoolController extends Controller
             }
     
             $validatedData['subscription_plan_id'] = SubscriptionPlan::where('billing_cycle_month', 0)->first()->id;
-            $validatedData['school_token'] = Str::uuid();
+            do {
+                $token = Str::random(10);
+            } while (School::where('school_token', $token)->exists());
+            
+            $validatedData['school_token'] = $token;
             $validatedData['latest_subscription'] = convert_utc_to_timezone(Carbon::now(), $validatedData['timezone']);
     
             $school = School::create($validatedData);
@@ -177,19 +203,6 @@ class SchoolController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    public function getById($id)
-    {
-        $school = School::findOrFail($id);
-        if ($school->logo_image_path) {
-            $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
-        }
-        return response()->json([
-            'status' => 'success',
-            'message' => 'School retrieved successfully',
-            'data' => $school
-        ]);
     }
 
     public function update(Request $request, $id)

@@ -33,7 +33,7 @@ if (!function_exists('has_school_access')) {
 if (!function_exists('validate_school_access')) {
     function validate_school_access($schoolId, $user)
     {
-        if (!has_school_access($schoolId)) {
+        if ($schoolId && !has_school_access($schoolId)) {
             abort(403, $user->username . ' does not have access to school data with id ' . $schoolId);
         }
     }
