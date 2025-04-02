@@ -14,6 +14,7 @@ class RoleController extends Controller
     use Filterable, Sortable;
     public function index(Request $request)
     {
+        dd(auth()->user());
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
             'pluckName' => 'sometimes|boolean'

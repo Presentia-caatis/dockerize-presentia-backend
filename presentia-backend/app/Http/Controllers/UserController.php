@@ -7,7 +7,7 @@ use App\Models\School;
 use App\Models\User;
 use App\Sortable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Hash;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 

@@ -21,9 +21,6 @@ use App\Http\Controllers\{
     SubscriptionPlanController,
     SubscriptionFeatureController,
     SchoolController,
-    SchoolFeatureController,
-    SubscriptionHistoryController,
-    PaymentController,
     ClassGroupController,
     StudentController,
     CheckInStatusController,
@@ -40,7 +37,9 @@ use App\Http\Controllers\{
     SocialiteController,
     JobController,
     AuthController,
-    PermissionController
+    PermissionController,
+    ForgotPasswordController,
+    EmailVerificationController
 };
 
 //AUTH API
@@ -49,15 +48,19 @@ Route::controller(SocialiteController::class)->group(function () {
     Route::get('auth-google-callback', 'googleAuthentication');
 });
 
-Route::post('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::middleware(['auth:sanctum'])->post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('forgot-password', [ForgotPasswordController::class, 'forgotPassword']);
+Route::post('reset-password', [ForgotPasswordController::class, 'resetPassword']);
+Route::post('email/verify/send', [EmailVerificationController::class, 'sendVerificationEmail'])->middleware('auth:sanctum');
+Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verifyEmail'])->name('verification.verify')->middleware(['signed', 'throttle:6,1']);
+Route::post('register', [AuthController::class, 'register'])->name('register');
+Route::post('login', [AuthController::class, 'login'])->name('login');
+Route::middleware(['auth:sanctum'])->post('logout', [AuthController::class, 'logout'])->name('logout');
 
 //ADMS API
-Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
+Route::post('attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
 
 //USER API
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     Route::prefix('time')->group(function () {
         Route::get('/current', [TimeController::class, 'getCurrentTime']);

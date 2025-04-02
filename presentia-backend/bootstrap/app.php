@@ -4,7 +4,6 @@ use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
 use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,10 +12,6 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Console\Scheduling\Schedule;
-use function App\Helpers\convert_time_timezone_to_utc;
-use function App\Helpers\convert_timezone_to_utc;
-use function App\Helpers\convert_utc_to_timezone;
-use function App\Helpers\stringify_convert_timezone_to_utc;
 use function App\Helpers\stringify_convert_utc_to_timezone;
 
 return Application::configure(basePath: dirname(__DIR__))
