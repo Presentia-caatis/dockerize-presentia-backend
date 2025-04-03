@@ -16,7 +16,7 @@ class AuthController extends Controller
             'username' => 'required|string|alpha_dash|min:3|max:50|unique:users,username',
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'google_id' => 'required|string'
+            'google_id' => 'nullable|string'
         ]);
 
         $validatedData['password'] = Hash::make($validatedData['password']);
