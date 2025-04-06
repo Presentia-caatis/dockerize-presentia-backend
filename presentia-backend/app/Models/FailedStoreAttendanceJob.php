@@ -9,6 +9,7 @@ class FailedStoreAttendanceJob extends Model
     protected $fillable = [
         'student_id',
         'date',
-        'message'
+        'message',
+        'attendance_window_id'
     ];
 }

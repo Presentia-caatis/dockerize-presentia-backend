@@ -8,6 +8,9 @@ trait Filterable
 {
     public function applyFilters($query, $filters, $forbiddenRelations = [], $exactMatchColumns = [])
     {
+        if (!is_array($filters) || empty($filters)) {
+            return $query;
+        }
 
         $exactMatchColumns = array_merge(['gender', 'class_group_id', 'school_id', 'is_active'], $exactMatchColumns);
 

@@ -3,11 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\AttendanceController;
-use App\Models\AttendanceWindow;
-use App\Models\School;
 use Illuminate\Console\Command;
-use function App\Helpers\current_school_timezone;
-use function App\Helpers\stringify_convert_utc_to_timezone;
 
 class MarkAbsentStudents extends Command
 {
@@ -31,12 +27,11 @@ class MarkAbsentStudents extends Command
     public function handle()
     {
         config(['school.id' => $this->argument('school_id')]);
-        $currentDate =stringify_convert_utc_to_timezone(\Carbon\Carbon::now(), current_school_timezone(), 'Y-m-d');
+
         $request = new \Illuminate\Http\Request([
-            'attendance_window_ids' => AttendanceWindow::where('date', $currentDate)->pluck('id')->toArray()
+            'attendance_window_ids' => [$this->argument('attendance_window_id')]
         ]);
         
-
         $controller = app(AttendanceController::class);
         $controller->markAbsentStudents($request);
 

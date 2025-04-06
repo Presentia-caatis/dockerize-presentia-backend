@@ -17,10 +17,22 @@ class SchoolMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = 0;
+        if(!auth()->user()->hasRole('super_admin')){
+            $schoolId = auth()->user()?->school_id;
+            
+            validate_school_access(config('school.id'), auth()->user()); //unnecessary need to change
+        } else {
+            $schoolId = $request->header('School-Id') ?? auth()->user()->school_id;
+        }
 
-        School::findOrFail($schoolId);
-        validate_school_access($schoolId, auth()->user());
+        if($schoolId == null){
+            abort(403, 'You dont have access to this school data.');
+        }
+
+        if( !School::where('id', $schoolId)->exists()){
+            abort(404, 'School not found.');
+        }
         
         config(['school.id' => $schoolId]);
         return $next($request);

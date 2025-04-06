@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\AttendanceWindowController;
+use App\Models\CheckInStatus;
 use Illuminate\Console\Command;
 use function App\Helpers\current_school_timezone;
 use function App\Helpers\stringify_convert_utc_to_timezone;
@@ -33,7 +34,6 @@ class CallGenerateWindowApi extends Command
         $request = new \Illuminate\Http\Request([
             'date' => stringify_convert_utc_to_timezone(\Carbon\Carbon::now(), current_school_timezone(), 'Y-m-d')
         ]);
-    
         $controller = app(AttendanceWindowController::class);
         $controller->generateWindow($request);
     }

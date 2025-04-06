@@ -5,15 +5,18 @@ namespace App\Jobs;
 use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
+use App\Models\CheckOutStatus;
 use App\Models\FailedStoreAttendanceJob;
 use App\Models\Scopes\SchoolScope;
 use App\Models\Student;
+use App\Services\BelongsToSchoolService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use function App\Helpers\convert_timezone_to_utc;
 use function App\Helpers\convert_utc_to_timezone;
+use function App\Helpers\current_school_id;
 use function App\Helpers\current_school_timezone;
 
 class StoreAttendanceJob implements ShouldQueue
@@ -35,140 +38,165 @@ class StoreAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        if (empty($this->jsonInput)) {
-            return;
+        config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
+        $schoolId = current_school_id();
+        $schoolTimezone = current_school_timezone(); //get the school's timezone 
+
+        // (new BelongsToSchoolService($schoolId))->apply();
+
+        $inputDates = [];
+
+        foreach ($this->jsonInput as $student) {
+            $inputDates[Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d')] = true;
         }
 
-        $studentId = $this->jsonInput[0]['id'];
-        $schoolId = Student::withoutGlobalScope(SchoolScope::class)->find($studentId)?->school_id;
+        $inputDates = array_keys($inputDates);
 
-        if (!$schoolId) {
-            $this->logFailure($studentId, Carbon::parse($this->jsonInput[0]['date']),'Invalid student ID');
-            return;
-        }
 
-        config(['school.id' => $schoolId]);
-        $schoolTimezone = current_school_timezone() ?? 'Asia/Jakarta';
-
-        $inputDates = array_unique(array_map(function ($item) use ($schoolTimezone) {
-            return Carbon::parse($item['date'])->setTimezone($schoolTimezone)->format('Y-m-d');
-        }, $this->jsonInput));
-
-        $attendanceWindows = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->whereIn('date', $inputDates)
+        //get all attendance windows
+        $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
             ->get()
-            ->keyBy('date');
+            ->groupBy('date');
+        //>>
 
-        $checkInTypes = CheckInStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->where('is_active', true)
+        //get all check in statuses except the absence once <<
+        $checkInStatuses = CheckInStatus::where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
             ->get();
+        //>>
 
-        $absenceCheckInStatus = CheckInStatus::withoutGlobalScope(SchoolScope::class)
-            ->where('school_id', $schoolId)
-            ->where('late_duration', -1)
+        //get all the absence check in status <<
+        $absenceCheckInStatus = CheckInStatus::where('late_duration', -1)
             ->first();
+        //>>
+
+        //get all check out statuses <<
+        $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
+            ->toArray();
+        //>>
+        \Log::info('Input dates:', [$inputDates]);
+        \Log::info('Attendance Windows:', [$attendanceWindows]);
+        \Log::info('Attendance Windows 2025-09-03', [$attendanceWindows]);
+
+        $isInAttendanceSession = false;
 
         foreach ($this->jsonInput as $student) {
-            $isInCheckInTimeRange = false;
-            $studentId = $student['id'];
-            $checkTime = Carbon::parse($student['date']);
-            $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d');
+            $studentId = $student['id']; //get student id
+            $checkTime = Carbon::parse($student['date']); //get the time where the student is triggering the adms
+            $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d'); // get the date only from student
+            $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null; //get all attendance window for desired date
 
-            $attendanceWindow = $attendanceWindows[$formattedDate] ?? null;
-            if (!$attendanceWindow) {
-                $this->logFailure($studentId,$checkTime, "No attendance window found for date $formattedDate");
+            if (!$attendanceWindowsPerDate) {
+                $this->logFailure($studentId, $checkTime, "No attendance window found for date $formattedDate");
                 continue;
             }
 
-            $checkInStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimezone);
-            $checkInEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimezone);
-            $checkOutStart = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimezone);
-            $checkOutEnd = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimezone);
+            foreach ($attendanceWindowsPerDate as $attendanceWindow) {
+                $checkInStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimezone);
+                $checkInEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimezone);
+                $checkOutStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimezone);
+                $checkOutEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimezone);
 
-            if ($checkTime->lt($checkInStart) || $checkTime->gt($checkOutEnd)) {
-                $this->logFailure($studentId,$checkTime, "Invalid check time: $checkTime for attendance window id : ".$attendanceWindow->id);
-                continue;
-            }
+                $lateCutoffTime = $checkInEndTime->copy()->addMinutes($checkInStatuses->max('late_duration'));
+                $isInAttendanceSession = false;
 
-            if (!Student::find($studentId)) {
-                $this->logFailure($studentId, $checkTime , 'Unrecognized student ID');
-                continue;
-            }
+                if (
+                    $checkTime->lt($checkInStartTime) ||
+                    $checkTime->gt($checkOutEndTime) ||
+                    (
+                        $checkTime->gt($lateCutoffTime) &&
+                        $checkTime->lt($checkOutStartTime)
+                    )
+                ) {
+                    continue;
+                }
 
-            $attendance = Attendance::withoutGlobalScope(SchoolScope::class)
-                ->where('school_id', $schoolId)
-                ->where("student_id", $studentId)
-                ->where('attendance_window_id', $attendanceWindow->id)
-                ->first();
+                $isInAttendanceSession = true;
 
-            if (!$attendance) {
-                try {
-                    $attendance = Attendance::create([
-                        'school_id' => $schoolId,
-                        'student_id' => $studentId,
-                        'attendance_window_id' => $attendanceWindow->id,
-                        'check_in_status_id' => $absenceCheckInStatus->id
-                    ]);
+                $attendance = Attendance::where("student_id", $studentId)
+                    ->where('attendance_window_id', $attendanceWindow->id)
+                    ->first();
 
-                    if ($checkTime->gt($checkOutStart)) {
-                        $attendance->update([
-                            'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                if (!$attendance) {
+                    try {
+                        $attendance = Attendance::create([
+                            'school_id' => $schoolId,
+                            'student_id' => $studentId,
+                            'attendance_window_id' => $attendanceWindow->id,
+                            'check_in_status_id' => $absenceCheckInStatus->id,
+                            'check_out_status_id' => $checkOutStatuses["-1"]
                         ]);
-                        $this->logFailure($studentId,$checkTime, "Student has not checked in yet, check time: $checkTime");
+
+                    } catch (Exception $e) {
+                        $this->logFailure($studentId, $checkTime, 'Something went wrong: ' . $e->getMessage(), $attendanceWindow->id);
                         continue;
                     }
-                } catch (Exception $e) {
-                    $this->logFailure($studentId,$checkTime, 'Something went wrong: ' . $e->getMessage());
-                    continue;
+                } else {
+                    // Prevent duplicate check-ins
+                    if (
+                        $attendance->check_in_time &&
+                        $attendance->check_in_status_id != $absenceCheckInStatus->id &&
+                        $checkTime->between($checkInStartTime, $checkInEndTime)
+                    ) {
+                        $this->logFailure($studentId, $checkTime, 'Duplicate check-in attempt', $attendanceWindow->id);
+                        continue;
+                    } else if (
+                        $attendance->check_out_time &&
+                        $attendance->check_out_status_id != $checkOutStatuses["-1"] &&
+                        $checkTime->between($checkOutStartTime, $checkOutEndTime)
+                    ) { // Prevent duplicate check-outs
+                        $this->logFailure($studentId, $checkTime, 'Duplicate check-out attempt', $attendanceWindow->id);
+                        continue;
+                    }
                 }
-            } else {
-                // Prevent duplicate check-ins
-                if ($attendance->check_in_time && $checkTime->gt($checkInStart) && $checkTime->lt($checkOutStart)) {
-                    $this->logFailure($studentId,$checkTime, 'Duplicate check-in attempt');
-                    continue;
-                } else if ($attendance->check_out_time && $checkTime->between($checkOutStart, $checkOutEnd)){
-                    $this->logFailure($studentId,$checkTime, 'Duplicate check-out attempt');
-                    continue;
-                }
-            }
 
-            foreach ($checkInTypes as $cit) {
-                if ($checkTime->between($checkInStart, $checkInEnd->copy()->addMinutes($cit->late_duration))) {
-                    $isInCheckInTimeRange = true;
-                    $attendance->update([
-                        'check_in_status_id' => $cit->id,
-                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
-                    ]);
-                    break;
-                }
-            }
-
-            // If the student is not in check-in range, mark check-out time
-            if (!$isInCheckInTimeRange) {
-                if($checkTime->lt($checkOutStart)){
-                    $attendance->update([
-                        'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
-                    ]);
+                if ($checkTime->between($checkInStartTime, $lateCutoffTime)) {
+                    if ($attendanceWindow->type == 'event' && $checkTime->lte($attendanceWindow->check_in_end_time)) {
+                        $attendance->update([
+                            'check_in_status_id' => $absenceCheckInStatus->id,
+                            'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                        ]);
+                    } else {
+                        foreach ($checkInStatuses as $cit) {
+                            if ($checkTime->between($checkInStartTime, $checkInEndTime->copy()->addMinutes($cit->late_duration))) {
+                                $attendance->update([
+                                    'check_in_status_id' => $cit->id,
+                                    'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
+                                ]);
+                                break;
+                            }
+                        }
+                    }
                 } else {
                     $attendance->update([
+                        'check_out_status_id' => $checkOutStatuses["0"],
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
+                    if (!$attendance->check_in_time) {
+                        $this->logFailure($studentId, $checkTime, 'Student has not checked in yet', $attendanceWindow->id);
+                    }
                 }
-                
+                break;
+            }
+
+            if (!$isInAttendanceSession) {
+                $this->logFailure(
+                    $studentId,
+                    $checkTime,
+                    "No attendance session found for this check time.",
+                );
             }
         }
     }
 
-    private function logFailure($studentId,$date ,$message)
+    private function logFailure($studentId = null, $date, $message, $attendanceWindowId = null)
     {
         FailedStoreAttendanceJob::create([
             'student_id' => $studentId,
             'date' => $date,
             'message' => $message,
+            'attendance_window_id' => $attendanceWindowId
         ]);
     }
 }

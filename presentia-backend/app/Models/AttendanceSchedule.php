@@ -13,14 +13,18 @@ class AttendanceSchedule extends Model
 
     protected $fillable = [
         'event_id',
-        'name',
         'type',
-        'date',
+        'name',
         'check_in_start_time',
         'check_in_end_time',
         'check_out_start_time',
         'check_out_end_time'
     ];
+
+    public function days() 
+    {
+        return $this->hasMany(Day::class);
+    }
 
     public function event()
     {
@@ -29,6 +33,6 @@ class AttendanceSchedule extends Model
 
     public function schools()
     {
-        return $this->belongsToMany(School::class, 'days')->withTimestamps();
+        return $this->belongsToMany(School::class, 'days');
     }
 }

@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('failed_store_attendance_jobs', function (Blueprint $table) {
-            $table->id();
+        Schema::create('failed_adjust_attendance_jobs', function (Blueprint $table) {
             $table->foreignId('student_id')->nullable()->constrained('students')->cascadeOnDelete();
-            $table->foreignId('attendance_window_id')->nullable()->constrained('students')->cascadeOnDelete();
-            $table->dateTime('date');
+            $table->foreignId('attendance_window_id')->nullable()->constrained('attendance_windows')->cascadeOnDelete();
+            $table->json('upcoming_attendance_window_data')->nullable();
+            $table->string('context')->nullable();
             $table->text('message');
             $table->timestamps();
         });
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('failed_store_attendance_jobs');
+        Schema::dropIfExists('failed_adjust_attendance_jobs');
     }
 };

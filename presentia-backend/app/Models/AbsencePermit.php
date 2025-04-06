@@ -13,15 +13,14 @@ class AbsencePermit extends Model
 
     protected $fillable = [
         'school_id',
-        'attendance_id',
         'document_id',
         'absence_permit_type_id',
         'description',
     ];
 
-    public function attendance()
+    public function attendances()
     {
-        return $this->belongsTo(Attendance::class);
+        return $this->hasMany(Attendance::class);
     }
 
     public function document()

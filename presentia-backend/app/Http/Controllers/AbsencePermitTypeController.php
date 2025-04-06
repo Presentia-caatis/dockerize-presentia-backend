@@ -19,7 +19,7 @@ class AbsencePermitTypeController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AbsencePermitType::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(AbsencePermitType::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->paginate($perPage);
 

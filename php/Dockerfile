@@ -14,17 +14,43 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     nano
 
-
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY supervisord.conf /etc/supervisor/supervisord.conf
-COPY supervisor-laravel.conf /etc/supervisor/conf.d/laravel-queue.conf
+# Ensure Supervisor configuration directory exists
+RUN mkdir -p /etc/supervisor/conf.d
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Add Laravel queue worker configurations
+RUN echo "[program:store-attendance-queue]\n\
+process_name=%(program_name)s_%(process_num)02d\n\
+command=php /var/www/html/artisan queue:work --queue=store-attendance --tries=3\n\
+autostart=true\n\
+autorestart=true\n\
+stopasgroup=true\n\
+killasgroup=true\n\
+user=www-data\n\
+numprocs=5\n\
+redirect_stderr=true\n\
+stdout_logfile=/var/log/laravel-queue-store-attendance.log\n\
+\n\
+[program:import-student-queue]\n\
+process_name=%(program_name)s_%(process_num)02d\n\
+command=php /var/www/html/artisan queue:work --queue=import_student --tries=3\n\
+autostart=true\n\
+autorestart=true\n\
+stopasgroup=true\n\
+killasgroup=true\n\
+user=www-data\n\
+numprocs=2\n\
+redirect_stderr=true\n\
+stdout_logfile=/var/log/laravel-queue-import-student.log\n" > /etc/supervisor/conf.d/laravel-queue.conf
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+
+
+

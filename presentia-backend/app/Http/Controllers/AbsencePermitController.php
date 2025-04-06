@@ -18,7 +18,7 @@ class AbsencePermitController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school']);
+        $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school_id']);
 
         $data = $query->with('attendance', 'document', 'absencePermitType')->paginate($perPage);
 
@@ -33,7 +33,6 @@ class AbsencePermitController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'attendance_id' => 'required|exists:attendances,id',
             'document_id' => 'nullable|exists:documents,id',
             'absence_permit_type_id' => 'required|exists:absence_permit_types,id',
             'description' => 'required|string',
@@ -64,7 +63,6 @@ class AbsencePermitController extends Controller
     {
         $absencePermit=AbsencePermit::findOrFail($id);
         $validatedData = $request->validate([
-            'attendance_id' => 'exists:attendances,id',
             'remove_document' => 'boolean',
             'document_id' => 'exists:documents,id',
             'absence_permit_type_id' => 'exists:absence_permit_types,id',

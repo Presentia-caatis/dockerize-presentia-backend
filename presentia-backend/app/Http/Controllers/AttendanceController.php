@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Exports\AttendanceExport;
 use App\Filterable;
+use App\Jobs\AdjustAttendanceJob;
 use App\Jobs\StoreAttendanceJob;
 use App\Models\CheckInStatus;
 use App\Models\AttendanceWindow;
+use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
+use App\Models\Event;
 use App\Models\Student;
+use App\Sortable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -20,7 +24,8 @@ use function App\Helpers\stringify_convert_timezone_to_utc;
 
 class AttendanceController extends Controller
 {
-    use Filterable;
+    use Filterable, Sortable;
+
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -53,13 +58,15 @@ class AttendanceController extends Controller
             'perPage' => 'sometimes|integer|min:1',
             'simplify' => 'sometimes|boolean',
             'attendanceWindowId' => 'sometimes|exists:attendance_windows,id',
-            'type' => 'sometimes|in:in,out'
+            'type' => 'sometimes|in:in,out',
+            'isExcludeCheckInAbsentStudent' => 'nullable|boolean'
         ]);
 
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $simplify = $validatedData['simplify'] ?? true;
+        $simplify = $validatedData['simplify'] ?? false;
+        $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
         $type = $validatedData['type'] ?? null;
         if ($simplify) {
             $query = Attendance::with([
@@ -70,14 +77,16 @@ class AttendanceController extends Controller
                         'id',
                         'student_id',
                         'check_in_status_id',
+                        'attendance_window_id',
                         'check_in_time',
                         'check_out_time'
                     ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus');
+            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup');
         }
 
-        $query = $this->applyFilters($query, $request->input('filter', []), ['school']);
+        $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []));
 
         if (!empty($validatedData['startDate']) && !empty($validatedData['endDate'])) {
             $query->whereHas('attendanceWindow', function ($q) use ($validatedData) {
@@ -104,6 +113,10 @@ class AttendanceController extends Controller
                 ->orderBy('check_out_time', 'desc');
         }
 
+        if ($isExcludeCheckInAbsentStudent) {
+            $query->where('check_in_status_id', '!=', CheckInStatus::where('late_duration', -1)->first()->id);
+        }
+
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -111,6 +124,24 @@ class AttendanceController extends Controller
             'message' => 'Attendances retrieved successfully',
             'data' => $data
         ]);
+    }
+
+    public function adjustAttendance(Request $request){
+
+        $request->validate([
+            'attendance_window_ids' => 'required|array|min:1',
+            'attendance_window_ids.*' => 'exists:attendance_windows,id'
+        ]);
+
+        $attendanceWindowIds = AttendanceWindow::whereIn('id',  $request->attendance_window_ids)->pluck('id')->toArray();
+        $schoolId = current_school_id();
+
+        AdjustAttendanceJob::dispatch($attendanceWindowIds, 0, $schoolId)->onQueue('adjust-attendance');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance adjustment has started'
+        ], 201);
     }
 
     public function store(Request $request)
@@ -123,8 +154,8 @@ class AttendanceController extends Controller
                 'message' => 'Data is null'
             ], 201);
         }
-
-        StoreAttendanceJob::dispatch($jsonInput)->onQueue('attendance');
+        
+        StoreAttendanceJob::dispatch($jsonInput)->onQueue('store-attendance');
 
         return response()->json([
             'status' => 'success',
@@ -138,16 +169,13 @@ class AttendanceController extends Controller
             'attendance_window_id' => 'required|exists:attendance_windows,id',
             'student_id' => 'required|exists:students,id',
             'absence_permit_id' => 'nullable|exists:absence_permits,id',
-            'check_in_time' => 'required|date_format:Y-m-d H:i:s',
+            'check_in_time' => 'nullable|date_format:Y-m-d H:i:s',
             'check_out_time' => 'nullable|date_format:Y-m-d H:i:s',
+            'check_out_status_id' => 'nullable|exists:check_out_statuses',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses',
         ]);
 
-        $timeValidationResponse = $this->validateAttendanceTime(
-            $validatedData['check_in_time'] ?? null,
-            $validatedData['check_out_time'] ?? null,
-            $validatedData['attendance_window_id'],
-            $validatedData
-        );
+        $timeValidationResponse = $this->validateAttendanceTime($validatedData);
 
         if ($timeValidationResponse) {
             return $timeValidationResponse;
@@ -173,16 +201,13 @@ class AttendanceController extends Controller
             'absence_permit_id' => 'required_without_all:check_in_time,check_out_time|exists:absence_permits,id',
             'check_in_time' => 'required_without_all:absence_permit_id,check_out_time|date_format:Y-m-d H:i:s',
             'check_out_time' => 'required_without_all:absence_permit_id,check_in_time||date_format:Y-m-d H:i:s',
+            'check_out_status_id' => 'nullable|exists:check_out_statuses',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses',
         ]);
-        
+
 
         // Validate check-in and check-out time using the new function
-        $timeValidationResponse = $this->validateAttendanceTime(
-            $validatedData['check_in_time'] ?? null,
-            $validatedData['check_out_time'] ?? null,
-            $validatedData['attendance_window_id']?? null,
-            $validatedData
-        );
+        $timeValidationResponse = $this->validateAttendanceTime($validatedData);
 
         if ($timeValidationResponse) {
             return $timeValidationResponse; // Return the error response if validation fails
@@ -197,9 +222,11 @@ class AttendanceController extends Controller
         ]);
     }
 
-    private function validateAttendanceTime($checkInTime, $checkOutTime, $attendanceWindowId, &$validatedData)
+    private function validateAttendanceTime(&$validatedData)
     {
-        $attendanceWindow = AttendanceWindow::findOrFail($attendanceWindowId);
+        $checkOutTime = $validatedData['check_out_time'] ?? null;
+        $checkInTime = $validatedData['check_in_time'] ?? null;
+        $attendanceWindow = AttendanceWindow::findOrFail($validatedData['attendance_window_id']);
         $checkInStatus = CheckInStatus::where('late_duration', '!=', -1)->orderBy('late_duration')->get();
 
         $checkInStart = Carbon::parse($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time);
@@ -207,17 +234,16 @@ class AttendanceController extends Controller
         $checkOutStart = Carbon::parse($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time);
         $checkOutEnd = Carbon::parse($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time);
 
-        if ($checkOutTime) {
+        if ($checkOutTime && !isset($validatedData['check_out_time'])) {
             $checkOutTimeParsed = Carbon::parse($checkOutTime);
             if (!$checkOutTimeParsed->between($checkOutStart, $checkOutEnd)) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => "Attendance's check out time is outside attendance window range",
-                ], 422);
+                $validatedData['check_out_status_id'] = CheckOutStatus::where('late_duration', -1)->first()->id;
+            } else {
+                $validatedData['check_out_status_id'] = CheckOutStatus::where('late_duration', 0)->first()->id;
             }
         }
 
-        if ($checkInTime) {
+        if ($checkInTime && !isset($validatedData['check_in_time'])) {
             $checkInTimeParsed = Carbon::parse($checkInTime);
             $isInsideCheckInTimeRange = false;
 
@@ -230,28 +256,29 @@ class AttendanceController extends Controller
             }
 
             if (!$isInsideCheckInTimeRange) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => "Attendance's check in time is outside attendance window range",
-                ], 422);
+                $validatedData['check_in_status_id'] = CheckInStatus::where('late_duration', -1)->first()->id;
             }
         }
 
         return null;
     }
 
+    
     public function markAbsentStudents(Request $request)
     {
         $request->validate([
             'attendance_window_ids' => 'required|array|min:1|exists:attendance_windows,id'
         ]);
 
-        $absenceStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
+        \Log::info('School ID Config:', ['school_id' => config('school.id')]);
 
+        
+        $absenceCheckOutStatusId = CheckOutStatus::where('late_duration', -1)->first()->id;
         $validAttendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)
             ->where('type', '!=', 'holiday')
             ->pluck('id')
             ->toArray();
+        $absenceCheckInStatusId = CheckInStatus::where('late_duration', -1)->first()->id;
 
         foreach ($validAttendanceWindowIds as $attendanceWindowId) {
 
@@ -269,7 +296,8 @@ class AttendanceController extends Controller
                     'school_id' => config('school.id'),
                     'student_id' => $studentId,
                     'attendance_window_id' => $attendanceWindowId,
-                    'check_in_status_id' => $absenceStatusId,
+                    'check_in_status_id' => $absenceCheckInStatusId,
+                    'check_out_status_id' => $absenceCheckOutStatusId,
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
@@ -289,6 +317,9 @@ class AttendanceController extends Controller
 
     public function exportAttendance(Request $request)
     {
+        set_time_limit(3600);
+        ini_set('memory_limit', '1024M');
+
         $validated = $request->validate([
             'startDate' => ['sometimes', 'date_format:Y-m-d'],
             'endDate' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:startDate'],
@@ -305,6 +336,20 @@ class AttendanceController extends Controller
                     }
                 },
             ],
+            'event' => [
+                'sometimes',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all') {
+                        $ids = explode(',', $value);
+                        $validIds = Event::whereIn('id', $ids)->pluck('id')->toArray();
+
+                        if (array_diff($ids, $validIds)) {
+                            $fail("The selected $attribute contains invalid event IDs.");
+                        }
+                    }
+                },
+            ],
+            'isCheckOutStatusInluded' => 'sometimes|boolean',
         ]);
 
 
@@ -324,6 +369,17 @@ class AttendanceController extends Controller
         );
 
         return (new AttendanceExport($startDate, $endDate, $classGroup))->download($filename);
+    }
+
+    public function clearAttendanceRecords($attendanceWindowId)
+    {
+        $deletedCount = Attendance::where('attendance_window_id', $attendanceWindowId)->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance deleted successfully',
+            'deleted_records' => $deletedCount
+        ]);
     }
 
     public function getById($id)

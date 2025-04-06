@@ -18,6 +18,13 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping, WithStyles, WithStrictNullComparison, WithHeadings
 {
+    /**
+     * Only god knows what happens here.  
+     * If you must change it, pray first.  
+     * One wrong move, and everything might fall apart.  
+     * Proceed with caution. You have been warned.
+     * - The previous developer
+     */
 
     protected $classGroup;
     private $attendanceWindows;
@@ -83,20 +90,25 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             array_slice($this->checkInStatuses, 1)
         ));
 
-        // Process absence permit types using only filtered attendances
-        $absencePermitTypeData = array_map(
-            fn($permit) =>
-            $filteredAttendances->where('check_in_status_id', -1)
-                ->filter(fn($attendance) => $attendance->absencePermits->where('absence_permit_type_id', $permit['id'])->isNotEmpty())
-                ->count() ?? 0,
-            $this->absencePermitTypes
-        );
+        if (count($this->absencePermitTypes) > 0) {
+            // Process absence permit types using only filtered attendances
+            $absencePermitTypeData = array_map(
+                fn($permit) =>
+                $filteredAttendances->where('check_in_status_id', -1)
+                    ->filter(fn($attendance) => $attendance->absencePermits->where('absence_permit_type_id', $permit['id'])->isNotEmpty())
+                    ->count() ?? 0,
+                $this->absencePermitTypes
+            );
 
-        $absencePermitTypeData[] = $filteredAttendances->where('check_in_status_id', -1)
-            ->whereNull('absence_permit_type_id')->count()
-            + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
+            $absencePermitTypeData[] = $filteredAttendances->where('check_in_status_id', -1)
+                ->whereNull('absence_permit_type_id')->count()
+                + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
 
-        return array_merge($base, $checkInStatusData, $absencePermitTypeData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
+            return array_merge($base, $checkInStatusData, $absencePermitTypeData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
+        }
+
+
+        return array_merge($base, $checkInStatusData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
     }
 
     /**
@@ -111,7 +123,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
     {
         return [
             [''],
-            [''], 
+            [''],
         ];
     }
 
@@ -217,7 +229,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             }
         }
 
-        $lastColIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType + 2);
+        $lastColIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType + ($absencePermitTypeCount > 0 ? 2 : 1));
         $sheet->getStyle("{$lastColIndex}2:{$lastColIndex}1000")->getNumberFormat()->setFormatCode('0.00%');
         $sheet->setCellValue("{$lastColIndex}1", "Persentase\nKehadiran (%)");
         $sheet->mergeCells("{$lastColIndex}1:{$lastColIndex}2");
