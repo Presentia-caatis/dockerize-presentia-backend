@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Models\CheckInStatus;
 use App\Models\AttendanceLateType;
 use App\Models\School;
 use App\Models\ClassGroup;
@@ -174,6 +175,77 @@ class AttendanceTest extends TestCase
 
         $this->assertNotNull($retrievedAttendance->student, "Attendance should be linked to a student.");
         $this->assertEquals($student->id, $retrievedAttendance->student->id, "The attendance's student ID should match the created student ID.");
+    }
+
+
+    #[Test]
+    public function staff_can_view_attendance_list()
+    {
+        Attendance::factory()->count(5)->create();
+
+        $response = $this->getJson(route('api/school/attendance/'));
+        
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_date()
+    {
+        $response = $this->getJson('/api/attendance?startDate=2024-03-01&endDate=2024-03-05');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_class()
+    {
+        $classGroup = ClassGroup::factory()->create();
+        
+        $response = $this->getJson("/api/attendance?classGroup={$classGroup->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_status()
+    {
+        $checkInStatus = CheckInStatus::factory()->create();
+        
+        $response = $this->getJson("/api/attendance?checkInStatusId={$checkInStatus->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_search_attendance_by_student_name()
+    {
+        $student = Student::factory()->create();
+        
+        $response = $this->getJson("api/attendance?search={$student->student_name}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_sort_attendance_list()
+    {
+        $response = $this->getJson('api/attendance?sort=check_in_time&order=desc');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_download_attendance_as_csv()
+    {
+        $response = $this->getJson('api/attendance/export-attendance?startDate=2024-03-01&endDate=2024-03-05');
+        
+        $response->assertStatus(200);
     }
 
 }
