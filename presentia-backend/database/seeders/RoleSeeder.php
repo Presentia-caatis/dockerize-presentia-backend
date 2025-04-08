@@ -21,7 +21,6 @@ class RoleSeeder extends Seeder
             'school_admin',
             'school_coadmin',
             'school_staff',
-            'guest'
         ];
 
         foreach ($roles as $role) {
@@ -35,8 +34,7 @@ class RoleSeeder extends Seeder
             'manage_schools',
             'manage_students',
             'manage_attendance',
-            'view_dashboard',
-            'basic',
+            'basic_school',
         ];
 
         foreach ($permissions as $perm) {
@@ -48,7 +46,6 @@ class RoleSeeder extends Seeder
         $schoolAdmin = Role::findByName('school_admin');
         $schoolCoadmin = Role::findByName('school_coadmin');
         $schoolStaff = Role::findByName('school_staff');
-        $guest = Role::findByName('guest');
 
         $superAdmin->givePermissionTo(Permission::all());
 
@@ -57,25 +54,19 @@ class RoleSeeder extends Seeder
             'manage_schools',
             'manage_students',
             'manage_attendance',
-            'view_dashboard',
-            'basic'
+            'basic_school'
         ]);
 
         $schoolCoadmin->givePermissionTo([
             'manage_schools',
             'manage_students',
             'manage_attendance',
-            'view_dashboard',
-            'basic'
+            'basic_school'
         ]);
 
         $schoolStaff->givePermissionTo([
-            'view_dashboard',
-            'basic'
+            'basic_school'
         ]);
 
-        $guest->givePermissionTo([
-            'basic'
-        ]);
     }
 }
