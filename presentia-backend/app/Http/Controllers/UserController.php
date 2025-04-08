@@ -43,7 +43,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Schools retrieved successfully',
+            'message' => 'Users retrieved successfully',
             'data' => $data->load('school')
         ]);
     }
