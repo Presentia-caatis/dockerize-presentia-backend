@@ -12,7 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-      
             Schema::table('attendance_windows', function (Blueprint $table) {
                 $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
             });
