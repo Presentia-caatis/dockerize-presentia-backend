@@ -61,10 +61,8 @@ class AdjustAttendanceJob implements ShouldQueue
 
         $this->absenceCheckInStatusId = $checkInStatuses["-1"] ?? null;
 
-        //get all check out statuses <<
         $this->checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
             ->toArray();
-        //>>
 
         if ($this->absenceCheckInStatusId !== null) {
             unset($checkInStatuses["-1"]);
@@ -79,6 +77,7 @@ class AdjustAttendanceJob implements ShouldQueue
 
             switch ($this->context) {
                 case 0:
+                    dd($attendanceWindows);
                     foreach ($attendanceWindows as $id => $attendanceWindow) {
                         $this->adjustAttendance($id, $attendanceWindow->first(), $attendances);
                     }
