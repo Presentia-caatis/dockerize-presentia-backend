@@ -126,14 +126,15 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function adjustAttendance(Request $request){
+    public function adjustAttendance(Request $request)
+    {
 
         $request->validate([
             'attendance_window_ids' => 'required|array|min:1',
             'attendance_window_ids.*' => 'exists:attendance_windows,id'
         ]);
 
-        $attendanceWindowIds = AttendanceWindow::whereIn('id',  $request->attendance_window_ids)->pluck('id')->toArray();
+        $attendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)->pluck('id')->toArray();
         $schoolId = current_school_id();
 
         AdjustAttendanceJob::dispatch($attendanceWindowIds, 0, $schoolId)->onQueue('adjust-attendance');
@@ -141,6 +142,30 @@ class AttendanceController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance adjustment has started'
+        ], 201);
+    }
+
+    public function storeFromFile(Request $request)
+    {
+        $request->validate([
+            'attendances' => 'file|required|mimes:json',
+        ]);
+
+        $json = file_get_contents($request->file('attendances'));
+        $data = json_decode($json, true);
+
+        $firstKey = array_key_first($data);
+        $attendances = $data[$firstKey];
+
+        $batches = array_chunk($attendances, 500);
+
+        foreach ($batches as $attendanceBatch) {
+            StoreAttendanceJob::dispatch($attendanceBatch)->onQueue('store-attendance');
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance processing has started',
         ], 201);
     }
 
@@ -154,7 +179,7 @@ class AttendanceController extends Controller
                 'message' => 'Data is null'
             ], 201);
         }
-        
+
         StoreAttendanceJob::dispatch($jsonInput)->onQueue('store-attendance');
 
         return response()->json([
@@ -263,7 +288,6 @@ class AttendanceController extends Controller
         return null;
     }
 
-    
     public function markAbsentStudents(Request $request)
     {
         $request->validate([
@@ -272,7 +296,7 @@ class AttendanceController extends Controller
 
         \Log::info('School ID Config:', ['school_id' => config('school.id')]);
 
-        
+
         $absenceCheckOutStatusId = CheckOutStatus::where('late_duration', -1)->first()->id;
         $validAttendanceWindowIds = AttendanceWindow::whereIn('id', $request->attendance_window_ids)
             ->where('type', '!=', 'holiday')
