@@ -11,6 +11,7 @@ use App\Models\CheckOutStatus;
 use App\Models\Day;
 use App\Models\Event;
 use App\Models\Student;
+use App\Sortable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\current_school_timezone;
@@ -18,6 +19,7 @@ use function App\Helpers\current_school_timezone;
 class AttendanceWindowController extends Controller
 {
     use Filterable;
+    use Sortable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -26,7 +28,9 @@ class AttendanceWindowController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AttendanceWindow::query(), $request->input('filter', []), ['school_id']);
+        $query = AttendanceWindow::query();
+        $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []));
 
         $data = $query->paginate($perPage);
 
