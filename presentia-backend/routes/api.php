@@ -212,6 +212,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/', [AttendanceController::class, 'index']);
             Route::get('/export', [AttendanceController::class, 'exportAttendance']);
             Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
+            Route::post('/file', [AttendanceController::class, 'storeFromFile']);
             Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
             Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
             Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
@@ -262,6 +263,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::prefix('attendance-window')->group(function () {
                 Route::get('/', [AttendanceWindowController::class, 'index']);
                 Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
+                Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('role:super_admin');
                 Route::get('/{id}', [AttendanceWindowController::class, 'getById']);
                 Route::put('/{id}', [AttendanceWindowController::class, 'update']);
                 Route::delete('/{id}', [AttendanceWindowController::class, 'destroy']);

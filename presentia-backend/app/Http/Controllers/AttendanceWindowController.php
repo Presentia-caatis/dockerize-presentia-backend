@@ -78,8 +78,8 @@ class AttendanceWindowController extends Controller
             ->first();
 
         $dataSchedule = $dayData->attendanceSchedule;
-
-        if(!AttendanceWindow::where('date', $request->date)->first()?->event->is_scheduler_active){
+        $attendanceWindowInDate = AttendanceWindow::where('date', $request->date)->first();
+        if($attendanceWindowInDate && !$attendanceWindowInDate->event->is_scheduler_active){
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Attendance windows already exists for this date'

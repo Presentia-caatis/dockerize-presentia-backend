@@ -36,5 +36,7 @@ class CallGenerateWindowApi extends Command
         ]);
         $controller = app(AttendanceWindowController::class);
         $controller->generateWindow($request);
+
+        $this->info("Attendance window for school id : {$this->argument('school_id')} in {$request->date} has been created");
     }
 }
