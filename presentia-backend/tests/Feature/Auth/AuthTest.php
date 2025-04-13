@@ -14,6 +14,14 @@ class AuthTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     #[Test]
+    public function test_user_can_access_landing_page()
+    {
+        $response = $this->getJson('/');
+
+        $response->assertStatus(200);
+    }
+
+    #[Test]
     public function test_user_can_register()
     {
         $response = $this->postJson('api/register', [
@@ -171,10 +179,10 @@ class AuthTest extends TestCase
 
         $response = $this->postJson('api/login', [
             'email_or_username' => 'test@example.com',
-            'password' => 'WrongPassword!',
+            'password' => 'WrongPassword123!',
         ]);
 
-        $response->assertStatus(status: 200)
+        $response->assertStatus(status: 401)
                  ->assertJson([
                      'status' => 'failed',
                      'message' => 'The provided credentials are incorrect',
@@ -220,11 +228,28 @@ class AuthTest extends TestCase
         \Laravel\Socialite\Facades\Socialite::shouldReceive('driver->stateless->user')
             ->andReturn($googleUser);
 
-        $token = $user->createToken('api-token')->plainTextToken;
-
         $response = $this->getJson('api/auth-google-callback');
 
-        $response->assertRedirect(config('app.frontend_url') . '/login?status=existing_user&token=' . $token);
+        $redirectUrl = $response->headers->get('Location');
+    
+        // Cek URL redirect ke frontend login dengan parameter yang benar
+        $this->assertStringStartsWith(config('app.frontend_url') . '/login?status=existing_user&token=', $redirectUrl);
+    
+        // Parse parameter URL
+        parse_str(parse_url($redirectUrl, PHP_URL_QUERY), $queryParams);
+    
+        $this->assertEquals('existing_user', $queryParams['status']);
+        $this->assertArrayHasKey('token', $queryParams);
+        $this->assertNotEmpty($queryParams['token']);
+    
+        // Validasi token milik user 
+        $tokenParts = explode('|', $queryParams['token']);
+        $tokenHash = hash('sha256', $tokenParts[1] ?? '');
+    
+        $this->assertTrue(
+            $user->tokens()->where('token', $tokenHash)->exists(),
+            'The token returned does not belong to the expected user.'
+        );
 
         $this->assertDatabaseHas('users', [
             'google_id' => $googleUser->id,
@@ -243,4 +268,113 @@ class AuthTest extends TestCase
 
         $response->assertRedirect(config('app.frontend_url') . '/login?status=error&message=' . urlencode('Authentication failed.'));
     }
+
+    #[Test]
+    public function test_user_can_update_profile_with_valid_data()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+    
+        $targetUser = User::factory()->create();
+    
+        $payload = [
+            'fullname' => 'Updated Name',
+            'username' => 'updatedusername',
+            'school_id' => 1,
+        ];
+    
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->putJson("/api/user/{$targetUser->id}", $payload);
+    
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status' => 'success',
+                     'message' => 'User updated successfully',
+                 ]);
+    
+        $this->assertDatabaseHas('users', [
+            'id' => $targetUser->id,
+            'fullname' => 'Updated Name',
+            'username' => 'updatedusername',
+        ]);
+    }
+    
+    #[Test]
+    public function test_user_cannot_update_profile_with_invalid_data()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $targetUser = User::factory()->create();
+
+        $payload = [
+            'fullname' => 'a',
+            'username' => '',
+            'email' => 'invalid-email',
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->putJson("/api/user/{$targetUser->id}", $payload);
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function test_user_cannot_change_password_with_wrong_old_password()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $targetUser = User::factory()->create([
+            'password' => bcrypt('CorrectOldPassword'),
+        ]);
+
+        $payload = [
+            'old_password' => 'WrongOldPassword',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->putJson("/api/user/{$targetUser->id}", $payload);
+
+        $response->assertStatus(400)
+                ->assertJson([
+                    'status' => 'failed',
+                    'message' => 'Old password is incorrect',
+                ]);
+    }
+
+    #[Test]
+    public function test_user_can_change_password_with_correct_old_password()
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $targetUser = User::factory()->create([
+            'password' => bcrypt('CorrectOldPassword'),
+        ]);
+
+        $payload = [
+            'old_password' => 'CorrectOldPassword',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ];
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->putJson("/api/user/{$targetUser->id}", $payload);
+
+        $response->assertStatus(200)
+                ->assertJson([
+                    'status' => 'success',
+                    'message' => 'User updated successfully',
+                ]);
+
+        $this->assertTrue(Hash::check('NewPassword123!', $targetUser->fresh()->password));
+    }
+
 }
