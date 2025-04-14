@@ -77,17 +77,6 @@ class StudentTest extends TestCase
     }
 
     #[Test]
-    public function it_can_download_student_csv()
-    {
-        Student::factory()->create(['student_name' => 'Alice']);
-        
-        $response = $this->get('/api/student/csv');
-        
-        $response->assertStatus(200)
-                 ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-    }
-
-    #[Test]
     public function it_can_create_a_new_student()
     {
         $school = School::factory()->create();
@@ -115,7 +104,12 @@ class StudentTest extends TestCase
     #[Test]
     public function it_can_update_a_student()
     {
-        $student = Student::factory()->create();
+        $school = School::factory()->create(); 
+        $this->authUser->update(['school_id' => $school->id]);
+
+        $student = Student::factory()->create([
+            'school_id' => $school->id
+        ]);
 
         $data = [
             'school_id' => $student->school_id,
@@ -143,7 +137,12 @@ class StudentTest extends TestCase
     #[Test]
     public function it_can_delete_a_student()
     {
-        $student = Student::factory()->create();
+        $school = School::factory()->create(); 
+        $this->authUser->update(['school_id' => $school->id]);
+
+        $student = Student::factory()->create([
+            'school_id' => $school->id
+        ]);
 
         $response = $this->deleteJson("/api/student/{$student->id}");
 
@@ -154,5 +153,21 @@ class StudentTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('students', ['id' => $student->id]);
+    }
+    
+    #[Test]
+    public function it_can_download_student_csv()
+    {
+        $school = School::factory()->create(); 
+        $this->authUser->update(['school_id' => $school->id]);
+
+        Student::factory()->create([
+            'school_id' => $school->id
+        ]);
+        
+        $response = $this->get("/api/student/csv");
+        
+        $response->assertStatus(200)
+                 ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 }
