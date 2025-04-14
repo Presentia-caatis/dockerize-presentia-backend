@@ -10,14 +10,18 @@ trait TestCaseHelpers
     use RefreshDatabase;
 
     protected $token;
+    protected $authUser;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $user = User::factory()->create();
+        $this->authUser = User::factory()->create([
+            'password' => bcrypt('123') 
+        ]);
+
         $response = $this->postJson('api/login', [
-            'email_or_username' => $user->email,
+            'email_or_username' => $this->authUser->email,
             'password' => '123',  
         ]);
 
