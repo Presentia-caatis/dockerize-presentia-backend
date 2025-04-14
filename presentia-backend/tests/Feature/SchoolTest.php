@@ -21,7 +21,7 @@ class SchoolTest extends TestCase
     #[Test]
     public function it_can_list_all_schools()
     {
-        School::factory()->count(3)->create();
+        School::factory()->count(13)->create();
 
         $response = $this->getJson('/api/school');
 
@@ -30,7 +30,7 @@ class SchoolTest extends TestCase
                 'status' => 'success',
                 'message' => 'Schools retrieved successfully',
             ])
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(13, 'data');
     }
 
     #[Test]

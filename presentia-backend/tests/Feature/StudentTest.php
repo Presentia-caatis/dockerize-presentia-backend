@@ -24,7 +24,11 @@ class StudentTest extends TestCase
     
         if (!$school) {
             $school = School::factory()->create();
+        }else{
+            $school = $this->authUser->school_id;
         }
+
+        $this->authUser->update(['school_id' => $school->id]);
     
         $defaultData = [
             'school_id' => $school->id,
@@ -56,6 +60,7 @@ class StudentTest extends TestCase
     public function it_can_search_student_by_name()
     {
         $school = School::factory()->create(); 
+        $this->authUser->update(['school_id' => $school->id]);
 
         Student::create([
             'school_id' => $school->id,
