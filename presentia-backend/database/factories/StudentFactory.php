@@ -2,7 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Scopes\SchoolScope;
+use App\Models\School;
+use App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class StudentFactory extends Factory
 {
+    protected $model = Student::class;
+
     /**
      * Define the model's default state.
      *
@@ -17,19 +20,15 @@ class StudentFactory extends Factory
      */
     public function definition()
     {
-        return [
-            'school_id' => \App\Models\School::factory(),
-            'class_group_id' => function (array $attributes) {
-                return \App\Models\ClassGroup::withoutGlobalScope(SchoolScope::class)
-                    ->where('school_id', $attributes['school_id'])
-                    ->inRandomOrder()
-                    ->first()
-                    ->id;
-            },
+        // Buat sekolah agar school_id valid
+        $school = School::factory()->create();
 
+        return [
+            'school_id' => $school->id,
+            'class_group_id' => null, // Boleh null
             'is_active' => true,
-            'nis' => $this->faker->unique()->numerify('NIS####'),
-            'nisn' => $this->faker->unique()->numerify('NISN####'),
+            'nis' => $this->faker->unique()->numerify('123####'),
+            'nisn' => $this->faker->unique()->numerify('456####'),
             'student_name' => $this->faker->name,
             'gender' => $this->faker->randomElement(['male', 'female']),
         ];

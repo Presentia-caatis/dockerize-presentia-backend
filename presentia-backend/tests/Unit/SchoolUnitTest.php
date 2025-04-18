@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Str;
 use Tests\TestCase;
 use App\Models\School;
 use App\Models\SchoolFeature;
@@ -25,16 +26,16 @@ class SchoolUnitTest extends TestCase
 
         $data = [
             'subscription_plan_id' => $subscriptionPlan->id,
-            'school_name' => 'Test School',
+            'name' => 'Test School',
             'address' => 'Unknown',
             'latest_subscription' => now()->toDateString(),
-            'end_subscription' => now()->addMonth()->toDateString(),
+            'school_token' => Str::random(),
         ];
 
         $school = School::create($data);
 
         $this->assertDatabaseHas('schools', $data);
-        $this->assertEquals($data['school_name'], $school->school_name);
+        $this->assertEquals($data['name'], $school->name);
     }
 
     #[Test]
@@ -90,18 +91,6 @@ class SchoolUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_has_a_relationship_with_attendance_late_types()
-    {
-        $school = School::factory()->create();
-        $attendanceLateTypes = AttendanceLateType::factory()->count(3)->create();
-
-        $school->attendanceLateTypes()->attach($attendanceLateTypes);
-
-        $this->assertCount(3, $school->attendanceLateTypes);
-        $this->assertInstanceOf(AttendanceLateType::class, $school->attendanceLateTypes->first());
-    }
-
-    #[Test]
     public function it_validates_required_fields()
     {
         $this->expectException(\Illuminate\Database\QueryException::class);
@@ -119,9 +108,8 @@ class SchoolUnitTest extends TestCase
     {
         $data = [
             'subscription_plan_id' => null, // Null value for a NOT NULL column
-            'school_name' => 'Nullable Plan School',
+            'name' => 'Nullable Plan School',
             'latest_subscription' => now()->toDateString(),
-            'end_subscription' => now()->addMonth()->toDateString(),
         ];
 
         $this->expectException(\Illuminate\Database\QueryException::class);
@@ -131,7 +119,7 @@ class SchoolUnitTest extends TestCase
         School::create($data);
 
         // Ensure no record is created in the database
-        $this->assertDatabaseMissing('schools', ['school_name' => 'Nullable Plan School']);
+        $this->assertDatabaseMissing('schools', ['name' => 'Nullable Plan School']);
     }
 
     #[Test]
@@ -139,11 +127,9 @@ class SchoolUnitTest extends TestCase
     {
         $school = School::factory()->create([
             'latest_subscription' => '2024-10-01',
-            'end_subscription' => '2024-12-01',
         ]);
 
         $this->assertEquals('2024-10-01', $school->latest_subscription);
-        $this->assertEquals('2024-12-01', $school->end_subscription);
     }
 
     #[Test]

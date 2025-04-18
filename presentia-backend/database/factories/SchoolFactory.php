@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\School>
@@ -21,7 +22,7 @@ class SchoolFactory extends Factory
             'name' => $this->faker->company,
             'address' => $this->faker->address,
             'latest_subscription' => $this->faker->dateTimeThisYear,
-            'end_subscription' => $this->faker->dateTimeThisYear,
+            'school_token' => Str::random(10),
         ];
     }
 }

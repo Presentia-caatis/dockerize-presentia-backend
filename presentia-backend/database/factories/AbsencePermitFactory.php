@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\AbsencePermitType;
+use App\Models\Document;
+use App\Models\School;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,9 +20,9 @@ class AbsencePermitFactory extends Factory
     public function definition()
     {
         return [
-            'attendance_id' => \App\Models\Attendance::factory(),
-            'document_id' => \App\Models\Document::factory(),
-            'absence_permit_type_id' => \App\Models\AbsencePermitType::factory(),
+            'school_id' => School::factory(),
+            'document_id' => Document::factory(),
+            'absence_permit_type_id' => AbsencePermitType::factory(),
             'description' => $this->faker->sentence,
         ];
     }

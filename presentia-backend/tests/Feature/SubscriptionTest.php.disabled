@@ -11,29 +11,12 @@ use App\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCaseHelpers;
 
 
 class SubscriptionTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $user = User::factory()->create();
-        $response = $this->postJson('/api/login', [
-            'email_or_username' => $user->email,
-            'password' => '123',
-        ]);
-
-        $this->token = $response->json('token');
-
-        // Set token in headers for following requests
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ]);
-    }
+    use RefreshDatabase, TestCaseHelpers;
 
     #[Test]
     public function it_can_retrieve_all_subscription_features()
@@ -177,7 +160,7 @@ class SubscriptionTest extends TestCase
     {
         $data = [
             'subscription_name' => 'Basic Plan',
-            'billing_cycle_month' => 'monthly',
+            'billing_cycle_month' => 12222,
             'price' => 1000,
         ];
 
@@ -205,7 +188,7 @@ class SubscriptionTest extends TestCase
 
         $data = [
             'subscription_name' => 'Updated Plan',
-            'billing_cycle_month' => 'yearly',
+            'billing_cycle_month' => 10000,
             'price' => 2000,
         ];
 

@@ -9,32 +9,12 @@ use App\Models\School;
 use App\Models\SubscriptionPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCaseHelpers;
 
 
 class PaymentTest extends TestCase
 {
-    use RefreshDatabase;
-
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Create a user and login to get the API token
-        $user = User::factory()->create();
-        $response = $this->postJson('/api/login', [
-            'email_or_username' => $user->email,
-            'password' => '123',
-        ]);
-
-        $this->token = $response->json('token');
-
-        // Set token in headers for following requests
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ]);
-    }
-
+    use RefreshDatabase, TestCaseHelpers;
 
     #[Test]
     public function it_can_list_all_payments()

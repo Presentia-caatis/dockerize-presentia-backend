@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Models\CheckInStatus;
 use App\Models\AttendanceLateType;
 use App\Models\School;
 use App\Models\ClassGroup;
@@ -12,41 +13,20 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCaseHelpers;
 
 
 class AttendanceTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        $user = User::factory()->create();
-        $response = $this->postJson('/login', [
-            'email_or_username' => $user->email,
-            'password' => '123',  
-        ]);
-
-        // Simpan token ke dalam properti
-        $this->token = $response->json('token');
-
-        // Menyimpan token di header untuk semua request berikutnya
-        $this->withHeaders([
-            'Authorization' => 'Bearer ' . $this->token,
-        ]);
-
-        $this->school = School::factory()->create();
-        $this->classGroup = ClassGroup::factory()->create(['school_id' => $this->school->id]);
-        $this->student = Student::factory()->create(['school_id' => $this->school->id]);
-        $this->attendanceLateType = AttendanceLateType::factory()->create();
-    }
+    use RefreshDatabase, TestCaseHelpers;
 
     #[Test]
     public function it_can_retrieve_all_attendances()
     {
-        // Seed some attendance data
-        Attendance::factory()->count(5)->create(['student_id' => $this->student->id]);
+        
+        $school = School::factory()->create();
+        $student = Student::factory()->create(['school_id' => $school->id]);
+        Attendance::factory()->count(5)->create(['student_id' => $student->id]);
 
         $response = $this->getJson('/api/attendance');
 
@@ -63,9 +43,12 @@ class AttendanceTest extends TestCase
     #[Test]
     public function it_can_create_an_attendance_record()
     {
+        
+        $school = School::factory()->create();
+        $student = Student::factory()->create(['school_id' => $school->id]);
+
         $data = [
-            'student_id' => $this->student->id,
-            'attendance_late_type_id' => $this->attendanceLateType->id,
+            'student_id' => $student->id,
             'check_in_time' => now()->toDateTimeString(),
             'check_out_time' => now()->addHours(8)->toDateTimeString(),
         ];
@@ -91,7 +74,6 @@ class AttendanceTest extends TestCase
     {
         $data = [
             'student_id' => 9999,
-            'attendance_late_type_id' => 9999, 
             'check_in_time' => 'invalid_date',
             'check_out_time' => 'another_invalid_date',
         ];
@@ -104,10 +86,11 @@ class AttendanceTest extends TestCase
 
     #[Test]
     public function it_can_retrieve_a_single_attendance_record()
-    {
+    {   
+        $school = School::factory()->create();
+        $student = Student::factory()->create(['school_id' => $school->id]);
         $attendance = Attendance::factory()->create([
-            'student_id' => $this->student->id,
-            'attendance_late_type_id' => $this->attendanceLateType->id,
+            'student_id' => $student->id,
         ]);
 
         $response = $this->getJson("/api/attendance/{$attendance->id}");
@@ -118,8 +101,7 @@ class AttendanceTest extends TestCase
                      'message' => 'Attendance retrieved successfully',
                     'data' => [
                     'id' => $attendance->id,
-                    'student_id' => $this->student->id,
-                    'attendance_late_type_id' => $this->attendanceLateType->id,
+                    'student_id' => $student->id,
                     'check_in_time' => $attendance->check_in_time->format('Y-m-d H:i:s'),
                     'check_out_time' => $attendance->check_out_time->format('Y-m-d H:i:s'),
                     'created_at' => $attendance->created_at->format('Y-m-d\TH:i:s.u\Z'), 
@@ -132,9 +114,10 @@ class AttendanceTest extends TestCase
     #[Test]
     public function it_can_update_an_attendance_record()
     {
+        $school = School::factory()->create();
+        $student = Student::factory()->create(['school_id' => $school->id]);
         $attendance = Attendance::factory()->create([
-            'student_id' => $this->student->id,
-            'attendance_late_type_id' => $this->attendanceLateType->id,
+            'student_id' => $student->id,
         ]);
 
         $updatedData = [
@@ -149,8 +132,7 @@ class AttendanceTest extends TestCase
                      'message' => 'Attendance updated successfully',
                      'data' => [
                      'id' => $attendance->id,
-                     'student_id' => $this->student->id,
-                     'attendance_late_type_id' => $this->attendanceLateType->id,
+                     'student_id' => $student->id,
                      'check_in_time' => $attendance->check_in_time->format('Y-m-d H:i:s'),
                      'check_out_time' => \Carbon\Carbon::parse($updatedData['check_out_time'])->format('Y-m-d H:i:s'),
                      'created_at' => $attendance->created_at->format('Y-m-d\TH:i:s.u\Z'), 
@@ -164,9 +146,11 @@ class AttendanceTest extends TestCase
     #[Test]
     public function it_can_delete_an_attendance_record()
     {
+        
+        $school = School::factory()->create();
+        $student = Student::factory()->create(['school_id' => $school->id]);
         $attendance = Attendance::factory()->create([
-            'student_id' => $this->student->id,
-            'attendance_late_type_id' => $this->attendanceLateType->id,
+            'student_id' => $student->id,
         ]);
 
         $response = $this->deleteJson("/api/attendance/{$attendance->id}");
@@ -191,6 +175,77 @@ class AttendanceTest extends TestCase
 
         $this->assertNotNull($retrievedAttendance->student, "Attendance should be linked to a student.");
         $this->assertEquals($student->id, $retrievedAttendance->student->id, "The attendance's student ID should match the created student ID.");
+    }
+
+
+    #[Test]
+    public function staff_can_view_attendance_list()
+    {
+        Attendance::factory()->count(5)->create();
+
+        $response = $this->getJson(route('api/school/attendance/'));
+        
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_date()
+    {
+        $response = $this->getJson('/api/attendance?startDate=2024-03-01&endDate=2024-03-05');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_class()
+    {
+        $classGroup = ClassGroup::factory()->create();
+        
+        $response = $this->getJson("/api/attendance?classGroup={$classGroup->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_filter_attendance_by_status()
+    {
+        $checkInStatus = CheckInStatus::factory()->create();
+        
+        $response = $this->getJson("/api/attendance?checkInStatusId={$checkInStatus->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_search_attendance_by_student_name()
+    {
+        $student = Student::factory()->create();
+        
+        $response = $this->getJson("api/attendance?search={$student->student_name}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_sort_attendance_list()
+    {
+        $response = $this->getJson('api/attendance?sort=check_in_time&order=desc');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['status', 'message', 'data']);
+    }
+
+    #[Test]
+    public function staff_can_download_attendance_as_csv()
+    {
+        $response = $this->getJson('api/attendance/export-attendance?startDate=2024-03-01&endDate=2024-03-05');
+        
+        $response->assertStatus(200);
     }
 
 }
