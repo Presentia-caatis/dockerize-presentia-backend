@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // Allow all authenticated users to access get-by-token
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
         Route::post('/school/assign-via-token', [UserController::class , 'assignToSchoolViaToken']);    
+        Route::put('/', [UserController::class, 'update']);
 
         // Allow only super_admin and school_admin to manage link-to-school
         Route::middleware('permission:manage_school_users')->group(function () {
@@ -107,7 +108,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/', [UserController::class, 'index']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
-            Route::put('/{id}', [UserController::class, 'update']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
         });
     });

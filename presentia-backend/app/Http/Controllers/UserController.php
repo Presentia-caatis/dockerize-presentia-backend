@@ -171,9 +171,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        $user = User::findOrFail($id);
+        $user = $request->user();
         $validatedData = $request->validate([
             'fullname' => 'nullable|string|min:3|max:100|regex:/^[a-zA-Z \'\\\\]+$/',
             'username' => 'nullable|string|alpha_dash|min:3|max:50|unique:users,username,' . $user->id,
