@@ -79,14 +79,14 @@ class AttendanceWindowController extends Controller
 
         $dataSchedule = $dayData->attendanceSchedule;
         $attendanceWindowInDate = AttendanceWindow::where('date', $request->date)->first();
-        if($attendanceWindowInDate && !$attendanceWindowInDate->event->is_scheduler_active){
+        if($attendanceWindowInDate && $attendanceWindowInDate->event && !$attendanceWindowInDate->event->is_scheduler_active){
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Attendance windows already exists for this date'
             ], 400);
         }
 
-        if(AttendanceWindow::where('date', $request->date)->first()?->event->type == 'event_holiday'){
+        if(AttendanceWindow::where('date', $request->date)->first()?->event?->type == 'event_holiday'){
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Ateeendance windows cannot be generated for holiday event'
