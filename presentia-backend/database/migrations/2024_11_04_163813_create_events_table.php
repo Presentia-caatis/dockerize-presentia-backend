@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->boolean('is_active')->default(true);
-            $table->boolean('')->default(true);
+            $table->boolean('is_scheduler_active')->default(true);
             
             // EVENT DURATION ; (occurancences = 0 && start_date) => one time event 
             $table->integer('occurrences')->nullable(); //n : end after n occurrences
