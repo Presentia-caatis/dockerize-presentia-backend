@@ -196,8 +196,8 @@ class AttendanceController extends Controller
             'absence_permit_id' => 'nullable|exists:absence_permits,id',
             'check_in_time' => 'nullable|date_format:Y-m-d H:i:s',
             'check_out_time' => 'nullable|date_format:Y-m-d H:i:s',
-            'check_out_status_id' => 'nullable|exists:check_out_statuses',
-            'check_in_status_id' => 'nullable|exists:check_in_statuses',
+            'check_out_status_id' => 'nullable|exists:check_out_statuses,id',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses,id',
         ]);
 
         $timeValidationResponse = $this->validateAttendanceTime($validatedData);

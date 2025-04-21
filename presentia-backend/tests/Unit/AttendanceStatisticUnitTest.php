@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\AbsencePermit;
 use App\Models\Attendance;
 use App\Models\AttendanceWindow;
+use App\Models\CheckOutStatus;
 use App\Models\Student;
 use App\Models\CheckInStatus;
 use App\Models\School;
@@ -85,7 +86,13 @@ class AttendanceStatisticUnitTest extends TestCase
             ['late_duration' => -1, 'status_name' => 'Absent'],
             ['late_duration' => 0, 'status_name' => 'On Time'],
             ['late_duration' => 5, 'status_name' => 'Late']
-        )->count(3)->create();
+        )->count(3)->create([
+            'school_id' => $school->id
+        ]);
+
+        $checkout = CheckOutStatus::factory()->create([
+            'school_id' => $school->id
+        ]);
 
         $students = Student::factory()->count(3)->create(['is_active' => true, 'school_id' => $school->id]);
 
@@ -96,6 +103,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[0]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[1]->id, // On Time
+            'check_out_status_id' => $checkout->id,
             'school_id' => $school->id
         ]);
 
@@ -125,7 +133,13 @@ class AttendanceStatisticUnitTest extends TestCase
         $statuses = CheckInStatus::factory()->sequence(
             ['late_duration' => -1, 'status_name' => 'Absent'],
             ['late_duration' => 0, 'status_name' => 'On Time']
-        )->count(2)->create();
+        )->count(2)->create([
+            'school_id' => $school->id
+        ]);
+
+        $checkout = CheckOutStatus::factory()->create([
+            'school_id' => $school->id
+        ]);
 
         $students = Student::factory()->count(2)->create(['is_active' => true, 'school_id' => $school->id]);
 
@@ -143,6 +157,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[1]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[1]->id,
+            'check_out_status_id' => $checkout->id,
             'school_id' => $school->id
         ]);
 
