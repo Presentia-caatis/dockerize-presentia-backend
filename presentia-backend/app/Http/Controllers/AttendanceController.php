@@ -203,7 +203,7 @@ class AttendanceController extends Controller
         $timeValidationResponse = $this->validateAttendanceTime($validatedData);
 
         if ($timeValidationResponse) {
-            return $timeValidationResponse;
+            abort(422, $timeValidationResponse);
         }
 
         $validatedData['school_id'] = current_school_id();
@@ -214,6 +214,33 @@ class AttendanceController extends Controller
             'status' => 'success',
             'message' => 'Attendance created successfully',
             'data' => $data
+        ]);
+    }
+
+    public function storeManualAttendanceNisOnly(Request $request)
+    {
+        $request->validate([
+            'nis' => 'required',
+        ]);
+
+        $studentId = Student::where('nis', $request->nis)->firstOrFail()?->id;
+
+        $jsonFile = [
+            [
+                'id' => $studentId,
+                'date' => now()
+            ]
+        ];
+
+        $job = new StoreAttendanceJob($jsonFile);
+        $job->handle();
+
+        $job->response[$studentId]["nis"] = $request->nis;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance created successfully',
+            'data' => $job->response
         ]);
     }
 
@@ -235,7 +262,7 @@ class AttendanceController extends Controller
         $timeValidationResponse = $this->validateAttendanceTime($validatedData);
 
         if ($timeValidationResponse) {
-            return $timeValidationResponse; // Return the error response if validation fails
+            abort(422, $timeValidationResponse);
         }
 
         $attendance->update($validatedData);
