@@ -214,6 +214,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
             Route::post('/file', [AttendanceController::class, 'storeFromFile']);
             Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+            Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
             Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
             Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
             Route::get('/{id}', [AttendanceController::class, 'getById']);
