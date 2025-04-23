@@ -19,7 +19,6 @@ class AttendanceScheduleFactory extends Factory
         return [
             'event_id' => null,
             'name' => $this->faker->sentence(3),
-            'date' => $this->faker->optional()->date(),
             'type' => $this->faker->randomElement(['default', 'event', 'holiday']),
             'check_in_start_time' => $this->faker->time(),
             'check_in_end_time' => $this->faker->time(),

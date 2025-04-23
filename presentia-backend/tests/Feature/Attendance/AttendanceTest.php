@@ -25,6 +25,7 @@ class AttendanceTest extends TestCase
     {
         
         $school = School::factory()->create();
+        $this->authUser->update(['school_id' => $school->id]);
         $student = Student::factory()->create(['school_id' => $school->id]);
         Attendance::factory()->count(5)->create(['student_id' => $student->id]);
 
@@ -45,6 +46,7 @@ class AttendanceTest extends TestCase
     {
         
         $school = School::factory()->create();
+        $this->authUser->update(['school_id' => $school->id]);
         $student = Student::factory()->create(['school_id' => $school->id]);
 
         $data = [
@@ -216,7 +218,7 @@ class AttendanceTest extends TestCase
         
         $response = $this->getJson("/api/attendance?checkInStatusId={$checkInStatus->id}");
 
-        $response->assertStatus(200)
+        $response->assertStatus(status: 200)
             ->assertJsonStructure(['status', 'message', 'data']);
     }
 
