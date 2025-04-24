@@ -223,7 +223,7 @@ class AttendanceController extends Controller
             'nis' => 'required',
         ]);
         $studentId = Student::where('nis', $request->nis)->firstOrFail()?->id;
-        dd($studentId);
+
         $jsonFile = [
             [
                 'id' => $studentId,
