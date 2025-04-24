@@ -19,8 +19,13 @@ class ClassManagementTest extends TestCase
     public function it_can_retrieve_class_groups()
     {
         $school = School::factory()->create();
-
-        ClassGroup::factory()->count(3)->create(['school_id' => $school->id]);
+        
+        ClassGroup::factory()->count(3)->sequence(
+            ['class_name' => 'Class A'],
+            ['class_name' => 'Class B'],
+            ['class_name' => 'Class C'],
+        )->create(['school_id' => $school->id]);
+        
         $this->assertDatabaseCount('class_groups', 3);
 
         $response = $this->getJson('/api/class-group');

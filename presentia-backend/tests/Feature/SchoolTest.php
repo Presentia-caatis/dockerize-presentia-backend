@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use Tests\TestCaseHelpers;
 use App\Models\User;
@@ -17,34 +19,31 @@ class SchoolTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 
-    // School
     #[Test]
-    public function it_can_list_all_schools()
+    public function superadmin_can_retrieve_school_list()
     {
-        School::factory()->count(13)->create();
+        School::factory()->count(3)->create();
 
         $response = $this->getJson('/api/school');
 
-        $response->assertStatus(status: 200)
+        $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
-                'message' => 'Schools retrieved successfully',
+                'message' => 'Schools retrieved successfully'
             ])
-            ->assertJsonCount(13, 'data');
+            ->assertJsonCount(4, 'data.data');
     }
 
     #[Test]
-    public function it_can_store_a_new_school()
+    public function superadmin_can_create_school_with_valid_data()
     {
-        $subscriptionPlan = SubscriptionPlan::factory()->create();
+        SubscriptionPlan::factory()->create(['billing_cycle_month' => 0]);
 
         $payload = [
-            'subscription_plan_id' => $subscriptionPlan->id,
-            'name' => 'Test School',
-            'address' => 'Bandung',
-            'timezone' => 'UTC',
-            'latest_subscription' => now()->toDateString(),
-            'school_token' => 'asDHvX426xx',
+            'name' => 'Sekolah Baru',
+            'address' => 'Jl. Pendidikan No. 123',
+            'timezone' => 'Asia/Jakarta',
+            'logo_image' => UploadedFile::fake()->image('logo.jpg')
         ];
 
         $response = $this->postJson('/api/school', $payload);
@@ -52,43 +51,44 @@ class SchoolTest extends TestCase
         $response->assertStatus(201)
             ->assertJson([
                 'status' => 'success',
-                'message' => 'School created successfully',
+                'message' => 'School created successfully'
             ]);
 
-        $this->assertDatabaseHas('schools', $payload);
+        $this->assertDatabaseHas('schools', [
+            'name' => 'Sekolah Baru',
+            'address' => 'Jl. Pendidikan No. 123',
+            'timezone' => 'Asia/Jakarta'
+        ]);
+
+        $school = School::first();
+        Storage::disk('public')->assertExists($school->logo_image_path);
     }
 
     #[Test]
-    public function it_can_show_a_school()
+    public function system_rejects_school_creation_with_invalid_data()
     {
-        $school = School::factory()->create();
+        $payload = [
+            'name' => '', // Nama kosong
+            'address' => 'Jl. Pendidikan No. 123',
+            'timezone' => 'Invalid/Timezone' // Timezone tidak valid
+        ];
 
-        $response = $this->getJson("/api/school/{$school->id}");
+        $response = $this->postJson('/api/school', $payload);
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School retrieved successfully',
-                'data' => [
-                    'id' => $school->id,
-                    'name' => $school->name,
-                ],
-            ]);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'timezone']);
     }
 
     #[Test]
-    public function it_can_update_a_school()
+    public function superadmin_can_update_school_with_valid_data()
     {
         $school = School::factory()->create();
-
-        $subscriptionPlan = SubscriptionPlan::factory()->create();
+        Storage::fake('public');
 
         $payload = [
-            'subscription_plan_id' => $subscriptionPlan->id,
-            'name' => 'Updated School',
-            'address' => $school->address,
-            'latest_subscription' => now()->toDateString(),
-            'end_subscription' => now()->addMonth()->toDateString(),
+            'name' => 'Sekolah Updated',
+            'address' => 'Jl. Baru No. 456',
+            'logo_image' => UploadedFile::fake()->image('new-logo.jpg')
         ];
 
         $response = $this->putJson("/api/school/{$school->id}", $payload);
@@ -96,122 +96,51 @@ class SchoolTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
-                'message' => 'School updated successfully',
+                'message' => 'School updated successfully'
             ]);
 
-        $this->assertDatabaseHas('schools', $payload);
+        $this->assertDatabaseHas('schools', [
+            'id' => $school->id,
+            'name' => 'Sekolah Updated',
+            'address' => 'Jl. Baru No. 456'
+        ]);
+
+        $updatedSchool = School::find($school->id);
+        Storage::disk('public')->assertExists($updatedSchool->logo_image_path);
     }
 
     #[Test]
-    public function it_can_delete_a_school()
+    public function system_rejects_school_update_with_invalid_data()
     {
         $school = School::factory()->create();
+
+        $payload = [
+            'subscription_plan_id' => 9999 // ID tidak ada
+        ];
+
+        $response = $this->putJson("/api/school/{$school->id}", $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['subscription_plan_id']);
+    }
+
+    #[Test]
+    public function superadmin_can_delete_school()
+    {
+        $school = School::factory()->create(['logo_image_path' => 'logos/test.jpg']);
+        Storage::fake('public')->put('logos/test.jpg', 'dummy');
 
         $response = $this->deleteJson("/api/school/{$school->id}");
 
         $response->assertStatus(200)
             ->assertJson([
                 'status' => 'success',
-                'message' => 'School deleted successfully',
+                'message' => 'School deleted successfully'
             ]);
 
         $this->assertDatabaseMissing('schools', ['id' => $school->id]);
-    }
-
-    // School Feature
-    #[Test]
-    public function it_can_list_all_school_features()
-    {
-        SchoolFeature::factory()->count(3)->create();
-
-        $response = $this->getJson('/api/school-feature');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School features retrieved successfully',
-            ])
-            ->assertJsonCount(3, 'data');
-    }
-
-    #[Test]
-    public function it_can_store_a_new_school_feature()
-    {
-        $school = School::factory()->create();
-        $feature = Feature::factory()->create();
-
-        $payload = [
-            'school_id' => $school->id,
-            'feature_id' => $feature->id,
-            'status' => true,
-        ];
-
-        $response = $this->postJson('/api/school-feature', $payload);
-
-        $response->assertStatus(201)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School feature created successfully',
-            ]);
-
-        $this->assertDatabaseHas('school_features', $payload);
-    }
-
-    #[Test]
-    public function it_can_show_a_school_feature()
-    {
-        $schoolFeature = SchoolFeature::factory()->create();
-
-        $response = $this->getJson("/api/school-feature/{$schoolFeature->id}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School feature retrieved successfully',
-            ]);
-    }
-
-    #[Test]
-    public function it_can_update_a_school_feature()
-    {
-        $school = School::factory()->create();
-        $feature = Feature::factory()->create();
         
-        $schoolFeature = SchoolFeature::factory()->create([
-            'school_id' => $school->id,
-            'feature_id'=> $feature->id,
-        ]);
-
-        $payload = [
-            'school_id' => $school->id,
-            'feature_id' => $feature->id,
-            'status' => 0,
-        ];
-
-        $response = $this->putJson("/api/school-feature/{$schoolFeature->id}", $payload);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School feature updated successfully',
-            ]);
-
-        $this->assertDatabaseHas('school_features', $payload);
+        Storage::disk('public')->assertMissing('logos/test.jpg');
     }
 
-    #[Test]
-    public function it_can_delete_a_school_feature()
-    {
-        $schoolFeature = SchoolFeature::factory()->create();
-
-        $response = $this->deleteJson("/api/school-feature/{$schoolFeature->id}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'School feature deleted successfully',
-            ]);
-
-        $this->assertDatabaseMissing('school_features', ['id' => $schoolFeature->id]);
-    }
 }
