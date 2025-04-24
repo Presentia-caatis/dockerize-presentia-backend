@@ -222,9 +222,7 @@ class AttendanceController extends Controller
         $request->validate([
             'nis' => 'required',
         ]);
-
         $studentId = Student::where('nis', $request->nis)->firstOrFail()?->id;
-
         $jsonFile = [
             [
                 'id' => $studentId,
@@ -320,8 +318,6 @@ class AttendanceController extends Controller
         $request->validate([
             'attendance_window_ids' => 'required|array|min:1|exists:attendance_windows,id'
         ]);
-
-        \Log::info('School ID Config:', ['school_id' => config('school.id')]);
 
 
         $absenceCheckOutStatusId = CheckOutStatus::where('late_duration', -1)->first()->id;
