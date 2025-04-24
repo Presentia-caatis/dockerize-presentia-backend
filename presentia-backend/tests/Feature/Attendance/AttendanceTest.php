@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceWindow;
+use App\Models\CheckOutStatus;
 use Tests\TestCase;
 use App\Models\Attendance;
 use App\Models\Student;
@@ -20,234 +22,329 @@ class AttendanceTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 
-    #[Test]
-    public function it_can_retrieve_all_attendances()
+    private function createTestData()
     {
+        $school = School::find($this->authUser->school_id);
         
-        $school = School::factory()->create();
-        $this->authUser->update(['school_id' => $school->id]);
-        $student = Student::factory()->create(['school_id' => $school->id]);
-        Attendance::factory()->count(5)->create(['student_id' => $student->id]);
+        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $student = Student::factory()->create([
+            'school_id' => $school->id,
+            'class_group_id' => $classGroup->id
+        ]);
+        
+        $attendanceWindow = AttendanceWindow::factory()->create([
+            'school_id' => $school->id,
+            'date' => now()->format('Y-m-d')
+        ]);
+        
+        $checkInStatus = CheckInStatus::factory()->create();
+        $checkOutStatus = CheckOutStatus::factory()->create();
+
+        return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
+    }
+
+    #[Test]
+    public function it_can_retrieve_attendance_list()
+    {
+        $data = $this->createTestData();
+        
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
 
         $response = $this->getJson('/api/attendance');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'status',
-                     'message',
-                     'data' => [
-                         '*' => ['id', 'student_id', 'attendance_late_type_id', 'check_in_time', 'check_out_time']
-                     ]
-                 ]);
+            ->assertJson(['status' => 'success']);
     }
 
+    
     #[Test]
-    public function it_can_create_an_attendance_record()
+    public function it_can_filter_attendance_by_date_range()
     {
+        $data = $this->createTestData();
         
-        $school = School::factory()->create();
-        $this->authUser->update(['school_id' => $school->id]);
-        $student = Student::factory()->create(['school_id' => $school->id]);
+        $todayWindow = AttendanceWindow::factory()->create([
+            'date' => now()->format('Y-m-d'),
+            'school_id' => $data['school']->id
+        ]);
+        
+        $yesterdayWindow = AttendanceWindow::factory()->create([
+            'date' => now()->subDay()->format('Y-m-d'),
+            'school_id' => $data['school']->id
+        ]);
 
-        $data = [
-            'student_id' => $student->id,
-            'check_in_time' => now()->toDateTimeString(),
-            'check_out_time' => now()->addHours(8)->toDateTimeString(),
-        ];
+        // Presensi hari ini
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $todayWindow->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
 
-        $response = $this->postJson('/api/attendance', $data);
+        // Presensi kemarin 
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $yesterdayWindow->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
 
-        $response->assertStatus(201)
-                 ->assertJson([
-                     'status' => 'success',
-                     'message' => 'Attendance created successfully',
-                 ])
-                 ->assertJsonStructure([
-                     'status',
-                     'message',
-                     'data' => ['id', 'student_id', 'attendance_late_type_id', 'check_in_time', 'check_out_time']
-                 ]);
+        $response = $this->getJson('/api/attendance?startDate='.now()->format('Y-m-d').'&endDate='.now()->format('Y-m-d'));
 
-        $this->assertDatabaseHas('attendances', $data);
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.attendance_window_id', $todayWindow->id);
     }
 
     #[Test]
-    public function it_fails_to_create_attendance_with_invalid_data()
+    public function it_can_filter_attendance_by_class()
     {
-        $data = [
-            'student_id' => 9999,
-            'check_in_time' => 'invalid_date',
-            'check_out_time' => 'another_invalid_date',
+        $data = $this->createTestData();
+        
+        $otherClass = ClassGroup::factory()->create(['school_id' => $data['school']->id]);
+        $otherStudent = Student::factory()->create([
+            'school_id' => $data['school']->id,
+            'class_group_id' => $otherClass->id
+        ]);
+
+        // Presensi kelas yang difilter
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        // Presensi kelas lain
+        Attendance::factory()->create([
+            'student_id' => $otherStudent->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        $response = $this->getJson('/api/attendance?classGroup='.$data['classGroup']->id);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.student_id', $data['student']->id);
+    }
+
+    #[Test]
+    public function it_can_filter_attendance_by_status()
+    {
+        $data = $this->createTestData();
+        $otherStatus = CheckInStatus::factory()->create();
+
+        $window1 = AttendanceWindow::factory()->create([
+            'school_id' => $data['school']->id,
+            'date' => now()->format('Y-m-d')
+        ]);
+        
+        $window2 = AttendanceWindow::factory()->create([
+            'school_id' => $data['school']->id,
+            'date' => now()->addDay()->format('Y-m-d')
+        ]);
+
+        // Presensi dengan status yang difilter
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $window1->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        // Presensi dengan status lain
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $window2->id,
+            'check_in_status_id' => $otherStatus->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        $response = $this->getJson('/api/attendance?filter[check_in_status_id]='.$data['checkInStatus']->id);
+        
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.check_in_status_id', $data['checkInStatus']->id);
+    }
+
+    #[Test]
+    public function it_can_search_attendance_by_keyword()
+    {
+        $data = $this->createTestData();
+
+        // Presensi yang sesuai pencarian
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        $response = $this->getJson('/api/attendance?search='.$data['student']->student_name);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.student.student_name', $data['student']->student_name);
+    }
+
+    #[Test]
+    public function it_can_sort_attendance_by_column()
+    {
+        $data = $this->createTestData();
+        
+        $studentA = Student::factory()->create([
+            'school_id' => $data['school']->id,
+            'class_group_id' => $data['classGroup']->id,
+            'student_name' => 'Aaa Student'
+        ]);
+        
+        $studentB = Student::factory()->create([
+            'school_id' => $data['school']->id,
+            'class_group_id' => $data['classGroup']->id,
+            'student_name' => 'Bbb Student'
+        ]);
+
+        $windowA = AttendanceWindow::factory()->create([
+            'school_id' => $data['school']->id,
+            'date' => now()->format('Y-m-d')
+        ]);
+        
+        $windowB = AttendanceWindow::factory()->create([
+            'school_id' => $data['school']->id,
+            'date' => now()->addDay()->format('Y-m-d')
+        ]);
+
+        Attendance::factory()->create([
+            'student_id' => $studentB->id,
+            'attendance_window_id' => $windowB->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id,
+            'check_in_time' => now()->addDay()->format('Y-m-d H:i:s')
+        ]);
+
+        Attendance::factory()->create([
+            'student_id' => $studentA->id,
+            'attendance_window_id' => $windowA->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id,
+            'check_in_time' => now()->format('Y-m-d H:i:s')
+        ]);
+
+        // Urutkan ascending
+        $response = $this->getJson('/api/attendance?sort=student_name:asc');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.data.0.student.student_name', 'Aaa Student')
+            ->assertJsonPath('data.data.1.student.student_name', 'Bbb Student');
+    }
+
+    #[Test]
+    public function it_can_export_attendance_to_csv()
+    {
+        $data = $this->createTestData();
+        
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        $response = $this->get('/api/attendance/export?startDate='.now()->subWeek()->format('Y-m-d').'&endDate='.now()->format('Y-m-d'));
+
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+
+    #[Test]
+    public function it_can_update_attendance()
+    {
+        $data = $this->createTestData();
+        
+        $attendance = Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id,
+            'check_in_time' => now()->subHour()->format('Y-m-d H:i:s')
+        ]);
+
+        $updateData = [
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_time' => now()->format('Y-m-d H:i:s'),
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'check_out_time' => now()->addHours(5)->format('Y-m-d H:i:s'),
+            'check_out_status_id' => $data['checkOutStatus']->id
         ];
 
-        $response = $this->postJson('/api/attendance', $data);
+        $response = $this->putJson("/api/attendance/{$attendance->id}", $updateData);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'message' => 'Attendance updated successfully'
+            ]);
+
+        $this->assertDatabaseHas('attendances', [
+            'id' => $attendance->id,
+            'check_in_time' => now()->format('Y-m-d H:i:s'),
+            'check_out_time' => now()->addHours(5)->format('Y-m-d H:i:s')
+        ]);
+    }
+
+    #[Test]
+    public function it_cannot_update_attendance_with_invalid_data()
+    {
+        $data = $this->createTestData();
+        
+        $attendance = Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+
+        $invalidData = [
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_time' => 'invalid-date-format', // Format tanggal tidak valid
+            'check_in_status_id' => $data['checkInStatus']->id
+        ];
+
+        $response = $this->putJson("/api/attendance/{$attendance->id}", $invalidData);
 
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['student_id', 'attendance_late_type_id', 'check_in_time', 'check_out_time']);
+            ->assertJsonValidationErrors(['check_in_time']);
     }
 
     #[Test]
-    public function it_can_retrieve_a_single_attendance_record()
-    {   
-        $school = School::factory()->create();
-        $student = Student::factory()->create(['school_id' => $school->id]);
-        $attendance = Attendance::factory()->create([
-            'student_id' => $student->id,
-        ]);
-
-        $response = $this->getJson("/api/attendance/{$attendance->id}");
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'status' => 'success',
-                     'message' => 'Attendance retrieved successfully',
-                    'data' => [
-                    'id' => $attendance->id,
-                    'student_id' => $student->id,
-                    'check_in_time' => $attendance->check_in_time->format('Y-m-d H:i:s'),
-                    'check_out_time' => $attendance->check_out_time->format('Y-m-d H:i:s'),
-                    'created_at' => $attendance->created_at->format('Y-m-d\TH:i:s.u\Z'), 
-                    'updated_at' => $attendance->updated_at->format('Y-m-d\TH:i:s.u\Z'),
-                    ]
-                 ]);
-
-    }
-
-    #[Test]
-    public function it_can_update_an_attendance_record()
+    public function it_can_delete_attendance()
     {
-        $school = School::factory()->create();
-        $student = Student::factory()->create(['school_id' => $school->id]);
-        $attendance = Attendance::factory()->create([
-            'student_id' => $student->id,
-        ]);
-
-        $updatedData = [
-            'check_out_time' => now()->addHours(8)->toDateTimeString(),
-        ];
-
-        $response = $this->putJson("/api/attendance/{$attendance->id}", $updatedData);
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'status' => 'success',
-                     'message' => 'Attendance updated successfully',
-                     'data' => [
-                     'id' => $attendance->id,
-                     'student_id' => $student->id,
-                     'check_in_time' => $attendance->check_in_time->format('Y-m-d H:i:s'),
-                     'check_out_time' => \Carbon\Carbon::parse($updatedData['check_out_time'])->format('Y-m-d H:i:s'),
-                     'created_at' => $attendance->created_at->format('Y-m-d\TH:i:s.u\Z'), 
-                     'updated_at' => $attendance->updated_at->format('Y-m-d\TH:i:s.u\Z'),
-                     ]
-                 ]);
-
-        $this->assertDatabaseHas('attendances', array_merge(['id' => $attendance->id], $updatedData));
-    }
-
-    #[Test]
-    public function it_can_delete_an_attendance_record()
-    {
+        $data = $this->createTestData();
         
-        $school = School::factory()->create();
-        $student = Student::factory()->create(['school_id' => $school->id]);
         $attendance = Attendance::factory()->create([
-            'student_id' => $student->id,
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
         ]);
 
         $response = $this->deleteJson("/api/attendance/{$attendance->id}");
 
         $response->assertStatus(200)
-                 ->assertJson([
-                     'status' => 'success',
-                     'message' => 'Attendance deleted successfully'
-                 ]);
+            ->assertJson([
+                'status' => 'success',
+                'message' => 'Attendance deleted successfully'
+            ]);
 
         $this->assertDatabaseMissing('attendances', ['id' => $attendance->id]);
-        $this->assertDatabaseCount('attendances', 0);
     }
 
-    #[Test]
-    public function it_checks_attendance_data_is_linked_to_a_student()
-    {
-        $student = Student::factory()->create();
-        $attendance = Attendance::factory()->create(['student_id' => $student->id]);
-
-        $retrievedAttendance = Attendance::with('student')->find($attendance->id);
-
-        $this->assertNotNull($retrievedAttendance->student, "Attendance should be linked to a student.");
-        $this->assertEquals($student->id, $retrievedAttendance->student->id, "The attendance's student ID should match the created student ID.");
-    }
-
-
-    #[Test]
-    public function staff_can_view_attendance_list()
-    {
-        Attendance::factory()->count(5)->create();
-
-        $response = $this->getJson(route('api/school/attendance/'));
-        
-        $response->assertStatus(200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_filter_attendance_by_date()
-    {
-        $response = $this->getJson('/api/attendance?startDate=2024-03-01&endDate=2024-03-05');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_filter_attendance_by_class()
-    {
-        $classGroup = ClassGroup::factory()->create();
-        
-        $response = $this->getJson("/api/attendance?classGroup={$classGroup->id}");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_filter_attendance_by_status()
-    {
-        $checkInStatus = CheckInStatus::factory()->create();
-        
-        $response = $this->getJson("/api/attendance?checkInStatusId={$checkInStatus->id}");
-
-        $response->assertStatus(status: 200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_search_attendance_by_student_name()
-    {
-        $student = Student::factory()->create();
-        
-        $response = $this->getJson("api/attendance?search={$student->student_name}");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_sort_attendance_list()
-    {
-        $response = $this->getJson('api/attendance?sort=check_in_time&order=desc');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['status', 'message', 'data']);
-    }
-
-    #[Test]
-    public function staff_can_download_attendance_as_csv()
-    {
-        $response = $this->getJson('api/attendance/export-attendance?startDate=2024-03-01&endDate=2024-03-05');
-        
-        $response->assertStatus(200);
-    }
 
 }
