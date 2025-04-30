@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
 use Illuminate\Validation\ValidationException;
+use function App\Helpers\current_school_id;
 class AbsencePermitController extends Controller
 {
     use Filterable;
@@ -20,7 +21,7 @@ class AbsencePermitController extends Controller
 
         $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school_id']);
 
-        $data = $query->with('attendance', 'document', 'absencePermitType')->paginate($perPage);
+        $data = $query->with('attendances', 'document', 'absencePermitType')->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
@@ -38,7 +39,8 @@ class AbsencePermitController extends Controller
             'description' => 'required|string',
         ]);
 
-
+        $validatedData['school_id'] = current_school_id();
+        
         $data = AbsencePermit::create($validatedData);
         return response()->json([
             'status' => 'success',

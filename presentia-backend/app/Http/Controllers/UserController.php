@@ -84,7 +84,7 @@ class UserController extends Controller
         $user = $request->user();
         $user->school_id = School::where("school_token", $request->school_token)->first()?->id;
         $user->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User assigned to school successfully',
@@ -95,7 +95,7 @@ class UserController extends Controller
     public function removeFromSchool($id)
     {
         $user = User::findOrFail($id);
-        if($user->school_id != auth()->user()->school_id){
+        if ($user->school_id != auth()->user()->school_id) {
             abort(403, 'You do not have the authority to remove a user from a school that does not assign to you.');
         }
 
@@ -162,12 +162,17 @@ class UserController extends Controller
         if ($user->profile_image_path) {
             $user->profile_image_path = asset('storage/' . $user->profile_image_path);
         }
-        ;
 
         return response()->json([
             'status' => 'success',
             'message' => 'User retrieved successfully',
-            'data' => $user
+            'data' => array_merge(
+                $user->toArray(),
+                [
+                    'roles' => $user->getRoleNames(),
+                    'permissions' => $user->getAllPermissions()->pluck('name')
+                ]
+            )
         ]);
     }
 

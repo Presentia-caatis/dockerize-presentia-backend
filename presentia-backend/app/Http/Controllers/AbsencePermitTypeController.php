@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\AbsencePermitType;
 use Illuminate\Validation\ValidationException;
+use function App\Helpers\current_school_id;
 
 class AbsencePermitTypeController extends Controller
 {
@@ -26,7 +27,7 @@ class AbsencePermitTypeController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit types retrieved successfully',
-            'data' => $data
+            'data' => $data 
         ]);
 
     }
@@ -38,6 +39,7 @@ class AbsencePermitTypeController extends Controller
             'is_active' => 'required|boolean', 
         ]);
 
+        $validatedData['school_id'] = current_school_id();
 
         $data = AbsencePermitType::create($validatedData);
         return response()->json([
@@ -66,6 +68,7 @@ class AbsencePermitTypeController extends Controller
         ]);
 
         $absencePermitType->update($validatedData);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type updated successfully',
