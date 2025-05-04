@@ -253,8 +253,8 @@ class AttendanceController extends Controller
             'absence_permit_id' => 'nullable|exists:absence_permits,id',
             'check_in_time' => 'nullable|date_format:Y-m-d H:i:s',
             'check_out_time' => 'nullable||date_format:Y-m-d H:i:s',
-            'check_out_status_id' => 'nullable|exists:check_out_statuses',
-            'check_in_status_id' => 'nullable|exists:check_in_statuses',
+            'check_out_status_id' => 'nullable|exists:check_out_statuses,id',
+            'check_in_status_id' => 'nullable|exists:check_in_statuses,id',
         ]);
 
 
@@ -285,7 +285,7 @@ class AttendanceController extends Controller
         $checkOutStart = Carbon::parse($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time);
         $checkOutEnd = Carbon::parse($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time);
 
-        if ($checkOutTime) {
+        if ($checkOutTime && !isset($validatedData['check_out_status_id'])) {
             $checkOutTimeParsed = Carbon::parse($checkOutTime);
             if (!$checkOutTimeParsed->between($checkOutStart, $checkOutEnd)) {
                 $validatedData['check_out_status_id'] = CheckOutStatus::where('late_duration', -1)->first()->id;
@@ -294,7 +294,7 @@ class AttendanceController extends Controller
             }
         }
 
-        if ($checkInTime) {
+        if ($checkInTime && !isset($validatedData['check_in_status_id'])) {
             $checkInTimeParsed = Carbon::parse($checkInTime);
             $isInsideCheckInTimeRange = false;
 
