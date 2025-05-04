@@ -432,7 +432,9 @@ class AttendanceController extends Controller
 
     public function getById($id)
     {
-        $attendance = Attendance::findOrFail($id);
+        $attendance = Attendance::with(['student', 'checkInStatus', 'checkOutStatus', 'absencePermit'])->findOrFail($id);
+        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance retrieved successfully',
