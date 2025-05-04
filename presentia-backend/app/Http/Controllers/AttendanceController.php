@@ -433,7 +433,7 @@ class AttendanceController extends Controller
 
     public function getById($id)
     {
-        $attendance = Attendance::with(['student', 'checkInStatus', 'checkOutStatus', 'absencePermit'])->findOrFail($id);
+        $attendance = Attendance::with(['student', 'checkInStatus', 'checkOutStatus', 'absencePermit', 'attendanceWindow'])->findOrFail($id);
         
 
         return response()->json([
