@@ -60,7 +60,10 @@ class AbsencePermitController extends Controller
 
     public function getById($id)
     {
-        $absencePermit=AbsencePermit::findOrFail($id);
+        $absencePermit=AbsencePermit::with('document')->findOrFail($id);
+
+        $absencePermit->document->path = asset('storage/' . $absencePermit->document->path);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit retrieved successfully',
