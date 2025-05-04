@@ -73,6 +73,7 @@ class AttendanceController extends Controller
                 'student:id,student_name,nis,nisn,gender,class_group_id',
                 'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
+                'attendanceWindow:id,date'
             ])->select([
                         'id',
                         'student_id',
@@ -82,7 +83,7 @@ class AttendanceController extends Controller
                         'check_out_time'
                     ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup');
+            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow');
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
