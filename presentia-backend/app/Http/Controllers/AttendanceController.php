@@ -31,6 +31,7 @@ class AttendanceController extends Controller
         $validatedData = $request->validate([
             'startDate' => ['required_with:endDate', 'date_format:Y-m-d'],
             'endDate' => ['required_with:startDate', 'date_format:Y-m-d', 'after_or_equal:startDate'],
+            'search' => 'sometimes|string|max:255',
             'classGroup' => [
                 'sometimes',
                 function ($attribute, $value, $fail) {
@@ -74,13 +75,13 @@ class AttendanceController extends Controller
                 'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
             ])->select([
-                        'id',
-                        'student_id',
-                        'check_in_status_id',
-                        'attendance_window_id',
-                        'check_in_time',
-                        'check_out_time'
-                    ]);
+                'id',
+                'student_id',
+                'check_in_status_id',
+                'attendance_window_id',
+                'check_in_time',
+                'check_out_time'
+            ]);
         } else {
             $query = Attendance::with('student', 'checkInStatus', 'student.classGroup');
         }
@@ -116,6 +117,16 @@ class AttendanceController extends Controller
         if ($isExcludeCheckInAbsentStudent) {
             $query->where('check_in_status_id', '!=', CheckInStatus::where('late_duration', -1)->first()->id);
         }
+
+        if (!empty($validatedData['search'])) {
+            $search = $validatedData['search'];
+            $query->whereHas('student', function ($q) use ($search) {
+                $q->where('student_name', 'like', "%$search%")
+                    ->orWhere('nis', 'like', "%$search%")
+                    ->orWhere('nisn', 'like', "%$search%");
+            });
+        }
+
 
         $data = $query->paginate($perPage);
 
@@ -162,7 +173,7 @@ class AttendanceController extends Controller
         foreach ($batches as $attendanceBatch) {
             StoreAttendanceJob::dispatch($attendanceBatch)->onQueue('store-attendance');
         }
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance processing has started',
@@ -360,7 +371,6 @@ class AttendanceController extends Controller
             'status' => 'success',
             'message' => 'Absent students marked successfully'
         ]);
-
     }
 
     public function exportAttendance(Request $request)
