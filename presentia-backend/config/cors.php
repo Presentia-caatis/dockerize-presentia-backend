@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://presentia.matradipti.org', env('FRONTEND_URL'), '*'],
+    'allowed_origins' => ['http://presentia.matradipti.org', 'http://localhost:8080' ,env('FRONTEND_URL'), '*'],
 
     'allowed_origins_patterns' => [],
 
