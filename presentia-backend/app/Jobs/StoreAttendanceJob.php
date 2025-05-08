@@ -24,6 +24,7 @@ class StoreAttendanceJob implements ShouldQueue
     use Queueable;
 
     protected $jsonInput;
+    public $response;
 
     /**
      * Create a new job instance.
@@ -31,6 +32,7 @@ class StoreAttendanceJob implements ShouldQueue
     public function __construct(array $jsonInput)
     {
         $this->jsonInput = $jsonInput;
+        $this->response = [];
     }
 
     /**
@@ -75,9 +77,6 @@ class StoreAttendanceJob implements ShouldQueue
         $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
             ->toArray();
         //>>
-        \Log::info('Input dates:', [$inputDates]);
-        \Log::info('Attendance Windows:', [$attendanceWindows]);
-        \Log::info('Attendance Windows 2025-09-03', [$attendanceWindows]);
 
         $isInAttendanceSession = false;
 
@@ -88,6 +87,7 @@ class StoreAttendanceJob implements ShouldQueue
             $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null; //get all attendance window for desired date
 
             if (!$attendanceWindowsPerDate) {
+                $this->setResponse("failed", $studentId, "Waktu presensi diluar jangka waktu yang ditentukan");
                 $this->logFailure($studentId, $checkTime, "No attendance window found for date $formattedDate");
                 continue;
             }
@@ -129,6 +129,7 @@ class StoreAttendanceJob implements ShouldQueue
                         ]);
 
                     } catch (Exception $e) {
+                        $this->setResponse("failed", $studentId, "Gagal Input Presensi", $e->getMessage());
                         $this->logFailure($studentId, $checkTime, 'Something went wrong: ' . $e->getMessage(), $attendanceWindow->id);
                         continue;
                     }
@@ -139,6 +140,7 @@ class StoreAttendanceJob implements ShouldQueue
                         $attendance->check_in_status_id != $absenceCheckInStatus->id &&
                         $checkTime->between($checkInStartTime, $checkInEndTime)
                     ) {
+                        $this->setResponse("failed", $studentId, "Siswa sudah presensi masuk");
                         $this->logFailure($studentId, $checkTime, 'Duplicate check-in attempt', $attendanceWindow->id);
                         continue;
                     } else if (
@@ -146,6 +148,7 @@ class StoreAttendanceJob implements ShouldQueue
                         $attendance->check_out_status_id != $checkOutStatuses["-1"] &&
                         $checkTime->between($checkOutStartTime, $checkOutEndTime)
                     ) { // Prevent duplicate check-outs
+                        $this->setResponse("failed", $studentId, "Siswa sudah presensi keluar");
                         $this->logFailure($studentId, $checkTime, 'Duplicate check-out attempt', $attendanceWindow->id);
                         continue;
                     }
@@ -174,13 +177,16 @@ class StoreAttendanceJob implements ShouldQueue
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
                     if (!$attendance->check_in_time) {
+                        $this->setResponse("warning" ,$studentId, "Siswa belum presensi masuk");
                         $this->logFailure($studentId, $checkTime, 'Student has not checked in yet', $attendanceWindow->id);
                     }
                 }
+                $this->setResponse("success" ,$studentId, "Presensi berhasil");
                 break;
             }
 
             if (!$isInAttendanceSession) {
+                $this->setResponse("failed", $studentId, "Waktu presensi diluar jangka waktu yang ditentukan");
                 $this->logFailure(
                     $studentId,
                     $checkTime,
@@ -198,5 +204,13 @@ class StoreAttendanceJob implements ShouldQueue
             'message' => $message,
             'attendance_window_id' => $attendanceWindowId
         ]);
+    }
+
+    private function setResponse($status ,$studentId, $message, $error = ""){
+        $this->response[$studentId][] = [
+            'status' => $status,
+            'message' => $message,
+            'error' => $error
+        ];
     }
 }

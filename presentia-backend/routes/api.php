@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // Allow all authenticated users to access get-by-token
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
         Route::post('/school/assign-via-token', [UserController::class , 'assignToSchoolViaToken']);    
+        Route::put('/', [UserController::class, 'update']);
 
         // Allow only super_admin and school_admin to manage link-to-school
         Route::middleware('permission:manage_school_users')->group(function () {
@@ -107,7 +108,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/', [UserController::class, 'index']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
-            Route::put('/{id}', [UserController::class, 'update']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
         });
     });
@@ -214,6 +214,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
             Route::post('/file', [AttendanceController::class, 'storeFromFile']);
             Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+            Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
             Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
             Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
             Route::get('/{id}', [AttendanceController::class, 'getById']);
