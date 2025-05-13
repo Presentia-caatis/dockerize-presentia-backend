@@ -47,7 +47,7 @@ class DashboardStatistic extends Controller
         $attendanceWindows = AttendanceWindow::whereDate('date', $date)->get();
 
         if ($attendanceWindows->isEmpty()) {
-            return $this->emptyResponse($summarize);
+            return $this->emptyResponse();
         }
 
         $checkInStatuses = CheckInStatus::orderBy('late_duration')->pluck('status_name', 'id');
@@ -119,12 +119,10 @@ class DashboardStatistic extends Controller
         ];
     }
 
-    private function emptyResponse(bool $summarize): JsonResponse
+    private function emptyResponse(): JsonResponse
     {
         $count = Student::where('is_active', true)->count();
-        $data = $summarize
-            ? ['present' => 0, 'absent' => $count]
-            : ['Tidak Hadir' => $count];
+        $data = ['present' => 0, 'absent' => $count];
 
         return response()->json([
             'status' => 'success',

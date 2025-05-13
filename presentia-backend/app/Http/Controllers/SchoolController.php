@@ -186,9 +186,9 @@ class SchoolController extends Controller
                 ],
             ]);
     
-            \DB::commit(); 
-    
             $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+
+            \DB::commit(); 
     
             return response()->json([
                 'status' => 'success',
