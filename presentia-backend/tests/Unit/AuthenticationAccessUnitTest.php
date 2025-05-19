@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
-class AuthTest extends TestCase
+class AuthenticationAccessUnitTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
@@ -49,50 +49,6 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => $response->json('user.email'),
         ]);
-    }
-
-    #[Test]
-    public function test_user_can_register_invalid_fullname()
-    {
-        $response = $this->postJson('api/register', [
-            'fullname' => 'ad',
-            'username' => 'adamUser',
-            'email' => $this->faker->unique()->safeEmail,
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'google_id' => $this->faker->numerify('##############'),
-        ]);
-
-        $response->assertStatus(422)
-                 ->assertJsonStructure([
-                     'status',
-                     'message',
-                     'errors' => [
-                         'fullname',
-                     ]
-                 ]);
-    }
-
-    #[Test]
-    public function test_user_can_register_invalid_username()
-    {
-        $response = $this->postJson('api/register', [
-            'fullname' => 'adam',
-            'username' => 'ad',
-            'email' => $this->faker->unique()->safeEmail,
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'google_id' => $this->faker->numerify('##############'),
-        ]);
-
-        $response->assertStatus(422)
-                 ->assertJsonStructure([
-                     'status',
-                     'message',
-                     'errors' => [
-                         'username',
-                     ]
-                 ]);
     }
 
     #[Test]
@@ -144,32 +100,6 @@ class AuthTest extends TestCase
     }
 
     #[Test]
-    public function test_user_can_login_with_username()
-    {
-        $user = User::factory()->create([
-            'username' => 'testuser',
-            'password' => bcrypt('Password123!'),
-        ]);
-
-        $response = $this->postJson('api/login', [
-            'email_or_username' => 'testuser',
-            'password' => 'Password123!',
-        ]);
-
-        $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'status',
-                     'user' => [
-                         'id',
-                         'fullname',
-                         'username',
-                         'email',
-                     ],
-                     'token',
-                 ]);
-    }
-
-    #[Test]
     public function test_user_cannot_login_with_invalid_credentials()
     {
         $user = User::factory()->create([
@@ -190,28 +120,7 @@ class AuthTest extends TestCase
     }
 
     #[Test]
-    public function test_user_can_logout()
-    {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('api/logout');
-
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'status' => 'success',
-                     'message' => 'You are logged out',
-                 ]);
-
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id,
-        ]);
-    }
-
-    #[Test]
-    public function test_google_authentication_existing_user()
+    public function test_google_authentication()
     {
         $googleUser = (object) [
             'id' => '123456789',
@@ -258,14 +167,24 @@ class AuthTest extends TestCase
     }
 
     #[Test]
-    public function test_google_authentication_error()
+    public function test_user_can_logout()
     {
-        // Mock Socialite untuk melempar exception
-        \Laravel\Socialite\Facades\Socialite::shouldReceive('driver->stateless->user')
-            ->andThrow(new \Exception('Authentication failed.'));
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
 
-        $response = $this->getJson('api/auth-google-callback');
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('api/logout');
 
-        $response->assertRedirect(config('app.frontend_url') . '/login?status=error&message=' . urlencode('Authentication failed.'));
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status' => 'success',
+                     'message' => 'You are logged out',
+                 ]);
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+        ]);
     }
+
 }

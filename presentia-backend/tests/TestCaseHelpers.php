@@ -35,14 +35,14 @@ trait TestCaseHelpers
         $role->givePermissionTo('manage_attendance');
 
         $this->authUser = User::factory()->create([
-            'password' => bcrypt('123'),
+            'password' => bcrypt('password123'),
             'school_id' => $school->id
         ]);
         $this->authUser->assignRole(Role::findByName('super_admin', 'web'));
 
         $response = $this->postJson('api/login', [
             'email_or_username' => $this->authUser->email,
-            'password' => '123',  
+            'password' => 'password123',  
         ]);
 
         $this->token = $response->json('token');

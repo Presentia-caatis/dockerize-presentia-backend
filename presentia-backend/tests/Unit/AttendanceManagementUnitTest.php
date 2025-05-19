@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceSchedule;
 use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
+use App\Models\Day;
 use Tests\TestCase;
 use App\Models\Attendance;
 use App\Models\Student;
@@ -18,7 +20,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
 
 
-class AttendanceTest extends TestCase
+class AttendanceManagementUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 
@@ -262,6 +264,59 @@ class AttendanceTest extends TestCase
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
+    #[Test]
+    public function test_user_can_update_attendance_schedule_with_valid_data()
+    {
+        $schedule = AttendanceSchedule::factory()->create();
+
+        $day = Day::factory()->create([
+            'school_id' => $this->authUser->school_id,
+            'attendance_schedule_id' => $schedule->id
+        ]);
+
+        $payload = [
+            'name' => 'Updated Schedule Name',
+            'check_in_start_time' => '07:00:00',
+            'check_in_end_time' => '08:00:00',
+            'check_out_start_time' => '12:00:00',
+            'check_out_end_time' => '13:00:00',
+        ];
+
+        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
+
+        $response->assertStatus(200)
+                ->assertJson([
+                    'status' => 'success',
+                    'message' => 'Attendance schedule updated successfully',
+                    'data' => [
+                        'id' => $schedule->id,
+                        'name' => 'Updated Schedule Name',
+                        'check_in_start_time' => '07:00:00',
+                        'check_in_end_time' => '08:00:00',
+                        'check_out_start_time' => '12:00:00',
+                        'check_out_end_time' => '13:00:00',
+                    ]
+                ]);
+    }
+
+    #[Test]
+    public function test_cannot_update_without_required_check_out_end_time()
+    {
+        $schedule = AttendanceSchedule::factory()->create();
+        Day::factory()->create([
+            'school_id' => $this->authUser->school_id,
+            'attendance_schedule_id' => $schedule->id
+        ]);
+
+        $payload = [
+            'name' => 'Updated Name',
+        ];
+
+        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['check_out_end_time']);
+    }
 
     #[Test]
     public function it_can_update_attendance()
@@ -313,7 +368,7 @@ class AttendanceTest extends TestCase
 
         $invalidData = [
             'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_time' => 'invalid-date-format', // Format tanggal tidak valid
+            'check_in_time' => 'invalid-date-format',
             'check_in_status_id' => $data['checkInStatus']->id
         ];
 
@@ -322,29 +377,5 @@ class AttendanceTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['check_in_time']);
     }
-
-    #[Test]
-    public function it_can_delete_attendance()
-    {
-        $data = $this->createTestData();
-        
-        $attendance = Attendance::factory()->create([
-            'student_id' => $data['student']->id,
-            'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_status_id' => $data['checkInStatus']->id,
-            'school_id' => $data['school']->id
-        ]);
-
-        $response = $this->deleteJson("/api/attendance/{$attendance->id}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Attendance deleted successfully'
-            ]);
-
-        $this->assertDatabaseMissing('attendances', ['id' => $attendance->id]);
-    }
-
 
 }

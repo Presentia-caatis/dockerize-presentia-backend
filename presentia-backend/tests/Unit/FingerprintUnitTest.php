@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
 
-class FingerprintTest extends TestCase
+class FingerprintUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 

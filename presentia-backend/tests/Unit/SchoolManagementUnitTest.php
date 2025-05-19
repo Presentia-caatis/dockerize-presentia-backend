@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 
 
-class SchoolTest extends TestCase
+class SchoolManagementUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 

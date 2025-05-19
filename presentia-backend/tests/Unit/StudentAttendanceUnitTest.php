@@ -20,7 +20,7 @@ use Tests\TestCaseHelpers;
 use PHPUnit\Framework\Attributes\Test;
 
 
-class AttendanceUnitTest extends TestCase
+class StudentAttendanceUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers, WithFaker;
 

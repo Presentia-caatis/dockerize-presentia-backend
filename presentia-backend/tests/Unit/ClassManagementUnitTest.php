@@ -11,7 +11,7 @@ use App\Models\School;
 use Tests\TestCaseHelpers;
 use PHPUnit\Framework\Attributes\Test;
 
-class ClassManagementTest extends TestCase
+class ClassManagementUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 

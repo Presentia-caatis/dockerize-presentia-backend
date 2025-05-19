@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
 
 
-class StudentTest extends TestCase
+class StudentManagementUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers;
 
@@ -87,7 +87,7 @@ class StudentTest extends TestCase
             'class_group_id' => null,
             'nis' => '12345678',
             'nisn' => '87654321',
-            'student_name' => 'John Doe',
+            'student_name' => 'Adam',
             'gender' => 'male',
         ];
 
@@ -209,7 +209,7 @@ class StudentTest extends TestCase
             'school_id' => $schoolId
         ]);
         
-        $response = $this->get("/api/student/csv");
+        $response = $this->getJson("/api/student/csv");
         
         $response->assertStatus(200)
                  ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
