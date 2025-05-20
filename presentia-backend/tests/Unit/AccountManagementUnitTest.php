@@ -24,7 +24,7 @@ class AccountManagementUnitTest extends TestCase
     
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/user/{$this->authUser->id}", $payload);
+        ])->putJson("/api/user/", $payload);
     
         $response->assertStatus(200)
                  ->assertJson([
@@ -50,7 +50,7 @@ class AccountManagementUnitTest extends TestCase
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/user/{$this->authUser->id}", $payload);
+        ])->putJson("/api/user/", $payload);
 
         $response->assertStatus(422);
     }
@@ -66,7 +66,7 @@ class AccountManagementUnitTest extends TestCase
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/user/{$this->authUser->id}", $payload);
+        ])->putJson("/api/user/", $payload);
 
         $response->assertStatus(200)
                 ->assertJson([
@@ -88,7 +88,7 @@ class AccountManagementUnitTest extends TestCase
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
-        ])->putJson("/api/user/{$this->authUser->id}", $payload);
+        ])->putJson("/api/user/", $payload);
 
         $response->assertStatus(400)
                 ->assertJson([
