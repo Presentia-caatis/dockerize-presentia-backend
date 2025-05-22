@@ -19,6 +19,10 @@ class AuthController extends Controller
             'google_id' => 'nullable|string'
         ]);
 
+        if(isset($validatedData['google_id'])){
+            $validatedData['email_verified_at'] = now();
+        }
+
         $validatedData['password'] = Hash::make($validatedData['password']);
 
         $user = User::create($validatedData);
