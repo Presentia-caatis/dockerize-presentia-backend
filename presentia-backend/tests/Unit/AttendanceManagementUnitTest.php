@@ -239,7 +239,7 @@ class AttendanceManagementUnitTest extends TestCase
         ]);
 
         // Urutkan ascending
-        $response = $this->getJson('/api/attendance?sort=student_name:asc');
+        $response = $this->getJson('/api/attendance?sort[student.student_name]=asc');
 
         $response->assertStatus(200)
             ->assertJsonPath('data.data.0.student.student_name', 'Aaa Student')

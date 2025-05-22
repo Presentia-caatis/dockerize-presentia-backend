@@ -24,6 +24,7 @@ class AttendanceStatisticUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers, WithFaker;
 
+    // Active/Inactive Student
     public function test_static_statistic_endpoint_returns_expected_data()
     {
         $school = School::factory()->create();
@@ -75,6 +76,7 @@ class AttendanceStatisticUnitTest extends TestCase
             ]);
     }
 
+    // 
     public function test_daily_statistic_with_attendance_window_and_attendance()
     {
 

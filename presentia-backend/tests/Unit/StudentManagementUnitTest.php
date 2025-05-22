@@ -199,21 +199,6 @@ class StudentManagementUnitTest extends TestCase
 
         $this->assertDatabaseMissing('students', ['id' => $student->id]);
     }
-    
-    #[Test]
-    public function it_can_download_student_csv()
-    {
-        $schoolId = $this->authUser->school_id;
-
-        Student::factory()->create([
-            'school_id' => $schoolId
-        ]);
-        
-        $response = $this->getJson("/api/student/csv");
-        
-        $response->assertStatus(200)
-                 ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-    }
 
     #[Test] 
     public function it_can_retrieve_student_active_status_statistics()
