@@ -92,8 +92,16 @@ class AttendanceStatisticUnitTest extends TestCase
             'school_id' => $school->id
         ]);
 
-        $checkout = CheckOutStatus::factory()->create([
-            'school_id' => $school->id
+        $checkoutNormal = CheckOutStatus::factory()->create([
+            'school_id' => $school->id,
+            'late_duration' => 0, // Contoh: On Time Checkout
+            'status_name' => 'On Time Checkout'
+        ]);
+
+        $checkoutAbsent = CheckOutStatus::factory()->create([
+            'school_id' => $school->id,
+            'late_duration' => -1, // Penting: Status absen untuk checkout
+            'status_name' => 'Absent Checkout'
         ]);
 
         $students = Student::factory()->count(3)->create(['is_active' => true, 'school_id' => $school->id]);
@@ -105,7 +113,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[0]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[1]->id, // On Time
-            'check_out_status_id' => $checkout->id,
+            'check_out_status_id' => $checkoutNormal->id,
             'school_id' => $school->id
         ]);
 
@@ -113,6 +121,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[1]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[0]->id, // Absent
+            'check_out_status_id' => $checkoutAbsent->id,
             'school_id' => $school->id
         ]);
 
@@ -139,8 +148,16 @@ class AttendanceStatisticUnitTest extends TestCase
             'school_id' => $school->id
         ]);
 
-        $checkout = CheckOutStatus::factory()->create([
-            'school_id' => $school->id
+        $checkoutOnTime = CheckOutStatus::factory()->create([
+            'school_id' => $school->id,
+            'late_duration' => 0,
+            'status_name' => 'On Time Checkout' 
+        ]);
+
+        $checkoutAbsent = CheckOutStatus::factory()->create([
+            'school_id' => $school->id,
+            'late_duration' => -1,
+            'status_name' => 'Absent Checkout' 
         ]);
 
         $students = Student::factory()->count(2)->create(['is_active' => true, 'school_id' => $school->id]);
@@ -152,6 +169,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[0]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[0]->id,
+            'check_out_status_id' => $checkoutAbsent->id,
             'school_id' => $school->id
         ]);
 
@@ -159,7 +177,7 @@ class AttendanceStatisticUnitTest extends TestCase
             'student_id' => $students[1]->id,
             'attendance_window_id' => $window->id,
             'check_in_status_id' => $statuses[1]->id,
-            'check_out_status_id' => $checkout->id,
+            'check_out_status_id' => $checkoutOnTime->id,
             'school_id' => $school->id
         ]);
 
@@ -169,11 +187,24 @@ class AttendanceStatisticUnitTest extends TestCase
             ->assertJsonStructure([
                 'status',
                 'message',
-                'data' => [
-                    'Total Hadir',
-                    'Absent',
-                    'On Time'
+                'data' => [ 
+                '*' => [
+                    'attendance_window_name',
+                    'attendance_window_type',
+                    'statistic' => [
+                        'check_in' => [
+                            'Total Hadir', 
+                            'Absent',     
+                            'On Time'     
+                        ],
+                        'check_out' => [
+                            'Total Keluar',
+                            'On Time Checkout', 
+                            'Absent Checkout'  
+                        ]
+                    ]
                 ]
+            ]
             ]);
     }
 
