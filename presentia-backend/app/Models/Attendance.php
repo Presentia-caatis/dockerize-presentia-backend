@@ -15,6 +15,7 @@ class Attendance extends Model
         'school_id',
         'id',
         'student_id',
+        'is_active',
         "absence_permit_id",
         'check_in_status_id',
         'check_out_status_id',
