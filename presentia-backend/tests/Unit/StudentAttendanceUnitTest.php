@@ -6,6 +6,7 @@ use App\Models\AbsencePermit;
 use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
+use App\Models\ClassGroup;
 use App\Models\Student;
 use App\Models\CheckInStatus;
 use App\Models\School;
@@ -23,6 +24,28 @@ use PHPUnit\Framework\Attributes\Test;
 class StudentAttendanceUnitTest extends TestCase
 {
     use RefreshDatabase, TestCaseHelpers, WithFaker;
+
+    
+    private function createTestData()
+    {
+        $school = School::find($this->authUser->school_id);
+        
+        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $student = Student::factory()->create([
+            'school_id' => $school->id,
+            'class_group_id' => $classGroup->id
+        ]);
+        
+        $attendanceWindow = AttendanceWindow::factory()->create([
+            'school_id' => $school->id,
+            'date' => now()->format('Y-m-d')
+        ]);
+        
+        $checkInStatus = CheckInStatus::factory()->create();
+        $checkOutStatus = CheckOutStatus::factory()->create();
+
+        return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
+    }
 
     #[Test]
     public function test_user_can_input_manual_attendance_with_valid_data()
@@ -121,5 +144,42 @@ class StudentAttendanceUnitTest extends TestCase
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['check_in_time', 'check_out_time']);
     }
+
+    #[Test]
+    public function it_can_retrieve_today_attendance_list()
+    {
+        $data = $this->createTestData();
+        
+        Attendance::factory()->create([
+            'student_id' => $data['student']->id,
+            'attendance_window_id' => $data['attendanceWindow']->id,
+            'check_in_status_id' => $data['checkInStatus']->id,
+            'school_id' => $data['school']->id
+        ]);
+        
+        $today = Carbon::today()->toDateString();
+
+        $response = $this->getJson('/api/attendance?startDate=' . $today . '&endDate=' . $today);
+
+        $response->assertStatus(200)
+                ->assertJson([
+                    'status' => 'success',
+                    'message' => 'Attendances retrieved successfully',
+                    'data' => [
+                        'current_page' => 1,
+                        'data' => [
+                            [
+                                'attendance_window' => [
+                                    'date' => $today, 
+                                ],
+                                'student' => [
+                                    'student_name' => $data['student']->student_name, 
+                                ]
+                            ]
+                        ],
+                    ],
+                ]);
+    }
+
 
 }
