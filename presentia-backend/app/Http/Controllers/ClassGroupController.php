@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
+use App\Sortable;
 use Illuminate\Http\Request;
 
 use App\Models\ClassGroup;
 
 class ClassGroupController extends Controller
 {
-    use Filterable;
+    use Filterable, Sortable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -19,6 +20,7 @@ class ClassGroupController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
 
         $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
 
         $data = $query->withCount('students')->paginate($perPage);
 
