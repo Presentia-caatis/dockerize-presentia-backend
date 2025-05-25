@@ -6,6 +6,7 @@ use App\Filterable;
 use App\Http\Requests\ExcelFileRequest;
 use App\Jobs\ImportStudentJob;
 use App\Models\ClassGroup;
+use App\Sortable;
 use Illuminate\Http\Request;
 
 use App\Models\Student;
@@ -13,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
-    use Filterable;
+    use Filterable, Sortable;
     
     public function index(Request $request)
     {
@@ -28,6 +29,7 @@ class StudentController extends Controller
         $query = Student::with('classGroup');
 
         $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
 
 
         if ($request->has('class_group_id')) {
