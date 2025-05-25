@@ -22,23 +22,36 @@ trait TestCaseHelpers
         $school = School::factory()->create();
 
         $role = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'school_staff', 'guard_name' => 'web']);
+
         Permission::firstOrCreate(['name' => 'manage_school_users', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'basic_school', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_students', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_schools', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_attendance', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'assign_roles', 'guard_name' => 'web']);
 
-        $role->givePermissionTo('manage_school_users');
-        $role->givePermissionTo('basic_school');
-        $role->givePermissionTo('manage_students');
-        $role->givePermissionTo('manage_schools');
-        $role->givePermissionTo('manage_attendance');
+        $superAdminRole = Role::findByName('super_admin', 'web');
+
+        $superAdminRole->givePermissionTo([
+            'manage_school_users',
+            'basic_school',
+            'manage_students',
+            'manage_schools',
+            'manage_attendance',
+            'assign_roles', 
+        ]);
+
+        $schoolAdminRole = Role::findByName('school_admin', 'web');
+        $schoolAdminRole->givePermissionTo('basic_school'); 
 
         $this->authUser = User::factory()->create([
             'password' => bcrypt('password123'),
-            'school_id' => $school->id
+            'school_id' => $school->id,
+            'email_verified_at' => now(),
         ]);
-        $this->authUser->assignRole(Role::findByName('super_admin', 'web'));
+        $this->authUser->assignRole('super_admin');
 
         $response = $this->postJson('api/login', [
             'email_or_username' => $this->authUser->email,

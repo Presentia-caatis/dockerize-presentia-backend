@@ -94,6 +94,99 @@ class SchoolManagementUnitTest extends TestCase
     }
 
     #[Test]
+    public function superadmin_can_view_list_of_all_users(): void
+    {
+        $school1 = School::factory()->create();
+        $school2 = School::factory()->create();
+
+        $user1_school1 = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
+        $user2_school1 = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
+        $user3_school2 = User::factory()->create(['school_id' => $school2->id, 'email_verified_at' => now()]);
+        $user4_no_school = User::factory()->create(['school_id' => null, 'email_verified_at' => now()]);
+
+        $schoolAdminRole = Role::findByName('school_admin', 'web');
+        $userSchoolAdmin = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
+        $userSchoolAdmin->assignRole($schoolAdminRole);
+
+        $response = $this->getJson('/api/user');
+
+        $response->assertStatus(200)
+                 ->assertJsonStructure([
+                     'status',
+                     'message',
+                     'data' => [
+                             '*' => [
+                                 'id',
+                                 'fullname',
+                                 'username',
+                                 'email',
+                                 'school_id',
+                                 'profile_image_path', 
+                                 'school',
+                                 'roles',
+                         ],
+                     ]
+                 ]);
+
+        $response->assertJsonFragment(['id' => $user1_school1->id]);
+        $response->assertJsonFragment(['id' => $user2_school1->id]);
+        $response->assertJsonFragment(['id' => $user3_school2->id]);
+        $response->assertJsonFragment(['id' => $user4_no_school->id]);
+        $response->assertJsonFragment(['id' => $userSchoolAdmin->id]);
+
+        $this->assertEquals(6, count($response->json('data')));
+    }
+
+        #[Test]
+    public function superadmin_can_assign_school_staff_role_to_user(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+
+        $response = $this->postJson('/api/role/user/assign', [
+            'user_id' => $user->id,
+            'role'    => 'school_staff',
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status'  => 'success',
+                     'message' => 'Role assigned successfully',
+                     'data'    => [
+                         'id'    => $user->id,
+                         'roles' => [['name' => 'school_staff']],
+                     ],
+                 ]);
+
+        $user->refresh();
+        $this->assertTrue($user->hasRole('school_staff'));
+    }
+
+    #[Test]
+    public function superadmin_can_remove_school_staff_role_from_user(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user->assignRole('school_staff');
+        $this->assertTrue($user->hasRole('school_staff'));
+
+        $response = $this->postJson('/api/role/user/remove', [
+            'user_id' => $user->id,
+            'role'    => 'school_staff',
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status'  => 'success',
+                     'message' => 'Role removed successfully',
+                     'data'    => [
+                         'id'    => $user->id,
+                     ],
+                 ]);
+
+        $user->refresh();
+        $this->assertFalse($user->hasRole('school_staff'));
+    }
+
+    #[Test]
     public function superadmin_can_retrieve_school_list()
     {
         School::factory()->count(3)->create();
@@ -215,6 +308,84 @@ class SchoolManagementUnitTest extends TestCase
         $this->assertDatabaseMissing('schools', ['id' => $school->id]);
         
         Storage::disk('public')->assertMissing('logos/test.jpg');
+    }
+
+        #[Test]
+    public function superadmin_can_filter_users_by_role_to_see_school_admins(): void
+    {
+        $school1 = School::factory()->create();
+        $school2 = School::factory()->create();
+
+        $schoolAdminRole = Role::findByName('school_admin', 'web');
+
+        $userSchoolAdmin1 = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
+        $userSchoolAdmin1->assignRole($schoolAdminRole);
+
+        $userSchoolAdmin2 = User::factory()->create(['school_id' => $school2->id, 'email_verified_at' => now()]);
+        $userSchoolAdmin2->assignRole($schoolAdminRole);
+
+        $userRegularStaff = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
+
+        $response = $this->getJson('/api/user?filter[roles.name]=school_admin');
+
+        $response->assertStatus(200);
+
+        $response->assertJsonFragment(['id' => $userSchoolAdmin1->id]);
+        $response->assertJsonFragment(['id' => $userSchoolAdmin2->id]);
+        $response->assertJsonMissing(['id' => $this->authUser->id]); 
+        $response->assertJsonMissing(['id' => $userRegularStaff->id]); 
+
+        $this->assertEquals(2, count($response->json('data')));
+    }
+
+    #[Test]
+    public function superadmin_can_assign_school_admin_role_to_user(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+
+        $response = $this->postJson('/api/role/user/assign', [
+            'user_id' => $user->id,
+            'role'    => 'school_admin',
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status'  => 'success',
+                     'message' => 'Role assigned successfully',
+                     'data'    => [
+                         'id'    => $user->id,
+                         'roles' => [['name' => 'school_admin']], 
+                     ],
+                 ]);
+
+        $user->refresh();
+        $this->assertTrue($user->hasRole('school_admin'));
+    }
+
+    #[Test]
+    public function superadmin_can_remove_school_admin_role_from_user(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user->assignRole('school_admin');
+
+        $this->assertTrue($user->hasRole('school_admin'));
+
+        $response = $this->postJson('/api/role/user/remove', [
+            'user_id' => $user->id,
+            'role'    => 'school_admin',
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status'  => 'success',
+                     'message' => 'Role removed successfully',
+                     'data'    => [
+                         'id'    => $user->id,
+                     ],
+                 ]);
+
+        $user->refresh(); 
+        $this->assertFalse($user->hasRole('school_admin'));
     }
 
 }
