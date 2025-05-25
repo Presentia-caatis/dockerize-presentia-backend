@@ -263,6 +263,47 @@ class StudentManagementUnitTest extends TestCase
                 ]);
     }
 
+    #[Test]
+    public function it_can_sort_students_by_nis(): void
+    {
+        $schoolId = $this->authUser->school_id;
+
+        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
+
+        $studentA = Student::factory()->create([
+            'school_id'      => $schoolId,
+            'class_group_id' => $classGroup->id,
+            'nis'            => '1001',
+            'student_name'   => 'Adam',
+        ]);
+
+        $studentB = Student::factory()->create([
+            'school_id'      => $schoolId,
+            'class_group_id' => $classGroup->id,
+            'nis'            => '1003',
+            'student_name'   => 'Budi',
+        ]);
+
+        $studentC = Student::factory()->create([
+            'school_id'      => $schoolId,
+            'class_group_id' => $classGroup->id,
+            'nis'            => '1002',
+            'student_name'   => 'Cantika',
+        ]);
+
+        $responseAsc = $this->getJson('/api/student?sort[nis]=asc');
+
+        $responseAsc->assertStatus(200)
+                    ->assertJson([
+                        'status'  => 'success',
+                        'message' => 'Students retrieved successfully',
+                    ]);
+
+        $responseAsc->assertJsonPath('data.data.0.nis', $studentA->nis); // NIS 1001
+        $responseAsc->assertJsonPath('data.data.1.nis', $studentC->nis); // NIS 1002
+        $responseAsc->assertJsonPath('data.data.2.nis', $studentB->nis); // NIS 1003
+    }
+
     #[Test] 
     public function it_can_retrieve_total_active_student()
     {

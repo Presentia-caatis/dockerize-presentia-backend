@@ -43,12 +43,11 @@ class StudentAndAttendanceManagementTest extends TestCase
 
 
     #[Test]
-    public function attendance_management_workflow(): void
+    public function student_attendance_management(): void
     {
         // --- 0. Initial Setup ---
         $schoolId = $this->authUser->school_id;
 
-        // Buat data test menggunakan helper createTestData()
         $data = $this->createTestData();
         $school = $data['school'];
         $student = $data['student'];
@@ -56,7 +55,6 @@ class StudentAndAttendanceManagementTest extends TestCase
         $checkInStatus = $data['checkInStatus'];
         $checkOutStatus = $data['checkOutStatus'];
 
-        // Tambahkan status absen jika controller bergantung padanya untuk perhitungan
         $checkInStatusAbsent = CheckInStatus::factory()->create([
             'school_id' => $schoolId,
             'late_duration' => -1,
@@ -104,7 +102,7 @@ class StudentAndAttendanceManagementTest extends TestCase
         ]);
 
 
-        // --- 2. Tampilkan Presensi (Index) ---
+        // --- 2. Tampilkan Presensi ---
         $response = $this->getJson('/api/attendance?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d'));
 
         $response->assertStatus(200)
@@ -119,7 +117,6 @@ class StudentAndAttendanceManagementTest extends TestCase
                  ]);
 
         // --- 3. Export Presensi ---
-        // Mock Storage facade as export likely involves saving to disk
         Storage::fake('public'); 
 
         $response = $this->get('/api/attendance/export?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d'));

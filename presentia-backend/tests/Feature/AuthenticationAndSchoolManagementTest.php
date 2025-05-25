@@ -51,7 +51,7 @@ class AuthenticationAndSchoolManagementTest extends TestCase
     }
 
     #[Test]
-    public function new_user_becomes_school_admin_and_accesses_dashboard_workflow(): void
+    public function user_login_becomes_school_admin_and_accesses_school_dashboard(): void
     {
         // --- 0. Persiapan Awal ---
         

@@ -15,7 +15,7 @@ class ClassAndStudentManagementTest extends TestCase
     use WithFaker, TestCaseHelpers;
 
     #[Test]
-    public function student_class_management_workflow(): void
+    public function student_class_management(): void
     {
         // --- 0. Initial Setup ---
         $schoolId = $this->authUser->school_id;

@@ -14,9 +14,7 @@ class AuthenticationAndAccessTest extends TestCase
     #[Test]
     public function user_can_register_login_and_view_empty_dashboard_statistics(): void
     {
-        /** ------------------------------------
-         *  1) REGISTER
-         *  ----------------------------------*/
+        // --- 1. Register ---
         $registerPayload = [
             'fullname'              => 'Adam',
             'username'              => 'adamUser',
@@ -32,9 +30,8 @@ class AuthenticationAndAccessTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => $registerPayload['email']]);
 
-        /** ------------------------------------
-         *  2) LOGIN (email)
-         *  ----------------------------------*/
+
+        // --- 2. Login ---
         $loginRes = $this->postJson('/api/login', [
             'email_or_username' => $registerPayload['email'],
             'password'          => $registerPayload['password'],
@@ -43,9 +40,8 @@ class AuthenticationAndAccessTest extends TestCase
 
         $token   = $loginRes->json('token');
 
-        /** ------------------------------------
-         *  3) DASHBOARD 
-         *  ----------------------------------*/
+
+        // --- 3. Dashboard ---
         $statsRes = $this->withHeader('Authorization', "Bearer {$token}")
                          ->getJson('/api/user/get-by-token');
 

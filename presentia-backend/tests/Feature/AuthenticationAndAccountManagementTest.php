@@ -36,9 +36,7 @@ class AuthenticationAndAccountManagementTest extends TestCase
     {
         $registerPayload = $this->create_user();
 
-        /** ------------------------------------
-         *  1) LOGIN
-         *  ----------------------------------*/
+        // --- 1. Login ---
         $loginRes = $this->postJson('/api/login', [
             'email_or_username' => $registerPayload['email'],
             'password'          => $registerPayload['password'],
@@ -48,9 +46,7 @@ class AuthenticationAndAccountManagementTest extends TestCase
         $token = $loginRes->json('token');
         $user  = User::where('email', $registerPayload['email'])->first();
 
-        /** ------------------------------------
-         *  2) UPDATE PROFILE
-         *  ----------------------------------*/
+        // --- 2. Update Profile ---
         $updatePayload = [
             'fullname' => 'Updated Name',
             'username' => 'updatedusername',
@@ -72,9 +68,7 @@ class AuthenticationAndAccountManagementTest extends TestCase
             'username' => 'updatedusername',
         ]);
 
-        /** ------------------------------------
-         *  3) LOGOUT 
-         *  ----------------------------------*/
+        // --- 3. Logout ---
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
         ])->postJson('api/logout');
