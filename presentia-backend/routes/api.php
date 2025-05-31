@@ -60,6 +60,9 @@ Route::middleware(['auth:sanctum'])->post('logout', [AuthController::class, 'log
 Route::post('attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
 
 //USER API
+
+Route::get('/', [AttendanceController::class, 'index'])->middleware('school:true');
+
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     Route::prefix('time')->group(function () {
@@ -209,7 +212,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         // ATTENDANCE
         Route::middleware('permission:manage_attendance')->prefix('attendance')->group(function () {
-            Route::get('/', [AttendanceController::class, 'index']);
             Route::get('/export', [AttendanceController::class, 'exportAttendance']);
             Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
             Route::post('/file', [AttendanceController::class, 'storeFromFile']);
