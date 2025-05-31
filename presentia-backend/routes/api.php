@@ -60,10 +60,9 @@ Route::middleware(['auth:sanctum'])->post('logout', [AuthController::class, 'log
 Route::post('attendance', [AttendanceController::class, 'store'])->middleware('valid-adms');
 
 //USER API
-
-Route::get('/', [AttendanceController::class, 'index'])->middleware('school:true');
-
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+
+
 
     Route::prefix('time')->group(function () {
         Route::get('/current', [TimeController::class, 'getCurrentTime']);
@@ -174,7 +173,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::delete('/pending', [JobController::class, 'flushPendingJobs']);
     });
 
-    // SCHOOL
+
+    // PUBLIC SCHOOL DATA
+    Route::get('attendance', [AttendanceController::class, 'index'])->middleware(['school:true']);
+
+    // SCHOOL DATA
     Route::middleware(['school', 'permission:basic_school'])->group(function () {
         
         // CLASS GROUP

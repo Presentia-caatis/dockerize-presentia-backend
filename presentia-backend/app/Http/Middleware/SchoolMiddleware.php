@@ -21,8 +21,6 @@ class SchoolMiddleware
         if(!$skipChecks){
             if(!auth()->user()->hasRole('super_admin')){
                 $schoolId = auth()->user()?->school_id;
-                
-                validate_school_access(config('school.id'), auth()->user()); //unnecessary need to change
             } else {
                 $schoolId = $request->header('School-Id') ?? auth()->user()->school_id;
             }
