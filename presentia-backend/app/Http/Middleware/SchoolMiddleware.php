@@ -24,16 +24,21 @@ class SchoolMiddleware
             } else {
                 $schoolId = $request->header('School-Id') ?? auth()->user()->school_id;
             }
-    
+
             if($schoolId == null){
                 abort(403, 'You dont have access to this school data.');
             }
-    
-            if( !School::where('id', $schoolId)->exists()){
-                abort(404, 'School not found.');
+        } else {
+            $schoolId = $request->school_id;
+
+            if($schoolId == null){
+                abort(422, 'school_id is required');
             }
         }
         
+        if(!School::where('id', $schoolId)->exists()){
+            abort(404, 'School not found.');
+        }
         config(['school.id' => $schoolId]);
         return $next($request);
     }
