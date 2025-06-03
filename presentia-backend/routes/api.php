@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API 
+| API
 |--------------------------------------------------------------------------
 |
 | HERE IS WHERE YOU CAN REGISTER API  for your application. These
@@ -96,8 +96,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::prefix('user')->group(function () {
         // Allow all authenticated users to access get-by-token
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
-        Route::post('/school/assign-via-token', [UserController::class , 'assignToSchoolViaToken']);    
+        Route::post('/school/assign-via-token', [UserController::class, 'assignToSchoolViaToken']);
         Route::put('/', [UserController::class, 'update']);
+        Route::put('/change-password', [UserController::class, 'changePassword']);
 
         // Allow only super_admin and school_admin to manage link-to-school
         Route::middleware('permission:manage_school_users')->group(function () {
@@ -150,7 +151,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
     });
 
-    // SCHOOL 
+    // SCHOOL
     Route::prefix('school')->group(function () {
         Route::get('/', [SchoolController::class, 'index']);
         Route::get('/{id}', [SchoolController::class, 'getById']);
@@ -179,7 +180,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     // SCHOOL DATA
     Route::middleware(['school', 'permission:basic_school'])->group(function () {
-        
+
         // CLASS GROUP
         Route::prefix('class-group')->group(function () {
             Route::get('/', [ClassGroupController::class, 'index']);
@@ -229,7 +230,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         Route::middleware('permission:manage_schools')->group(function () {
 
-            // ATTENDANCE LATE TYPE 
+            // ATTENDANCE LATE TYPE
             Route::prefix('check-in-status')->group(function () {
                 Route::get('/', [CheckInStatusController::class, 'index']);
                 Route::post('/', [CheckInStatusController::class, 'store']);
@@ -238,7 +239,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::delete('/{id}', [CheckInStatusController::class, 'destroy']);
             });
 
-            // DOCUMENT 
+            // DOCUMENT
             Route::prefix('document')->group(function () {
                 Route::get('/', [DocumentController::class, 'index']);
                 Route::post('/', [DocumentController::class, 'store']);
@@ -247,7 +248,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::delete('/{id}', [DocumentController::class, 'destroy']);
             });
 
-            // ABSENCE PERMIT TYPE 
+            // ABSENCE PERMIT TYPE
             Route::prefix('absence-permit-type')->group(function () {
                 Route::get('/', [AbsencePermitTypeController::class, 'index']);
                 Route::post('/', [AbsencePermitTypeController::class, 'store']);
@@ -256,7 +257,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::delete('/{id}', [AbsencePermitTypeController::class, 'destroy']);
             });
 
-            // ABSENCE PERMIT 
+            // ABSENCE PERMIT
             Route::prefix('absence-permit')->group(function () {
                 Route::get('/', [AbsencePermitController::class, 'index']);
                 Route::post('/', [AbsencePermitController::class, 'store']);

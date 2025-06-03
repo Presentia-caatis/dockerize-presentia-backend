@@ -24,9 +24,10 @@ class ForgotPasswordController extends Controller
         if ($status === Password::RESET_LINK_SENT) {
             return response()->json(
                 [
-                    'status' => 'success', 
+                    'status' => 'success',
                     'message' => __($status)
-                ]);
+                ]
+            );
         }
 
         throw ValidationException::withMessages([
