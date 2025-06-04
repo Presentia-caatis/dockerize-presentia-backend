@@ -31,7 +31,6 @@ class AttendanceController extends Controller
         $validatedData = $request->validate([
             'startDate' => ['required_with:endDate', 'date_format:Y-m-d'],
             'endDate' => ['required_with:startDate', 'date_format:Y-m-d', 'after_or_equal:startDate'],
-            'search' => 'sometimes|string|max:255',
             'classGroup' => [
                 'sometimes',
                 function ($attribute, $value, $fail) {
@@ -58,8 +57,6 @@ class AttendanceController extends Controller
             ],
             'perPage' => 'sometimes|integer|min:1',
             'simplify' => 'sometimes|boolean',
-            'attendanceWindowId' => 'sometimes|exists:attendance_windows,id',
-            'type' => 'sometimes|in:in,out',
             'isExcludeCheckInAbsentStudent' => 'nullable|boolean'
         ]);
 
@@ -68,7 +65,7 @@ class AttendanceController extends Controller
 
     $simplify = $validatedData['simplify'] ?? false;
         $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
-        $type = $validatedData['type'] ?? null;
+        
         if ($simplify) {
             $query = Attendance::with([
                 'student:id,student_name,nis,nisn,gender,class_group_id',
@@ -108,24 +105,8 @@ class AttendanceController extends Controller
             $query->whereIn('check_in_status_id', $checkInStatusIds);
         }
 
-        if ($type === 'in') {
-            $query->orderBy('check_in_time', 'desc');
-        } else if ($type === 'out') {
-            $query->whereNotNull('check_out_time')->where('check_out_time', '!=', '')
-                ->orderBy('check_out_time', 'desc');
-        }
-
         if ($isExcludeCheckInAbsentStudent) {
             $query->where('check_in_status_id', '!=', CheckInStatus::where('late_duration', -1)->first()->id);
-        }
-
-        if (!empty($validatedData['search'])) {
-            $search = $validatedData['search'];
-            $query->whereHas('student', function ($q) use ($search) {
-                $q->where('student_name', 'like', "%$search%")
-                    ->orWhere('nis', 'like', "%$search%")
-                    ->orWhere('nisn', 'like', "%$search%");
-            });
         }
 
 
