@@ -48,6 +48,25 @@ class UserController extends Controller
         ]);
     }
 
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required'],
+            'new_password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ]);
+
+        if (!Hash::check($request->current_password, $request->user()->password)) {
+            return response()->json(['message' => 'Password lama salah.'], 400);
+        }
+
+        $request->user()->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Password berhasil diganti.']);
+    }
+
     public function assignToSchool(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -121,8 +140,7 @@ class UserController extends Controller
 
         if ($request->hasFile('profile_image')) {
             $validatedData['profile_image_path'] = $request->file('profile_image')->store($request->file('profile_image')->extension(), 'public');
-        }
-        ;
+        };
 
         $validatedData['password'] = Hash::make($request->password);
 
