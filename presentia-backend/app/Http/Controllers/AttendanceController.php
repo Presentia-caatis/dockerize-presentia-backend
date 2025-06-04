@@ -66,7 +66,7 @@ class AttendanceController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $simplify = $validatedData['simplify'] ?? false;
+    $simplify = $validatedData['simplify'] ?? false;
         $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
         $type = $validatedData['type'] ?? null;
         if ($simplify) {
