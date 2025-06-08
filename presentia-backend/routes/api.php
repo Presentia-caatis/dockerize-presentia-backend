@@ -189,8 +189,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                     Route::post('/enroll', [AttendanceSourceConnectionController::class, 'enroll']);
                     Route::put('/update-auth-profile', [AttendanceSourceConnectionController::class, 'updateAuthProfile']);
                 });
-    
-    
+
                 Route::get('/', [AttendanceSourceController::class, 'index'])->middleware('role:super_admin');
                 Route::get('/get-data', [AttendanceSourceController::class, 'getData']);
                 Route::get('/{id}', [AttendanceSourceController::class, 'getById'])->middleware('role:super_admin');
@@ -199,7 +198,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::delete('/{id}', [AttendanceSourceController::class, 'destroy']);
             });
 
-            
         });
 
         // CLASS GROUP
@@ -326,6 +324,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 Route::middleware(['school:true'])->group(function () {
     Route::get('class-group', [ClassGroupController::class, 'index']);
     Route::get('attendance', [AttendanceController::class, 'index']);
-    Route::get('school/{id}', [SchoolController::class, 'getById']);
-
 });
+
+Route::get('school/{id}', [SchoolController::class, 'getById']);

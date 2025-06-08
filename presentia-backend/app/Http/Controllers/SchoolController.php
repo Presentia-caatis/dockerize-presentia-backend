@@ -49,7 +49,7 @@ class SchoolController extends Controller
             $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
         }
 
-        $this->validateRole($school);
+        unset($school->school_token);
 
         return response()->json([
             'status' => 'success',
@@ -60,7 +60,7 @@ class SchoolController extends Controller
 
     private function validateRole(School &$school){
         if (!auth()->user()->hasRole(['super_admin', 'school_admin'])){
-            unset($school->school_token);
+            
         }
     }
     public function taskSchedulerToogle($id)
