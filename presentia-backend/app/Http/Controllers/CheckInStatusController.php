@@ -89,7 +89,7 @@ class CheckInStatusController extends Controller
             'description' => 'string',
             'is_active' => 'boolean',
             'late_duration' => 'integer',
-            'adjust_attendance' => 'required|boolean',
+            'adjust_attendance' => 'nullable|boolean',
             'start_date' => 'required_with:end_date|date_format:Y-m-d',
             'end_date' => 'required_with:start_date|date_format:Y-m-d',
             'attendance_window_ids' => 'sometimes|array|min:1',
@@ -98,7 +98,7 @@ class CheckInStatusController extends Controller
 
         $attendanceWindows = AttendanceWindow::query();
 
-        if($request->boolean("adjust_attendance")){
+        if($request->boolean("adjust_attendance") ?? false){
             if(isset($validatedData['start_date'])){
                 $attendanceWindows->whereBetween('date', [$validatedData['start_date'], $validatedData['end_date']]);
             } else if (isset($validatedData['attendance_window_ids'])){
@@ -123,7 +123,7 @@ class CheckInStatusController extends Controller
             ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) &&
             $request->late_duration != $checkInStatus->late_duration
         ) {
-            abort(403, 'Durasi keterlambatan tidak boleh diubah');
+            abort(403, 'Durasi keterlambatan tidak boleh diubah untuk status presensi ini.');
         }
 
         if ($checkInStatus->late_duration == 0 || $checkInStatus->late_duration == -1) {

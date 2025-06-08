@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('attendance_sources', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
             $table->enum('type', ['fingerprint', 'rfid', 'qr_code', 'face_recognition']);
             $table->string('username');
             $table->string('password');
+            $table->string('token')->nullable();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
-            $table->string('get_url_credential_info');
-            $table->string('post_url_authenticate');
-            $table->string('post_url_credential_info');
+            $table->string('base_url');
+            $table->unique('school_id');
             $table->timestamps();
         });
     }
