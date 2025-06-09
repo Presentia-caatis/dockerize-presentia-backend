@@ -86,7 +86,7 @@ class AttendanceSourceConnectionService
             $mp_data[$item['pin']][] = $item['data']['FID'];
         }
 
-        $paginated = Student::query()->paginate($perPage);
+        $paginated = Student::with("classGroup")->paginate($perPage);
 
         $paginated->getCollection()->transform(function ($student) use ($mp_data) {
             $studentId = $student->id;
