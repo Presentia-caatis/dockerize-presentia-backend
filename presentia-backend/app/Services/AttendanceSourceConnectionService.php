@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Filterable;
 use App\Models\AttendanceSource;
 use App\Models\Student;
+use App\Sortable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class AttendanceSourceConnectionService
 {
+    use Sortable, Filterable;
     protected AttendanceSourceService $attendanceSourceService;
 
     protected $attendanceSource;
@@ -86,9 +89,14 @@ class AttendanceSourceConnectionService
             $mp_data[$item['pin']][] = $item['data']['FID'];
         }
 
-        $paginated = Student::with("classGroup")->paginate($perPage);
+        $students = Student::with("classGroup");
+        
+        $students = $this->applyFilters($students, $request->input('filter', []), ['school_id']);
+        $students = $this->applySort($students, $request->input('sort', []));
+        
+        $students = $students->paginate($perPage);
 
-        $paginated->getCollection()->transform(function ($student) use ($mp_data) {
+        $students->getCollection()->transform(function ($student) use ($mp_data) {
             $studentId = $student->id;
 
             $studentArray = $student->toArray();
@@ -101,7 +109,7 @@ class AttendanceSourceConnectionService
         return response()->json([
             'status' => 'success',
             'message' => 'Data retrieved successfully',
-            'data' => $paginated
+            'data' => $students
         ], 200);
     }
 
