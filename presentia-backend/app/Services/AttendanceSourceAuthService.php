@@ -65,9 +65,6 @@ class AttendanceSourceAuthService
 
     public function checkValidToken($secondAttempt = false)
     {
-        if (!$this->attendanceSource->token) {
-            abort(422, "Missing token. Please log in again to the attendance source service.");
-        }   
         $response = Http::withHeaders([
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
