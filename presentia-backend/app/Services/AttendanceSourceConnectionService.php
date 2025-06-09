@@ -35,24 +35,24 @@ class AttendanceSourceConnectionService
     public function enroll(Request $request)
     {
         $request->validate([
-            'student_id' => 'required|string',
-            'finger_id' => 'required|string',
+            'student_id' => 'required',
+            'finger_id' => 'required',
             'retry' => 'required|integer|min:0',
             'machine_number' => 'required|string',
             'overwrite' => 'required|boolean'
         ]);
 
         $response = $this->client()->post("{$this->attendanceSource->base_url}/adms/command?include={$request->machine_number}", [
-            'header' => ['ENROLL_FP'],
-            'body' => [
+            "header" => ["ENROLL_FP"],
+            "body" => [
                 'PIN' => $request->student_id,
                 'FID' => $request->finger_id,
                 'RETRY' => $request->retry,
                 'OVERWRITE' => $request->overwrite ? '1' : '0',
-            ],
+            ]
         ]);
 
-        if ($response->status() == 200) {
+        if ($response->status() == 201) {
             return response()->json([
                 'status' => 'success',
                 'message' => 'enrollment request sent successfully.',
@@ -90,10 +90,10 @@ class AttendanceSourceConnectionService
         }
 
         $students = Student::with("classGroup");
-        
+
         $students = $this->applyFilters($students, $request->input('filter', []), ['school_id']);
         $students = $this->applySort($students, $request->input('sort', []));
-        
+
         $students = $students->paginate($perPage);
 
         $students->getCollection()->transform(function ($student) use ($mp_data) {
