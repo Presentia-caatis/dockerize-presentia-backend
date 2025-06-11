@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Str;
 use function App\Helpers\convert_utc_to_timezone;
@@ -49,7 +50,7 @@ class SchoolController extends Controller
             $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
         }
 
-        $this->validateRole($school);
+        unset($school->school_token);
 
         return response()->json([
             'status' => 'success',
@@ -58,9 +59,9 @@ class SchoolController extends Controller
         ]);
     }
 
-    private function validateRole(School &$school){
-        if (!auth()->user()->hasRole(['super_admin', 'school_admin'])){
-            unset($school->school_token);
+    private function validateRole(School &$school)
+    {
+        if (!auth()->user()->hasRole(['super_admin', 'school_admin'])) {
         }
     }
     public function taskSchedulerToogle($id)
@@ -80,26 +81,39 @@ class SchoolController extends Controller
             'name' => 'required|string',
             'address' => 'required|string',
             'timezone' => 'required|timezone',
-            'logo_image' => 'nullable|file|mimes:jpg,jpeg,png'
+            'logo_image' => 'nullable|file|mimes:jpg,jpeg,png',
+            'user_id' => 'required|exists:users,id',
         ]);
 
         try {
             \DB::beginTransaction();
-    
+
             if ($request->hasFile('logo_image')) {
                 $validatedData['logo_image_path'] = $request->file('logo_image')->store($request->file('logo_image')->extension(), 'public');
             }
-    
+
             $validatedData['subscription_plan_id'] = SubscriptionPlan::where('billing_cycle_month', 0)->first()->id;
             do {
                 $token = Str::random(10);
             } while (School::where('school_token', $token)->exists());
-            
+
             $validatedData['school_token'] = $token;
             $validatedData['latest_subscription'] = convert_utc_to_timezone(Carbon::now(), $validatedData['timezone']);
-    
+
             $school = School::create($validatedData);
-    
+
+            $user = User::find($validatedData['user_id']);
+            if ($user->school_id !== null && $user->school_token !== null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User already assigned to another school',
+                ], 422);
+            }
+
+            $user->school_id = $school->id;
+            $user->assignRole('school_admin');
+            $user->save();
+
             $defaultAttendanceSchedule = AttendanceSchedule::create([
                 'event_id' => null,
                 'type' => 'default',
@@ -109,13 +123,13 @@ class SchoolController extends Controller
                 'check_out_start_time' => '16:00:00',
                 'check_out_end_time' => '17:00:00',
             ]);
-    
+
             $holidayAttendanceSchedule = AttendanceSchedule::create([
                 'event_id' => null,
                 'type' => 'holiday',
                 'name' => 'Holiday Schedule',
             ]);
-    
+
             $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
             foreach ($weekdays as $day) {
                 Day::create([
@@ -124,7 +138,7 @@ class SchoolController extends Controller
                     'name' => $day,
                 ]);
             }
-    
+
             $weekends = ['saturday', 'sunday'];
             foreach ($weekends as $day) {
                 Day::create([
@@ -133,7 +147,7 @@ class SchoolController extends Controller
                     'name' => $day,
                 ]);
             }
-    
+
             CheckInStatus::insert([
                 [
                     'status_name' => 'Late',
@@ -157,7 +171,7 @@ class SchoolController extends Controller
                     'school_id' => $school->id,
                 ],
             ]);
-    
+
             CheckOutStatus::insert([
                 [
                     'status_name' => 'absent',
@@ -172,7 +186,7 @@ class SchoolController extends Controller
                     'school_id' => $school->id,
                 ],
             ]);
-    
+
             AbsencePermitType::insert([
                 [
                     'school_id' => $school->id,
@@ -185,18 +199,18 @@ class SchoolController extends Controller
                     'is_active' => true,
                 ],
             ]);
-    
+
             $school->logo_image_path = asset('storage/' . $school->logo_image_path);
 
-            \DB::commit(); 
-    
+            \DB::commit();
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'School created successfully',
                 'data' => $school
             ], 201);
         } catch (\Exception $e) {
-            \DB::rollBack(); 
+            \DB::rollBack();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create school',

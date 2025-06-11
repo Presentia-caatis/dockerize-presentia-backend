@@ -39,7 +39,11 @@ use App\Http\Controllers\{
     AuthController,
     PermissionController,
     ForgotPasswordController,
-    EmailVerificationController
+    EmailVerificationController,
+    AttendanceSourceController,
+    AttendanceSourceConnectionController,
+    AttendanceSourceAuthController,
+    AttendanceReferenceController
 };
 
 //AUTH API
@@ -61,9 +65,6 @@ Route::post('attendance', [AttendanceController::class, 'store'])->middleware('v
 
 //USER API
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
-
-
-
     Route::prefix('time')->group(function () {
         Route::get('/current', [TimeController::class, 'getCurrentTime']);
     });
@@ -109,6 +110,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // RESTRICT ALL OTHER  to users with 'super_admin' role
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/', [UserController::class, 'index']);
+            Route::get('/unassignedUsers', [UserController::class, 'unassignedUsers']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
@@ -154,7 +156,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // SCHOOL
     Route::prefix('school')->group(function () {
         Route::get('/', [SchoolController::class, 'index']);
-        Route::get('/{id}', [SchoolController::class, 'getById']);
 
         Route::middleware('role:super_admin')->group(function () {
             Route::post('/', [SchoolController::class, 'store']);
@@ -174,16 +175,35 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::delete('/pending', [JobController::class, 'flushPendingJobs']);
     });
 
-
-    // PUBLIC SCHOOL DATA
-    Route::get('attendance', [AttendanceController::class, 'index'])->middleware(['school:true']);
-
     // SCHOOL DATA
     Route::middleware(['school', 'permission:basic_school'])->group(function () {
 
+        // ATTENDANCE SOURCE
+        Route::prefix('attendance-source')->group(function () {
+
+            Route::prefix('auth')->group(function () {
+                Route::post('/login', [AttendanceSourceAuthController::class, 'login']);
+            });
+
+            Route::middleware('permission:manage_schools')->group(function () {
+                Route::prefix('connection')->group(function () {
+                    Route::get('/', [AttendanceSourceConnectionController::class, 'getAllData']);
+                    Route::post('/enroll', [AttendanceSourceConnectionController::class, 'enroll']);
+                    Route::put('/update-auth-profile', [AttendanceSourceConnectionController::class, 'updateAuthProfile']);
+                });
+
+                Route::get('/', [AttendanceSourceController::class, 'index'])->middleware('role:super_admin');
+                Route::get('/get-data', [AttendanceSourceController::class, 'getData']);
+                Route::get('/{id}', [AttendanceSourceController::class, 'getById'])->middleware('role:super_admin');
+                Route::post('/', [AttendanceSourceController::class, 'store']);
+                Route::put('/{id}', [AttendanceSourceController::class, 'update']);
+                Route::delete('/{id}', [AttendanceSourceController::class, 'destroy']);
+            });
+
+        });
+
         // CLASS GROUP
         Route::prefix('class-group')->group(function () {
-            Route::get('/', [ClassGroupController::class, 'index']);
             Route::get('/{id}', [ClassGroupController::class, 'getById']);
 
             Route::middleware('permission:manage_schools')->group(function () {
@@ -266,6 +286,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::delete('/{id}', [AbsencePermitController::class, 'destroy']);
             });
 
+            // ATTENDANCE REFERENCES (Combined)
+            Route::get('/attendance-references', [AttendanceReferenceController::class, 'index']);
+
             // ATTENDANCE WINDOW
             Route::prefix('attendance-window')->group(function () {
                 Route::get('/', [AttendanceWindowController::class, 'index']);
@@ -301,3 +324,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
     });
 });
+
+// PUBLIC SCHOOL DATA
+Route::middleware(['school:true'])->group(function () {
+    Route::get('class-group', [ClassGroupController::class, 'index']);
+    Route::get('attendance', [AttendanceController::class, 'index']);
+});
+
+Route::get('school/{id}', [SchoolController::class, 'getById']);

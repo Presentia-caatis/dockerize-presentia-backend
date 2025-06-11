@@ -49,6 +49,41 @@ class UserController extends Controller
     }
 
 
+    public function unassignedUsers(Request $request)
+    {
+        $validated = $request->validate([
+            'search' => 'nullable|string',
+            'perPage' => 'sometimes|integer|min:1',
+        ]);
+
+        $perPage = $validated['perPage'] ?? 10;
+        $search = $validated['search'] ?? null;
+
+        $query = User::query()
+            ->whereNull('school_id')
+            ->whereNull('school_token')
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            })
+            ->select('id', 'fullname', 'email');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('fullname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->orderBy('fullname')->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Unassigned users retrieved successfully',
+            'data' => $users
+        ]);
+    }
+
+
     public function changePassword(Request $request)
     {
         $request->validate([

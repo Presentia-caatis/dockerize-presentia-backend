@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
+use App\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 
 class AttendanceSource extends Model
 {
+    use BelongsToSchool;
     protected $fillable = [
-        'name',
         'type',
         'username',
         'password',
+        'token',
         'school_id',
-        'get_url_credential_info',
-        'post_url_authenticate',
-        'post_url_credential_info'
+        'base_url',
     ];
 
     public function school()
