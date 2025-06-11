@@ -72,6 +72,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
 
         // Count only the filtered attendances
         $totalAttendanceStudents = $filteredAttendances->count();
+        $totalAbsenceStudents = [count($this->attendanceWindows) - $totalAttendanceStudents];
 
         $base = [
             '',
@@ -108,11 +109,11 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
                 ->whereNull('absence_permit_type_id')->count()
                 + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
 
-            return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)], $checkInStatusData, $absencePermitTypeData);
+            return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)],  $absencePermitTypeData, $totalAbsenceStudents);
         }
 
 
-        return array_merge($base, $checkInStatusData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
+        return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)],  $totalAbsenceStudents);
     }
 
     /**
@@ -189,12 +190,13 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $startCol = 0;
         $endCol = 8;
 
-        $lastColIndex = Coordinate::stringFromColumnIndex($endCol + ($absencePermitTypeCount > 0 ? 2 : 1));
+        $lastColIndex = Coordinate::stringFromColumnIndex($endCol);
         $sheet->getStyle("{$lastColIndex}2:{$lastColIndex}1000")->getNumberFormat()->setFormatCode('0.00%');
         $sheet->setCellValue("{$lastColIndex}1", "Persentase\nKehadiran (%)");
         $sheet->mergeCells("{$lastColIndex}1:{$lastColIndex}2");
         $sheet->getStyle("{$lastColIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
         $sheet->getColumnDimension($lastColIndex)->setAutoSize(true);
+
 
         if ($this->showCheckInStatus) {
             $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + $checkInStatusCount);
@@ -230,16 +232,18 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
                     $sheet->getColumnDimension($col)->setAutoSize(true);
                     $currentCol++;
                 }
-                $lastAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endCol + 1);
-                $sheet->setCellValue("{$lastAbsencePermitTypeIndex}2", "Tidak ada\nKeterangan");
-                $sheet->getStyle("{$lastAbsencePermitTypeIndex}2")->getAlignment()->setHorizontal('center')->setVertical('center');
-                $sheet->getColumnDimension($lastAbsencePermitTypeIndex)->setAutoSize(true);
             }
         }
 
-        $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + 1);
+        $lastAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endCol + 1);
+        $sheet->setCellValue("{$lastAbsencePermitTypeIndex}2", "Tidak ada\nKeterangan");
+        $sheet->getStyle("{$lastAbsencePermitTypeIndex}2")->getAlignment()->setHorizontal('center')->setVertical('center');
+        $sheet->getColumnDimension($lastAbsencePermitTypeIndex)->setAutoSize(true);
 
-        $sheet->setCellValue("{$startColIndex}1", "Total Ketidakhadiran\n(dari total " . count($this->attendanceWindows) . ")");
+        $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + 2);
+
+        $sheet->setCellValue("{$endColIndex}1", "Total Ketidakhadiran\n(dari total " . count($this->attendanceWindows) . ")");
+        $sheet->mergeCells("{$endColIndex}1:{$endColIndex}2");
 
         $sheet->insertNewRowBefore(1, 1);
     }
