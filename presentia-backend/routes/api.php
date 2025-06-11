@@ -42,7 +42,8 @@ use App\Http\Controllers\{
     EmailVerificationController,
     AttendanceSourceController,
     AttendanceSourceConnectionController,
-    AttendanceSourceAuthController
+    AttendanceSourceAuthController,
+    AttendanceReferenceController
 };
 
 //AUTH API
@@ -198,6 +199,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::put('/{id}', [AttendanceSourceController::class, 'update']);
                 Route::delete('/{id}', [AttendanceSourceController::class, 'destroy']);
             });
+
         });
 
         // CLASS GROUP
@@ -283,6 +285,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::put('/{id}', [AbsencePermitController::class, 'update']);
                 Route::delete('/{id}', [AbsencePermitController::class, 'destroy']);
             });
+
+            // ATTENDANCE REFERENCES (Combined)
+            Route::get('/attendance-references', [AttendanceReferenceController::class, 'index']);
 
             // ATTENDANCE WINDOW
             Route::prefix('attendance-window')->group(function () {
