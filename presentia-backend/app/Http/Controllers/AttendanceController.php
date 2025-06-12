@@ -63,25 +63,26 @@ class AttendanceController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-    $simplify = $validatedData['simplify'] ?? false;
+        $simplify = $validatedData['simplify'] ?? false;
         $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
-        
+
         if ($simplify) {
             $query = Attendance::with([
                 'student:id,student_name,nis,nisn,gender,class_group_id',
                 'student.classGroup:id,class_name',
                 'checkInStatus:id,status_name',
-                'attendanceWindow:id,date'
+                'attendanceWindow:id,date',
+                'absencePermit'
             ])->select([
-                'id',
-                'student_id',
-                'check_in_status_id',
-                'attendance_window_id',
-                'check_in_time',
-                'check_out_time'
-            ]);
+                        'id',
+                        'student_id',
+                        'check_in_status_id',
+                        'attendance_window_id',
+                        'check_in_time',
+                        'check_out_time'
+                    ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow');
+            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow', 'absencePermit');
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
@@ -193,7 +194,7 @@ class AttendanceController extends Controller
             'check_in_status_id' => 'nullable|exists:check_in_statuses,id',
         ]);
 
-        $timeValidationResponse = $this->validateAttendanceTime($validatedData,$validatedData['attendance_window_id']);
+        $timeValidationResponse = $this->validateAttendanceTime($validatedData, $validatedData['attendance_window_id']);
 
         if ($timeValidationResponse) {
             abort(422, $timeValidationResponse);
@@ -251,7 +252,7 @@ class AttendanceController extends Controller
 
 
         // Validate check-in and check-out time using the new function
-        $timeValidationResponse = $this->validateAttendanceTime($validatedData,$attendance->attendance_window_id);
+        $timeValidationResponse = $this->validateAttendanceTime($validatedData, $attendance->attendance_window_id);
 
         if ($timeValidationResponse) {
             abort(422, $timeValidationResponse);
@@ -426,7 +427,7 @@ class AttendanceController extends Controller
     public function getById($id)
     {
         $attendance = Attendance::with(['student', 'checkInStatus', 'checkOutStatus', 'absencePermit', 'attendanceWindow'])->findOrFail($id);
-        
+
 
         return response()->json([
             'status' => 'success',
