@@ -6,6 +6,7 @@ use App\Filterable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Document;
+use function App\Helpers\current_school_id;
 
 class DocumentController extends Controller
 {
@@ -45,7 +46,7 @@ class DocumentController extends Controller
         $path = $request->file('file')->store($request->file('file')->extension(),'public');
 
         $data = Document::create([
-            'school_id' => $request->user()->school_id,
+            'school_id' => current_school_id(),
             'document_name' => $request->document_name,
             'path' => $path
         ]);

@@ -18,14 +18,23 @@ class AttendanceReferenceService
      */
     public function getCombinedReferences(Request $request): array
     {
-        $checkInStatuses = CheckInStatus::where('late_duration', "!=", -1)->get();
-        $absencePermitTypes = AbsencePermitType::all();
-        $checkOutStatuses = CheckOutStatus::where('late_duration', "!=", -1)->get();
+        $checkInStatuses = CheckInStatus::where('late_duration', "!=", -1)
+            ->get(['id', 'status_name'])
+            ->map(function ($status) {
+                return ['id' => $status->id, 'name' => $status->status_name, 'type' => 'check_in_status'];
+            });
 
-        return [
-            'check_in_statuses' => $checkInStatuses,
-            'absence_permit_types' => $absencePermitTypes,
-            'check_out_statuses' => $checkOutStatuses,
-        ];
+        $absencePermitTypes = AbsencePermitType::all(['id', 'permit_name'])
+            ->map(function ($permit) {
+                return ['id' => $permit->id, 'name' => $permit->permit_name, 'type' => 'absence_permit_type'];
+            });
+
+        $checkOutStatuses = CheckOutStatus::where('late_duration', "!=", -1)
+            ->get(['id', 'status_name'])
+            ->map(function ($status) {
+                return ['id' => $status->id, 'name' => $status->status_name, 'type' => 'check_out_status'];
+            });
+
+        return $checkInStatuses->concat($absencePermitTypes)->concat($checkOutStatuses)->all();
     }
 }
