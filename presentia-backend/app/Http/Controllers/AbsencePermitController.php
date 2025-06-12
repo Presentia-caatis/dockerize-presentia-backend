@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use function App\Helpers\current_school_id;
 
@@ -62,9 +63,12 @@ class AbsencePermitController extends Controller
         $absencePermit = AbsencePermit::with('document')->findOrFail($id);
 
         if ($absencePermit->document) {
-            $absencePermit->document->path = asset('storage/' . $absencePermit->document->path);
-        }
+            $relativePath = 'public/' . $absencePermit->document->path;
 
+            $absencePermit->document->url = asset('storage/' . $absencePermit->document->path);
+            $absencePermit->document->size = Storage::exists($relativePath) ? Storage::size($relativePath) : null;
+            $absencePermit->document->mime_type = Storage::exists($relativePath) ? Storage::mimeType($relativePath) : null;
+        }
 
         return response()->json([
             'status' => 'success',
