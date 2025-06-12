@@ -63,11 +63,17 @@ class AbsencePermitController extends Controller
         $absencePermit = AbsencePermit::with('document')->findOrFail($id);
 
         if ($absencePermit->document) {
-            $relativePath = 'public/' . $absencePermit->document->path;
+            $relativePath = $absencePermit->document->path;
 
-            $absencePermit->document->url = asset('storage/' . $absencePermit->document->path);
-            $absencePermit->document->size = Storage::exists($relativePath) ? Storage::size($relativePath) : null;
-            $absencePermit->document->mime_type = Storage::exists($relativePath) ? Storage::mimeType($relativePath) : null;
+            if (Storage::disk('public')->exists($relativePath)) {
+                $absencePermit->document->size = Storage::disk('public')->size($relativePath);
+                $absencePermit->document->mime_type = Storage::disk('public')->mimeType($relativePath);
+                $absencePermit->document->url = Storage::disk('public')->url($relativePath);
+            } else {
+                $absencePermit->document->size = null;
+                $absencePermit->document->mime_type = null;
+                $absencePermit->document->url = asset('storage/' . $relativePath);
+            }
         }
 
         return response()->json([
