@@ -221,7 +221,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         // STUDENT
         Route::prefix('student')->group(function () {
-            Route::get('/', [StudentController::class, 'index']);
             Route::get('/{id}', [StudentController::class, 'getById']);
 
             Route::get('/csv', [StudentController::class, 'exportStudents'])->middleware('role:super_admin');
@@ -327,6 +326,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
 // PUBLIC SCHOOL DATA
 Route::middleware(['school:true'])->group(function () {
+    Route::get('student', [StudentController::class, 'index']);
     Route::get('class-group', [ClassGroupController::class, 'index']);
     Route::get('attendance', [AttendanceController::class, 'index']);
 });
