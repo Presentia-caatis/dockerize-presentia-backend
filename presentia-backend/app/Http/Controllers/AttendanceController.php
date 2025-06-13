@@ -74,13 +74,13 @@ class AttendanceController extends Controller
                 'attendanceWindow:id,date',
                 'absencePermit'
             ])->select([
-                        'id',
-                        'student_id',
-                        'check_in_status_id',
-                        'attendance_window_id',
-                        'check_in_time',
-                        'check_out_time'
-                    ]);
+                'attendances.id',
+                'attendances.student_id',
+                'attendances.check_in_status_id',
+                'attendances.attendance_window_id',
+                'attendances.check_in_time',
+                'attendances.check_out_time'
+            ]);
         } else {
             $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow', 'absencePermit');
         }
