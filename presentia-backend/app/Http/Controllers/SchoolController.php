@@ -31,7 +31,7 @@ class SchoolController extends Controller
 
         $data->getCollection()->transform(function ($school) {
             if ($school->logo_image_path) {
-                $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
             }
             $this->validateRole($school);
             return $school;
@@ -47,7 +47,7 @@ class SchoolController extends Controller
     {
         $school = School::findOrFail($id);
         if ($school->logo_image_path) {
-            $school->logo_image_path =  asset('storage/' . $school->logo_image_path);
+            $school->logo_image_path = asset('storage/' . $school->logo_image_path);
         }
 
         unset($school->school_token);
@@ -102,8 +102,8 @@ class SchoolController extends Controller
 
             $school = School::create($validatedData);
 
-            $user = User::find($validatedData['user_id']);
-            if ($user->school_id !== null && $user->school_token !== null) {
+            $user = User::findOrFail($validatedData['user_id']);
+            if ($user->school_id !== null) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'User already assigned to another school',
@@ -259,9 +259,26 @@ class SchoolController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $expectedConfirmation = 'I acknowledge that this action cannot be undone. Delete the school.';
+
+        $request->validate([
+            'delete_confirmation' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($expectedConfirmation) {
+                    if (trim(strtolower($value)) !== strtolower($expectedConfirmation)) {
+                        $fail('The confirmation sentence is incorrect.');
+                    }
+                },
+            ],
+        ]);
+
         $school = School::findOrFail($id);
+
+        User::where('school_id', $school->id)->update(['school_id' => null]);
+
         if ($school->logo_image_path) {
             Storage::disk('public')->delete($school->logo_image_path);
         }
