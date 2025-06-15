@@ -87,7 +87,7 @@ class StoreAttendanceJob implements ShouldQueue
             $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null; //get all attendance window for desired date
 
             if (!$attendanceWindowsPerDate) {
-                $this->setResponse("failed", $studentId, "Waktu presensi diluar jangka waktu yang ditentukan");
+                $this->setResponse("failed", $studentId, "Tidak ada jadwal presensi untuk hari ini");
                 $this->logFailure($studentId, $checkTime, "No attendance window found for date $formattedDate");
                 continue;
             }
