@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Filterable;
 use App\Models\AttendanceSchedule;
+use App\Models\Day;
 use App\Models\Event;
 use App\Models\School;
 use App\Services\AttendanceWindowLoaderService;
 use Carbon\Carbon;
+use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +25,7 @@ class AttendanceScheduleController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(AttendanceSchedule::query(), $request->input('filter', []), ['school_id']);
+        $query = $this->applyFilters(AttendanceSchedule::with(['days']), $request->input('filter', []), ['school_id']);
 
         $data = $query->paginate($perPage);
 
@@ -45,7 +47,7 @@ class AttendanceScheduleController extends Controller
 
     public function getById($id)
     {
-        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
+        $attendanceSchedule = AttendanceSchedule::with('days:name')->findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance windows retrieved successfully',
@@ -88,6 +90,25 @@ class AttendanceScheduleController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance schedule deleted successfully'
+        ]);
+    }
+
+    public function assignToDay(Request $request, $id){
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
+        $request->validate([
+            'days' => 'required|array|min:1|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'
+        ]);
+
+        if(!($attendanceSchedule->type === 'holiday' || $attendanceSchedule->type === 'default')){
+            abort(403, "You can only change either holiday or default attendance schedule");
+        }
+
+        Day::whereIn('name',$request->days)->update(['attendance_schedule_id' => $attendanceSchedule->id]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance schedule assigned to days successfully',
+            'data' => $attendanceSchedule->load('days')
         ]);
     }
 }

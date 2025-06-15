@@ -302,6 +302,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             // ATTENDANCE SCHEDULE
             Route::prefix('attendance-schedule')->group(function () {
                 Route::get('/', [AttendanceScheduleController::class, 'index']);
+                Route::put('/assign-to-day/{id}', [AttendanceScheduleController::class, 'assignToDay']);
                 Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
                 Route::put('/{id}', [AttendanceScheduleController::class, 'update']);
                 Route::delete('/{id}', [AttendanceScheduleController::class, 'destroy']);
@@ -317,7 +318,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::prefix('day')->group(function () {
                 Route::get('/', [DayController::class, 'index']);
                 Route::get('/{id}', [DayController::class, 'getById']);
-                Route::get('/all-by-school', [DayController::class, 'showAllBySchool']);
                 Route::put('/{id}', [DayController::class, 'update']);
             });
         });
