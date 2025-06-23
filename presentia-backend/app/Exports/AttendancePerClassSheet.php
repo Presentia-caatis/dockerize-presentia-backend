@@ -119,7 +119,6 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
             $absencePermitTypeData[] = $totalAbsenceStudents - $totalAbsenceWithPermit;
 
-            dd($absencePermitTypeData);
             return array_merge(
                 $base,
                 [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
