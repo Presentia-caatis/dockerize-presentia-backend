@@ -65,10 +65,12 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
      */
     public function map($student): array
     {
-        // Filter only attendances that match the given attendance windows
-        $filteredAttendances = $student->attendances->filter(function ($attendance) {
-            return in_array($attendance->attendance_window_id, $this->attendanceWindows);
-        });
+        // Use query builder to only get relevant attendances
+        $filteredAttendancesQuery = $student->attendances()
+            ->whereIn('attendance_window_id', $this->attendanceWindows);
+
+        // Get collection only ONCE (so you can still use collection methods below)
+        $filteredAttendances = $filteredAttendancesQuery->get();
 
         // Count only the filtered attendances
         $totalAttendanceStudents = $filteredAttendances->count();
@@ -84,10 +86,15 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             $totalAttendanceStudents ?? 0,
         ];
 
+        // Check-in status section (collection filter is fine, since data set per student is small)
         if ($this->checkInStatuses && $this->showCheckInStatus) {
-            $checkInStatusData[] = $filteredAttendances->where('check_in_status_id', -1)->count()
-                + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
+            $checkInStatusData = [];
+            // -1 is for absent; add absences outside filteredAttendances too
+            $checkInStatusData[] =
+                $filteredAttendances->where('check_in_status_id', -1)->count()
+                + (count($this->attendanceWindows) - $totalAttendanceStudents);
 
+            // For other check-in statuses
             $checkInStatusData = array_merge($checkInStatusData, array_map(
                 fn($status) =>
                 $filteredAttendances->where('check_in_status_id', $status['id'])->count() ?? 0,
@@ -95,35 +102,45 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             ));
         }
 
-
+        // Absence permit types counting
         if (count($this->absencePermitTypes) > 0) {
-            foreach ($filteredAttendances as $attendance) {
-                logger($attendance->absence_permit_id); // or dd($attendance->absence_permit_id, $permit["id"]);
-            }
-            
+            // Uncomment for debugging
+            // foreach ($filteredAttendances as $attendance) {
+            //     \Log::info($attendance->absence_permit_id); 
+            // }
+
             $absencePermitTypeData = array_map(
                 function ($permit) use ($filteredAttendances) {
                     return $filteredAttendances
-                        ->filter(function ($attendance) use ($permit) {
-                            return $attendance->absence_permit_id == $permit["id"];
-                        })->count();
+                        ->where('absence_permit_id', $permit["id"])
+                        ->count();
                 },
                 $this->absencePermitTypes
             );
 
-            // Tidak Ada Keterangan Type
+            // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
             $absencePermitTypeData[] = $filteredAttendances
                 ->filter(function ($attendance) {
-                    return $attendance->checkInStatus->late_duration == -1 && is_null($attendance->absence_permit_type_id);
+                    return optional($attendance->checkInStatus)->late_duration == -1
+                        && is_null($attendance->absence_permit_id);
                 })
                 ->count();
 
-            return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)], $absencePermitTypeData, $totalAbsenceStudents);
+            return array_merge(
+                $base,
+                [count($this->attendanceWindows) ? $totalAttendanceStudents / count($this->attendanceWindows) : 0],
+                $absencePermitTypeData,
+                $totalAbsenceStudents
+            );
         }
 
-
-        return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)], $totalAbsenceStudents);
+        return array_merge(
+            $base,
+            [count($this->attendanceWindows) ? $totalAttendanceStudents / count($this->attendanceWindows) : 0],
+            $totalAbsenceStudents
+        );
     }
+
 
     /**
      * Set the sheet title
