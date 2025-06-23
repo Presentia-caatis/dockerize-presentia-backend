@@ -98,20 +98,21 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
 
         if (count($this->absencePermitTypes) > 0) {
             $absencePermitTypeData = array_map(
-                function($permit) use ($filteredAttendances){
+                function ($permit) use ($filteredAttendances) {
                     return $filteredAttendances
-                    ->filter(function($attendance) use ($permit) {
-                        return $attendance->absencePermit && $attendance->absencePermit->id == $permit["id"];
+                        ->filter(function ($attendance) use ($permit) {
+                            return $attendance->absencePermit && $attendance["absence_permit_id"] == $permit["id"];
                         })->count();
                 },
                 $this->absencePermitTypes
             );
 
+            // Tidak Ada Keterangan Type
             $absencePermitTypeData[] = $filteredAttendances
                 ->filter(function ($attendance) {
                     return $attendance->checkInStatus->late_duration == -1 && is_null($attendance->absence_permit_type_id);
                 })
-                ->count() + (count($this->attendanceWindows) - $totalAttendanceStudents);
+                ->count();
 
             return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)], $absencePermitTypeData, $totalAbsenceStudents);
         }
