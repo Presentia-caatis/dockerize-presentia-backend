@@ -77,7 +77,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             ->get()
             ->count();
 
-        $totalAbsenceStudents = [count($this->attendanceWindows) - $filteredAttendancesPresentOnly];
+        $totalAbsenceStudents = count($this->attendanceWindows) - $filteredAttendancesPresentOnly;
 
         $base = [
             '',
@@ -100,34 +100,38 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         }
 
         if (count($this->absencePermitTypes) > 0) {
+            $totalAbsenceWithPermit = 0;
 
             $absencePermitTypeData = array_map(
-                function ($permit) use ($filteredAttendancesQuery) {
-                    return $filteredAttendancesQuery
-                        ->where('absence_permit_id', $permit["id"])
-                        ->count();
+                function ($permit) use ($filteredAttendancesQuery, &$totalAbsenceWithPermit) {
+                    $query = clone $filteredAttendancesQuery;
+                    $result = $query
+                        ->whereHas('absencePermit', function($q) use ($permit) {
+                            $q->where('absence_permit_type_id', $permit["id"]);
+                        })
+                        ->count(); 
+                    $totalAbsenceWithPermit += $result;
+                    return $result;
                 },
                 $this->absencePermitTypes
             );
 
             // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
-            $absencePermitTypeData[] = $filteredAttendancesQuery
-                ->where("check_in_status_id", $this->checkInAbsenceId)
-                ->where("absence_permit_id", null)
-                ->count();
+            $absencePermitTypeData[] = $totalAbsenceStudents - $totalAbsenceWithPermit;
 
+            dd($absencePermitTypeData);
             return array_merge(
                 $base,
                 [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
                 $absencePermitTypeData,
-                $totalAbsenceStudents
+                [$totalAbsenceStudents]
             );
         }
 
         return array_merge(
             $base,
             [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
-            $totalAbsenceStudents
+            [$totalAbsenceStudents]
         );
     }
 
