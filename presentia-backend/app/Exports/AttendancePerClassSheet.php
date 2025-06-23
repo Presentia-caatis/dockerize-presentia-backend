@@ -97,6 +97,10 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
 
 
         if (count($this->absencePermitTypes) > 0) {
+            foreach ($filteredAttendances as $attendance) {
+                logger($attendance->absence_permit_id); // or dd($attendance->absence_permit_id, $permit["id"]);
+            }
+            
             $absencePermitTypeData = array_map(
                 function ($permit) use ($filteredAttendances) {
                     return $filteredAttendances
