@@ -27,16 +27,18 @@ class AttendanceExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
+        $checkInStatusesQuery=CheckInStatus::orderBy('late_duration')->where('is_active', true);
 
         $classGroups = $this->classGroup == 'all'
             ? ClassGroup::all()
             : ClassGroup::whereIn('id', explode(',', $this->classGroup))->get();
         $attendanceWindows = AttendanceWindow::whereBetween('date', [$this->startDate, $this->endDate])->pluck('id')->toArray();
-        $checkInStatuses =CheckInStatus::orderBy('late_duration')->where('is_active', true)->get()->toArray();
+        $checkInStatuses =$checkInStatusesQuery->get()->toArray();
+        $checkInAbsenceId = $checkInStatusesQuery->where('late_duration', -1)->firstOrFail()->id;
         $absencePermitTypes = AbsencePermitType::orderBy('permit_name')->where('is_active', true)->get()->toArray(); 
 
         foreach ($classGroups as $classGroup) {
-            $sheets[] = new AttendancePerClassSheet($classGroup, $attendanceWindows, $checkInStatuses,$absencePermitTypes) ;
+            $sheets[] = new AttendancePerClassSheet($classGroup, $attendanceWindows, $checkInStatuses,$absencePermitTypes, $checkInAbsenceId) ;
         }
 
         return $sheets;

@@ -32,6 +32,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
     private $checkInStatuses;
     private $absencePermitTypes;
     private $showCheckInStatus;
+    private $checkInAbsenceId;
 
 
     public function __construct(
@@ -39,6 +40,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $attendanceWindows,
         $checkInStatuses,
         $absencePermitTypes,
+        $checkInAbsenceId,
         $showCheckInStatus = false,
         string $lang = "ID",
     ) {
@@ -46,6 +48,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $this->attendanceWindows = $attendanceWindows;
         $this->checkInStatuses = $checkInStatuses;
         $this->absencePermitTypes = $absencePermitTypes;
+        $this->checkInAbsenceId = $checkInAbsenceId;
         $this->lang = $lang;
         $this->showCheckInStatus = $showCheckInStatus;
     }
@@ -69,14 +72,12 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $filteredAttendancesQuery = $student->attendances()
             ->whereIn('attendance_window_id', $this->attendanceWindows);
 
-        $filteredAttendances = $filteredAttendancesQuery->whereHas(
-            "checkInStatus", function($q) {
-                $q->where("late_duration", "!=" , -1);
-            }
-        )->get();
+        $filteredAttendancesPresentOnly = $filteredAttendancesQuery
+            ->where('check_in_status_id', "!=" , $this->checkInAbsenceId)
+            ->get()
+            ->count();
 
-        $totalAttendanceStudents = $filteredAttendances->count();
-        $totalAbsenceStudents = [count($this->attendanceWindows) - $totalAttendanceStudents];
+        $totalAbsenceStudents = [count($this->attendanceWindows) - $filteredAttendancesPresentOnly];
 
         $base = [
             '',
@@ -85,21 +86,15 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             $student->student_name,
             $student->gender == 'male' ? 'Laki-laki' : 'Perempuan',
             ($student->is_active ? 'ya' : 'tidak') ?? 'tidak',
-            $totalAttendanceStudents ?? 0,
+            $filteredAttendancesPresentOnly ?? 0,
         ];
 
         // Check-in status section (collection filter is fine, since data set per student is small)
         if ($this->checkInStatuses && $this->showCheckInStatus) {
             $checkInStatusData = [];
-            // -1 is for absent; add absences outside filteredAttendances too
-            $checkInStatusData[] =
-                $filteredAttendances->where('check_in_status_id', -1)->count()
-                + (count($this->attendanceWindows) - $totalAttendanceStudents);
 
-            // For other check-in statuses
             $checkInStatusData = array_merge($checkInStatusData, array_map(
-                fn($status) =>
-                $filteredAttendances->where('check_in_status_id', $status['id'])->count() ?? 0,
+                fn($status) => $filteredAttendancesQuery->where('check_in_status_id', $status['id'])->count() ?? 0,
                 array_slice($this->checkInStatuses, 1)
             ));
         }
@@ -107,8 +102,8 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         if (count($this->absencePermitTypes) > 0) {
 
             $absencePermitTypeData = array_map(
-                function ($permit) use ($filteredAttendances) {
-                    return $filteredAttendances
+                function ($permit) use ($filteredAttendancesQuery) {
+                    return $filteredAttendancesQuery
                         ->where('absence_permit_id', $permit["id"])
                         ->count();
                 },
@@ -116,16 +111,14 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             );
 
             // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
-            $absencePermitTypeData[] = $filteredAttendances
-                ->filter(function ($attendance) {
-                    return optional($attendance->checkInStatus)->late_duration == -1
-                        && is_null($attendance->absence_permit_id);
-                })
+            $absencePermitTypeData[] = $filteredAttendancesQuery
+                ->where("check_in_status_id", $this->checkInAbsenceId)
+                ->where("absence_permit_id", null)
                 ->count();
 
             return array_merge(
                 $base,
-                [count($this->attendanceWindows) ? $totalAttendanceStudents / count($this->attendanceWindows) : 0],
+                [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
                 $absencePermitTypeData,
                 $totalAbsenceStudents
             );
@@ -133,7 +126,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
 
         return array_merge(
             $base,
-            [count($this->attendanceWindows) ? $totalAttendanceStudents / count($this->attendanceWindows) : 0],
+            [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
             $totalAbsenceStudents
         );
     }
