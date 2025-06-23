@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Filterable;
 use App\Models\Attendance;
+use App\Sortable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermit;
@@ -13,7 +14,7 @@ use function App\Helpers\current_school_id;
 
 class AbsencePermitController extends Controller
 {
-    use Filterable;
+    use Filterable, Sortable;
     public function index(Request $request)
     {
         $validatedData = $request->validate([
@@ -23,6 +24,7 @@ class AbsencePermitController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
 
         $query = $this->applyFilters(AbsencePermit::query(),  $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []));
 
         $data = $query->with('attendances', 'document', 'absencePermitType')->paginate($perPage);
 
