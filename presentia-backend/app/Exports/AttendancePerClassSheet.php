@@ -111,7 +111,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
                 ->filter(function ($attendance) {
                     return $attendance->checkInStatus->late_duration == -1 && is_null($attendance->absence_permit_type_id);
                 })
-                ->count();
+                ->count() + count($this->attendanceWindows) - $filteredAttendances->count();
 
             return array_merge($base, [$totalAttendanceStudents / count($this->attendanceWindows)], $absencePermitTypeData, $totalAbsenceStudents);
         }
