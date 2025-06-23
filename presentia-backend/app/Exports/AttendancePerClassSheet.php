@@ -101,7 +101,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
                 function ($permit) use ($filteredAttendances) {
                     return $filteredAttendances
                         ->filter(function ($attendance) use ($permit) {
-                            return $attendance->absencePermit && $attendance["absence_permit_id"] == $permit["id"];
+                            return $attendance->absence_permit_id == $permit["id"];
                         })->count();
                 },
                 $this->absencePermitTypes
