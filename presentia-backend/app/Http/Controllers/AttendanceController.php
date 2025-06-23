@@ -82,7 +82,7 @@ class AttendanceController extends Controller
                 'attendances.check_out_time'
             ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow', 'absencePermit');
+            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow', 'absencePermit.absencePermitType');
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
