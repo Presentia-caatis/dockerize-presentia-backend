@@ -65,14 +65,16 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
      */
     public function map($student): array
     {
-        // Use query builder to only get relevant attendances
+
         $filteredAttendancesQuery = $student->attendances()
             ->whereIn('attendance_window_id', $this->attendanceWindows);
 
-        // Get collection only ONCE (so you can still use collection methods below)
-        $filteredAttendances = $filteredAttendancesQuery->get();
+        $filteredAttendances = $filteredAttendancesQuery->whereHas(
+            "checkInStatus", function($q) {
+                $q->where("late_duration", "!=" , -1);
+            }
+        )->get();
 
-        // Count only the filtered attendances
         $totalAttendanceStudents = $filteredAttendances->count();
         $totalAbsenceStudents = [count($this->attendanceWindows) - $totalAttendanceStudents];
 
@@ -102,12 +104,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             ));
         }
 
-        // Absence permit types counting
         if (count($this->absencePermitTypes) > 0) {
-            // Uncomment for debugging
-            // foreach ($filteredAttendances as $attendance) {
-            //     \Log::info($attendance->absence_permit_id); 
-            // }
 
             $absencePermitTypeData = array_map(
                 function ($permit) use ($filteredAttendances) {
