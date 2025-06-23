@@ -62,7 +62,7 @@ class AbsencePermitController extends Controller
 
     public function getById($id)
     {
-        $absencePermit = AbsencePermit::with('document')->findOrFail($id);
+        $absencePermit = AbsencePermit::with('attendances', 'document', 'absencePermitType')->findOrFail($id);
 
         if ($absencePermit->document) {
             $relativePath = $absencePermit->document->path;

@@ -70,7 +70,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $filteredAttendancesQuery = $student->attendances()
             ->whereIn('attendance_window_id', $this->attendanceWindows);
 
-        $filteredAttendancesPresentOnly = $filteredAttendancesQuery
+        $filteredAttendancesPresentOnly = (clone $filteredAttendancesQuery)
             ->where('check_in_status_id', "!=" , $this->checkInAbsenceId)
             ->get()
             ->count();
@@ -92,14 +92,14 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             $checkInStatusData = [];
 
             $checkInStatusData = array_merge($checkInStatusData, array_map(
-                fn($status) => $filteredAttendancesQuery->where('check_in_status_id', $status['id'])->count() ?? 0,
+                fn($status) => (clone $filteredAttendancesQuery)->where('check_in_status_id', $status['id'])->count() ?? 0,
                 array_slice($this->checkInStatuses, 1)
             ));
         }
 
         if (count($this->absencePermitTypes) > 0) {
             $totalAbsenceWithPermit = 0;
-
+            
             $absencePermitTypeData = array_map(
                 function ($permit) use ($filteredAttendancesQuery, &$totalAbsenceWithPermit) {
                     $query = clone $filteredAttendancesQuery;
@@ -117,6 +117,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
             $absencePermitTypeData[] = $totalAbsenceStudents - $totalAbsenceWithPermit;
 
+            dd($absencePermitTypeData);
             return array_merge(
                 $base,
                 [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
