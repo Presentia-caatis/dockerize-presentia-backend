@@ -22,7 +22,7 @@ class SchoolMiddleware
             if(!auth()->user()->hasRole('super_admin')){
                 $schoolId = auth()->user()?->school_id;
             } else {
-                $schoolId = $request->header('School-Id') ?? auth()->user()->school_id;
+                $schoolId = $request->header('School-Id');
             }
 
             if($schoolId == null){

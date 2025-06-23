@@ -58,9 +58,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
      */
     public function collection()
     {
-        return Student::where('class_group_id', $this->classGroup->id)
-            ->with("attendances")
-            ->get();
+        return Student::where('class_group_id', $this->classGroup->id)->get();
     }
 
     /**
