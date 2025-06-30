@@ -199,8 +199,10 @@ class SchoolController extends Controller
                     'is_active' => true,
                 ],
             ]);
-
-            $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+            if($request->logo_image){
+                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+            }
+            
 
             \DB::commit();
 

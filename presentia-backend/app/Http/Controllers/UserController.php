@@ -149,7 +149,7 @@ class UserController extends Controller
     public function removeFromSchool($id)
     {
         $user = User::findOrFail($id);
-        if ($user->school_id != auth()->user()->school_id) {
+        if (!auth()->user()->hasRole('super_admin') && $user->school_id != auth()->user()->school_id) {
             abort(403, 'You do not have the authority to remove a user from a school that does not assign to you.');
         }
 
