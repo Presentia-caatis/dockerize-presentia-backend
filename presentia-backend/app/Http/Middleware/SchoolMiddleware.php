@@ -19,6 +19,7 @@ class SchoolMiddleware
     {
         $schoolId = 0;
         if(!$skipChecks){
+            dd(auth()->user()->hasRole('super_admin'));
             if(!auth()->user()->hasRole('super_admin')){
                 $schoolId = auth()->user()?->school_id;
             } else {
