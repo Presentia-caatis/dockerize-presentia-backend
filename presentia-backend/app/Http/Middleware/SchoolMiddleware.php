@@ -15,25 +15,30 @@ class SchoolMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, bool $skipChecks = false): Response
     {
         $schoolId = 0;
-        if(!auth()->user()->hasRole('super_admin')){
-            $schoolId = auth()->user()?->school_id;
-            
-            validate_school_access(config('school.id'), auth()->user()); //unnecessary need to change
+        if(!$skipChecks){
+            if(!auth()->user()->hasRole('super_admin')){
+                $schoolId = auth()->user()?->school_id;
+            } else {
+                $schoolId = $request->header('School-Id');
+            }
+
+            if($schoolId == null){
+                abort(403, 'You dont have access to this school data.');
+            }
         } else {
-            $schoolId = $request->header('School-Id') ?? auth()->user()->school_id;
-        }
+            $schoolId = $request->school_id;
 
-        if($schoolId == null){
-            abort(403, 'You dont have access to this school data.');
-        }
-
-        if( !School::where('id', $schoolId)->exists()){
-            abort(404, 'School not found.');
+            if($schoolId == null){
+                abort(422, 'school_id is required');
+            }
         }
         
+        if(!School::where('id', $schoolId)->exists()){
+            abort(404, 'School not found.');
+        }
         config(['school.id' => $schoolId]);
         return $next($request);
     }

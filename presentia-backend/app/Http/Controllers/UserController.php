@@ -48,6 +48,60 @@ class UserController extends Controller
         ]);
     }
 
+
+    public function unassignedUsers(Request $request)
+    {
+        $validated = $request->validate([
+            'search' => 'nullable|string',
+            'perPage' => 'sometimes|integer|min:1',
+        ]);
+
+        $perPage = $validated['perPage'] ?? 10;
+        $search = $validated['search'] ?? null;
+
+        $query = User::query()
+            ->whereNull('school_id')
+            ->whereNull('school_token')
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            })
+            ->select('id', 'fullname', 'email');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('fullname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->orderBy('fullname')->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Unassigned users retrieved successfully',
+            'data' => $users
+        ]);
+    }
+
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required'],
+            'new_password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ]);
+
+        if (!Hash::check($request->current_password, $request->user()->password)) {
+            return response()->json(['message' => 'Password lama salah.'], 400);
+        }
+
+        $request->user()->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Password berhasil diganti.']);
+    }
+
     public function assignToSchool(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -95,7 +149,7 @@ class UserController extends Controller
     public function removeFromSchool($id)
     {
         $user = User::findOrFail($id);
-        if ($user->school_id != auth()->user()->school_id) {
+        if (!auth()->user()->hasRole('super_admin') && $user->school_id != auth()->user()->school_id) {
             abort(403, 'You do not have the authority to remove a user from a school that does not assign to you.');
         }
 
@@ -121,8 +175,7 @@ class UserController extends Controller
 
         if ($request->hasFile('profile_image')) {
             $validatedData['profile_image_path'] = $request->file('profile_image')->store($request->file('profile_image')->extension(), 'public');
-        }
-        ;
+        };
 
         $validatedData['password'] = Hash::make($request->password);
 

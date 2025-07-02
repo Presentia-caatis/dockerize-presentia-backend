@@ -31,6 +31,8 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
     private $lang;
     private $checkInStatuses;
     private $absencePermitTypes;
+    private $showCheckInStatus;
+    private $checkInAbsenceId;
 
 
     public function __construct(
@@ -38,13 +40,17 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $attendanceWindows,
         $checkInStatuses,
         $absencePermitTypes,
+        $checkInAbsenceId,
+        $showCheckInStatus = false,
         string $lang = "ID",
     ) {
         $this->classGroup = $classGroup;
         $this->attendanceWindows = $attendanceWindows;
         $this->checkInStatuses = $checkInStatuses;
         $this->absencePermitTypes = $absencePermitTypes;
+        $this->checkInAbsenceId = $checkInAbsenceId;
         $this->lang = $lang;
+        $this->showCheckInStatus = $showCheckInStatus;
     }
 
     /**
@@ -52,9 +58,7 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
      */
     public function collection()
     {
-        return Student::where('class_group_id', $this->classGroup->id)
-            ->with("attendances")
-            ->get();
+        return Student::where('class_group_id', $this->classGroup->id)->get();
     }
 
     /**
@@ -62,13 +66,16 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
      */
     public function map($student): array
     {
-        // Filter only attendances that match the given attendance windows
-        $filteredAttendances = $student->attendances->filter(function ($attendance) {
-            return in_array($attendance->attendance_window_id, $this->attendanceWindows);
-        });
 
-        // Count only the filtered attendances
-        $totalAttendanceStudents = $filteredAttendances->count();
+        $filteredAttendancesQuery = $student->attendances()
+            ->whereIn('attendance_window_id', $this->attendanceWindows);
+
+        $filteredAttendancesPresentOnly = (clone $filteredAttendancesQuery)
+            ->where('check_in_status_id', "!=" , $this->checkInAbsenceId)
+            ->get()
+            ->count();
+
+        $totalAbsenceStudents = count($this->attendanceWindows) - $filteredAttendancesPresentOnly;
 
         $base = [
             '',
@@ -77,39 +84,54 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
             $student->student_name,
             $student->gender == 'male' ? 'Laki-laki' : 'Perempuan',
             ($student->is_active ? 'ya' : 'tidak') ?? 'tidak',
-            $totalAttendanceStudents ?? 0, // Use the count of filtered attendances
+            $filteredAttendancesPresentOnly ?? 0,
         ];
 
+        // Check-in status section (collection filter is fine, since data set per student is small)
+        if ($this->checkInStatuses && $this->showCheckInStatus) {
+            $checkInStatusData = [];
 
-        $checkInStatusData[] = $filteredAttendances->where('check_in_status_id', -1)->count()
-            + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
-
-        $checkInStatusData = array_merge($checkInStatusData, array_map(
-            fn($status) =>
-            $filteredAttendances->where('check_in_status_id', $status['id'])->count() ?? 0,
-            array_slice($this->checkInStatuses, 1)
-        ));
+            $checkInStatusData = array_merge($checkInStatusData, array_map(
+                fn($status) => (clone $filteredAttendancesQuery)->where('check_in_status_id', $status['id'])->count() ?? 0,
+                array_slice($this->checkInStatuses, 1)
+            ));
+        }
 
         if (count($this->absencePermitTypes) > 0) {
-            // Process absence permit types using only filtered attendances
+            $totalAbsenceWithPermit = 0;
+            
             $absencePermitTypeData = array_map(
-                fn($permit) =>
-                $filteredAttendances->where('check_in_status_id', -1)
-                    ->filter(fn($attendance) => $attendance->absencePermits->where('absence_permit_type_id', $permit['id'])->isNotEmpty())
-                    ->count() ?? 0,
+                function ($permit) use ($filteredAttendancesQuery, &$totalAbsenceWithPermit) {
+                    $query = clone $filteredAttendancesQuery;
+                    $result = $query
+                        ->whereHas('absencePermit', function($q) use ($permit) {
+                            $q->where('absence_permit_type_id', $permit["id"]);
+                        })
+                        ->count(); 
+                    $totalAbsenceWithPermit += $result;
+                    return $result;
+                },
                 $this->absencePermitTypes
             );
 
-            $absencePermitTypeData[] = $filteredAttendances->where('check_in_status_id', -1)
-                ->whereNull('absence_permit_type_id')->count()
-                + (count($this->attendanceWindows) - $totalAttendanceStudents) ?? 0;
-
-            return array_merge($base, $checkInStatusData, $absencePermitTypeData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
+            // Count 'Tidak Ada Keterangan' (absent with check_in_status -1, no absence_permit)
+            $absencePermitTypeData[] = $totalAbsenceStudents - $totalAbsenceWithPermit;
+            
+            return array_merge(
+                $base,
+                [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
+                $absencePermitTypeData,
+                [$totalAbsenceStudents]
+            );
         }
 
-
-        return array_merge($base, $checkInStatusData, [$totalAttendanceStudents / count($this->attendanceWindows)]);
+        return array_merge(
+            $base,
+            [count($this->attendanceWindows) ? $filteredAttendancesPresentOnly / count($this->attendanceWindows) : 0],
+            [$totalAbsenceStudents]
+        );
     }
+
 
     /**
      * Set the sheet title
@@ -182,61 +204,72 @@ class AttendancePerClassSheet implements FromCollection, WithTitle, WithMapping,
         $checkInStatusCount = count($this->checkInStatuses);
         $absencePermitTypeCount = count($this->absencePermitTypes);
 
-        $startColCheckInStatus = 8;
-        $endColCheckInStatus = $startColCheckInStatus + $checkInStatusCount - 1;
+        $startCol = 0;
+        $endCol = 8;
 
-        $startColCheckInStatusIndex = Coordinate::stringFromColumnIndex($startColCheckInStatus);
-        $endColCheckInStatusIndex = Coordinate::stringFromColumnIndex($endColCheckInStatus);
-
-        if ($checkInStatusCount > 0) {
-            $sheet->setCellValue("{$startColCheckInStatusIndex}1", "Status Kehadiran");
-            $sheet->getStyle("{$startColCheckInStatusIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
-            if ($startColCheckInStatus <= $endColCheckInStatus) {
-                $sheet->mergeCells("{$startColCheckInStatusIndex}1:{$endColCheckInStatusIndex}1");
-                $currentCol = 0;
-                foreach (range($startColCheckInStatusIndex, $endColCheckInStatusIndex) as $col) {
-                    $sheet->setCellValue("{$col}2", $this->checkInStatuses[$currentCol]["status_name"]);
-                    $sheet->getStyle("{$col}2")->getAlignment()->setHorizontal('center')->setVertical('center');
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
-                    $currentCol++;
-                }
-            }
-        }
-
-        $startColAbsencePermitType = $endColCheckInStatus + 1;
-        $endColAbsencePermitType = $startColAbsencePermitType + $absencePermitTypeCount - 1;
-
-        $startColAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($startColAbsencePermitType);
-        $endColAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType);
-
-        if ($absencePermitTypeCount > 0) {
-            $sheet->setCellValue("{$startColAbsencePermitTypeIndex}1", "Jenis Izin Absensi");
-            $sheet->getStyle("{$startColAbsencePermitTypeIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
-            if ($startColAbsencePermitType <= $endColAbsencePermitType) {
-                $extEndColAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType + 1);
-                $sheet->mergeCells("{$startColAbsencePermitTypeIndex}1:{$extEndColAbsencePermitTypeIndex}1");
-                $currentCol = 0;
-                foreach (range($startColAbsencePermitTypeIndex, $endColAbsencePermitTypeIndex) as $col) {
-                    $sheet->setCellValue("{$col}2", $this->absencePermitTypes[$currentCol]["permit_name"]);
-                    $sheet->getStyle("{$col}2")->getAlignment()->setHorizontal('center')->setVertical('center');
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
-                    $currentCol++;
-                }
-                $lastAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType + 1);
-                $sheet->setCellValue("{$lastAbsencePermitTypeIndex}2", "Tidak ada\nKeterangan");
-                $sheet->getStyle("{$lastAbsencePermitTypeIndex}2")->getAlignment()->setHorizontal('center')->setVertical('center');
-                $sheet->getColumnDimension($lastAbsencePermitTypeIndex)->setAutoSize(true);
-            }
-        }
-
-        $lastColIndex = Coordinate::stringFromColumnIndex($endColAbsencePermitType + ($absencePermitTypeCount > 0 ? 2 : 1));
+        $lastColIndex = Coordinate::stringFromColumnIndex($endCol);
         $sheet->getStyle("{$lastColIndex}2:{$lastColIndex}1000")->getNumberFormat()->setFormatCode('0.00%');
         $sheet->setCellValue("{$lastColIndex}1", "Persentase\nKehadiran (%)");
         $sheet->mergeCells("{$lastColIndex}1:{$lastColIndex}2");
         $sheet->getStyle("{$lastColIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
         $sheet->getColumnDimension($lastColIndex)->setAutoSize(true);
 
-        $sheet->insertNewRowBefore(1, 1);
 
+        if ($this->showCheckInStatus) {
+            $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + $checkInStatusCount);
+
+            if ($checkInStatusCount > 0) {
+                $sheet->setCellValue("{$startColIndex}1", "Status Kehadiran");
+                $sheet->getStyle("{$startColIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
+                if ($startCol <= $endCol) {
+                    $sheet->mergeCells("{$startColIndex}1:{$endColIndex}1");
+                    $currentCol = 0;
+                    foreach (range($startColIndex, $endColIndex) as $col) {
+                        $sheet->setCellValue("{$col}2", $this->checkInStatuses[$currentCol]["status_name"]);
+                        $sheet->getStyle("{$col}2")->getAlignment()->setHorizontal('center')->setVertical('center');
+                        $sheet->getColumnDimension($col)->setAutoSize(true);
+                        $currentCol++;
+                    }
+                }
+            }
+        }
+
+        $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + $absencePermitTypeCount);
+
+        if ($absencePermitTypeCount > 0) {
+            $sheet->setCellValue("{$startColIndex}1", "Jenis Izin Absensi");
+            $sheet->getStyle("{$startColIndex}1")->getAlignment()->setHorizontal('center')->setVertical('center');
+            if ($startCol <= $endCol) {
+                $extEndColAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endCol + 1);
+                $sheet->mergeCells("{$startColIndex}1:{$extEndColAbsencePermitTypeIndex}1");
+                $currentCol = 0;
+                foreach (range($startColIndex, $endColIndex) as $col) {
+                    $sheet->setCellValue("{$col}2", $this->absencePermitTypes[$currentCol]["permit_name"]);
+                    $sheet->getStyle("{$col}2")->getAlignment()->setHorizontal('center')->setVertical('center');
+                    $sheet->getColumnDimension($col)->setAutoSize(true);
+                    $currentCol++;
+                }
+            }
+        }
+
+        $lastAbsencePermitTypeIndex = Coordinate::stringFromColumnIndex($endCol + 1);
+        $sheet->setCellValue("{$lastAbsencePermitTypeIndex}2", "Tidak ada\nKeterangan");
+        $sheet->getStyle("{$lastAbsencePermitTypeIndex}2")->getAlignment()->setHorizontal('center')->setVertical('center');
+        $sheet->getColumnDimension($lastAbsencePermitTypeIndex)->setAutoSize(true);
+
+        $this->colBoundariesUpdate($startCol, $endCol, $startColIndex, $endColIndex, $endCol + 1, $endCol + 2);
+
+        $sheet->setCellValue("{$endColIndex}1", "Total Ketidakhadiran\n(dari total " . count($this->attendanceWindows) . ")");
+        $sheet->mergeCells("{$endColIndex}1:{$endColIndex}2");
+
+        $sheet->insertNewRowBefore(1, 1);
+    }
+
+    protected function colBoundariesUpdate(&$startCol, &$endCol, &$startColIndex, &$endColIndex, $formulaStartCol, $formulaEndCol)
+    {
+        $startCol = $formulaStartCol;
+        $endCol = $formulaEndCol;
+        $startColIndex = Coordinate::stringFromColumnIndex($startCol);
+        $endColIndex = Coordinate::stringFromColumnIndex($endCol);
     }
 }

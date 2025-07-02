@@ -35,7 +35,7 @@ trait Sortable
         // Remove the global school scope and reapply manually to avoid ambiguity
         $query->withoutGlobalScope(SchoolScope::class);
 
-        $schoolId = auth()->user()->school_id ?? null;
+        $schoolId = config('school.id');
         if ($schoolId) {
             // Apply qualified where condition to avoid ambiguity between joined tables
             $query->where($modelTable . '.school_id', $schoolId);
