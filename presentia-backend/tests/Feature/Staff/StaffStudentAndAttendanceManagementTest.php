@@ -14,15 +14,16 @@ use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Tests\TestCaseHelpers; 
-use Carbon\Carbon; 
+use Carbon\Carbon;
+use Tests\Traits\AuthenticatesSchoolStaff; 
 
-class StudentAndAttendanceManagementTest extends TestCase
+class StaffStudentAndAttendanceManagementTest extends TestCase
 {
-    use WithFaker, TestCaseHelpers;
+    use WithFaker, AuthenticatesSchoolStaff;
 
     private function createTestData()
     {
-        $school = School::find($this->authUser->school_id);
+        $school = School::find($this->schoolStaffUser->school_id);
         
         $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
         $student = Student::factory()->create([
@@ -46,7 +47,7 @@ class StudentAndAttendanceManagementTest extends TestCase
     public function student_attendance_management(): void
     {
         // --- 0. Initial Setup ---
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $data = $this->createTestData();
         $school = $data['school'];

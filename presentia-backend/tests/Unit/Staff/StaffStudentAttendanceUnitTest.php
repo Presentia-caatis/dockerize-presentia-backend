@@ -19,16 +19,16 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use Tests\TestCaseHelpers;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Traits\AuthenticatesSchoolStaff;
 
 
-class StudentAttendanceUnitTest extends TestCase
+class StaffStudentAttendanceUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers, WithFaker;
-
+    use AuthenticatesSchoolStaff, WithFaker;
     
     private function createTestData()
     {
-        $school = School::find($this->authUser->school_id);
+        $school = School::find($this->schoolStaffUser->school_id);
         
         $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
         $student = Student::factory()->create([
@@ -50,7 +50,7 @@ class StudentAttendanceUnitTest extends TestCase
     #[Test]
     public function test_user_can_input_manual_attendance_with_valid_data()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
     
         $student = Student::factory()->create(['school_id' => $schoolId]);
     
@@ -119,7 +119,7 @@ class StudentAttendanceUnitTest extends TestCase
     
     public function test_manual_attendance_fails_with_invalid_datetime_format()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
     
         $student = Student::factory()->create(['school_id' => $schoolId]);
     

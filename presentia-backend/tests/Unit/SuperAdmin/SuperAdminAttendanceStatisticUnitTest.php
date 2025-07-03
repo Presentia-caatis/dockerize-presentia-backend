@@ -18,11 +18,12 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use Tests\TestCaseHelpers;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Traits\AuthenticatesSuperAdmin;
 
 
-class AttendanceStatisticUnitTest extends TestCase
+class SuperAdminAttendanceStatisticUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers, WithFaker;
+    use AuthenticatesSuperAdmin, WithFaker;
 
     // Active/Inactive Student
     public function test_static_statistic_endpoint_returns_expected_data()
@@ -35,7 +36,8 @@ class AttendanceStatisticUnitTest extends TestCase
         $school->update(['latest_subscription' => now()]);
         $school->save();
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         Student::factory()->count(3)->create(['is_active' => true, 'gender' => 'male', 'school_id' => $school->id]);
         Student::factory()->count(2)->create(['is_active' => false, 'gender' => 'female', 'school_id' => $school->id]);
@@ -62,7 +64,8 @@ class AttendanceStatisticUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         Student::factory()->count(5)->create(['is_active' => true, 'school_id' => $school->id]);
         CheckInStatus::factory()->count(3)->create();
@@ -82,7 +85,8 @@ class AttendanceStatisticUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         $statuses = CheckInStatus::factory()->sequence(
             ['late_duration' => -1, 'status_name' => 'Absent'],
@@ -139,7 +143,8 @@ class AttendanceStatisticUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         $statuses = CheckInStatus::factory()->sequence(
             ['late_duration' => -1, 'status_name' => 'Absent'],

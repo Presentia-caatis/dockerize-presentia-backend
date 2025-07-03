@@ -10,21 +10,25 @@ use App\Models\ClassGroup;
 use App\Models\School;
 use Tests\TestCaseHelpers;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Traits\AuthenticatesSchoolAdmin;
+use Tests\Traits\AuthenticatesSuperAdmin;
 
-class ClassManagementUnitTest extends TestCase
+class SuperAdminClassManagementUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers;
+    use AuthenticatesSuperAdmin;
 
     #[Test]
-    public function it_can_retrieve_class_groups()
+    public function superadmin_can_retrieve_class_groups()
     {
-        $school = School::factory()->create();
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
         
         ClassGroup::factory()->count(3)->sequence(
             ['class_name' => 'Class A'],
             ['class_name' => 'Class B'],
             ['class_name' => 'Class C'],
-        )->create(['school_id' => $school->id]);
+        )->create(['school_id' => $schoolId]);
         
         $this->assertDatabaseCount('class_groups', 3);
 
@@ -39,12 +43,14 @@ class ClassManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_add_class_group()
+    public function superadmin_can_add_class_group()
     {
-        $school = School::factory()->create();
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
 
         $response = $this->postJson('/api/class-group', [
-            'school_id' => $school->id,
+            'school_id' => $schoolId,
             'class_name' => 'Class 10A',
         ]);
 
@@ -55,18 +61,20 @@ class ClassManagementUnitTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('class_groups', [
-            'school_id' => $school->id,
+            'school_id' => $schoolId,
             'class_name' => 'Class 10A',
         ]);
     }
 
     #[Test]
-    public function it_cannot_add_class_group_with_invalid_credentials()
+    public function superadmin_cannot_add_class_group_with_invalid_credentials()
     {
-        $school = School::factory()->create();
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
 
         $response = $this->postJson('/api/class-group', [
-            'school_id' => $school->id
+            'school_id' => $schoolId
         ]);
     
         $response->assertStatus(422) 
@@ -76,15 +84,16 @@ class ClassManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_update_class_group()
+    public function superadmin_can_update_class_group()
     {
-        $school = School::factory()->create(); 
-        $this->authUser->update(['school_id' => $school->id]);
+        $schoolId = $this->superAdminUser->school_id;
 
-        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
+        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
 
         $response = $this->putJson("/api/class-group/{$classGroup->id}", [
-            'school_id' => $school->id,
+            'school_id' => $schoolId,
             'class_name' => 'Updated Class Name',
         ]);
 
@@ -100,15 +109,16 @@ class ClassManagementUnitTest extends TestCase
         ]);
     }
     #[Test]
-    public function it_cannot_update_class_group_with_invalid_credentials()
+    public function superadmin_cannot_update_class_group_with_invalid_credentials()
     {
-        $school = School::factory()->create(); 
-        $this->authUser->update(['school_id' => $school->id]);
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
     
-        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
     
         $response = $this->putJson("/api/class-group/{$classGroup->id}", [
-            'school_id' => $school->id,
+            'school_id' => $schoolId,
             'class_name' => '', 
         ]);
     
@@ -123,12 +133,13 @@ class ClassManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_delete_class_group()
+    public function superadmin_can_delete_class_group()
     {
-        $school = School::factory()->create();
-        $this->authUser->update(['school_id' => $school->id]);
+        $schoolId = $this->superAdminUser->school_id;
 
-        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
+        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
 
         $response = $this->deleteJson("/api/class-group/{$classGroup->id}");
 

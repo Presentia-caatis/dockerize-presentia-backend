@@ -9,16 +9,17 @@ use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Tests\TestCaseHelpers;
+use Tests\Traits\AuthenticatesSchoolAdmin;
 
-class ClassAndStudentManagementTest extends TestCase
+class SchoolAdminClassAndStudentManagementTest extends TestCase
 {
-    use WithFaker, TestCaseHelpers;
+    use WithFaker, AuthenticatesSchoolAdmin;
 
     #[Test]
     public function student_class_management(): void
     {
         // --- 0. Initial Setup ---
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolAdminUser->school_id;
 
 
         // --- 1. Tambah Siswa ---

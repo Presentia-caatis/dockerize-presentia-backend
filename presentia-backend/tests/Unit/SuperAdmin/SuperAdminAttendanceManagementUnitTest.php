@@ -18,15 +18,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
+use Tests\Traits\AuthenticatesSuperAdmin;
 
 
-class AttendanceManagementUnitTest extends TestCase
+class SuperAdminAttendanceManagementUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers;
+    use AuthenticatesSuperAdmin;
 
     private function createTestData()
     {
-        $school = School::find($this->authUser->school_id);
+        $school = School::find($this->superAdminUser->school_id);
         
         $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
         $student = Student::factory()->create([
@@ -46,9 +47,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_retrieve_attendance_list()
+    public function superadmin_can_retrieve_attendance_list()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         Attendance::factory()->create([
             'student_id' => $data['student']->id,
@@ -65,9 +68,11 @@ class AttendanceManagementUnitTest extends TestCase
 
     
     #[Test]
-    public function it_can_filter_attendance_by_date_range()
+    public function superadmin_can_filter_attendance_by_date_range()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $todayWindow = AttendanceWindow::factory()->create([
             'date' => now()->format('Y-m-d'),
@@ -103,9 +108,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_filter_attendance_by_class()
+    public function superadmin_can_filter_attendance_by_class()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $otherClass = ClassGroup::factory()->create(['school_id' => $data['school']->id]);
         $otherStudent = Student::factory()->create([
@@ -137,9 +144,12 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_filter_attendance_by_status()
+    public function superadmin_can_filter_attendance_by_status()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
+
         $otherStatus = CheckInStatus::factory()->create();
 
         $window1 = AttendanceWindow::factory()->create([
@@ -176,9 +186,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_search_attendance_by_keyword()
+    public function superadmin_can_search_attendance_by_keyword()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
 
         // Presensi yang sesuai pencarian
         Attendance::factory()->create([
@@ -196,9 +208,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_sort_attendance_by_column()
+    public function superadmin_can_sort_attendance_by_column()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $studentA = Student::factory()->create([
             'school_id' => $data['school']->id,
@@ -247,9 +261,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_export_attendance_to_csv()
+    public function superadmin_can_export_attendance_to_csv()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         Attendance::factory()->create([
             'student_id' => $data['student']->id,
@@ -265,12 +281,14 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function test_user_can_update_attendance_schedule_with_valid_data()
+    public function superadmin_can_update_attendance_schedule_with_valid_data()
     {
+        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
+
         $schedule = AttendanceSchedule::factory()->create();
 
         $day = Day::factory()->create([
-            'school_id' => $this->authUser->school_id,
+            'school_id' => $this->superAdminUser->school_id,
             'attendance_schedule_id' => $schedule->id
         ]);
 
@@ -300,11 +318,13 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function test_cannot_update_without_required_check_out_end_time()
+    public function superadmin_cannot_update_without_required_check_out_end_time()
     {
+        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
+
         $schedule = AttendanceSchedule::factory()->create();
         Day::factory()->create([
-            'school_id' => $this->authUser->school_id,
+            'school_id' => $this->superAdminUser->school_id,
             'attendance_schedule_id' => $schedule->id
         ]);
 
@@ -319,9 +339,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_update_attendance()
+    public function superadmin_can_update_attendance()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $attendance = Attendance::factory()->create([
             'student_id' => $data['student']->id,
@@ -355,9 +377,11 @@ class AttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_cannot_update_attendance_with_invalid_data()
+    public function superadmin_cannot_update_attendance_with_invalid_data()
     {
         $data = $this->createTestData();
+
+        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $attendance = Attendance::factory()->create([
             'student_id' => $data['student']->id,

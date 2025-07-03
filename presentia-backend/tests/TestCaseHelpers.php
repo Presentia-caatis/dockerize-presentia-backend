@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 trait TestCaseHelpers
 {
@@ -18,6 +19,8 @@ trait TestCaseHelpers
     protected function setUp(): void
     {
         parent::setUp();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $school = School::factory()->create();
 
@@ -44,7 +47,7 @@ trait TestCaseHelpers
         ]);
 
         $schoolAdminRole = Role::findByName('school_admin', 'web');
-        $schoolAdminRole->givePermissionTo('basic_school'); 
+        $schoolAdminRole->givePermissionTo('basic_school', 'manage_schools'); 
 
         $this->authUser = User::factory()->create([
             'password' => bcrypt('password123'),
@@ -63,5 +66,7 @@ trait TestCaseHelpers
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->token,
         ]);
+        
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

@@ -16,72 +16,21 @@ use App\Models\Feature;
 use App\Models\SubscriptionPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Traits\AuthenticatesSuperAdmin;
 
 
-class SchoolManagementUnitTest extends TestCase
+class SuperAdminSchoolManagementUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers;
+    use AuthenticatesSuperAdmin;
 
     #[Test]
-    public function user_can_register_as_staff_with_valid_token(): void
-    {
-        $this->authUser->update(['school_id' => null]);  
-
-        $school = School::factory()->create([
-            'school_token' => Str::upper(Str::random(10)),
-        ]);
-
-        $response = $this->postJson('/api/user/school/assign-via-token', [
-            'school_token' => $school->school_token,
-        ]);
-
-        if ($response->status() === 500) {
-            dd($response->json(), $response->exception->getMessage(), $response->exception->getTraceAsString());
-        }
-
-        $response->assertStatus(201)
-                 ->assertJson([
-                     'status'  => 'success',
-                     'message' => 'User assigned to school successfully',
-                     'data'    => [
-                         'id'     => $this->authUser->id, 
-                         'school' => [
-                             'id'   => $school->id,
-                             'name' => $school->name,
-                         ],
-                     ],
-                 ]);
-
-        $this->assertDatabaseHas('users', [
-            'id'        => $this->authUser->id, 
-            'school_id' => $school->id,
-        ]);
-    }
-    
-    #[Test]
-    public function system_rejects_staff_registration_with_invalid_token(): void
-    {
-        $this->authUser->update(['school_id' => null]);
-
-        $response = $this->postJson('/api/user/school/assign-via-token', [
-            'school_token' => 'INVALIDTOKEN',
-        ]);
-
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['school_token']);
-
-        $this->assertDatabaseHas('users', [
-            'id'        => $this->authUser->id,
-            'school_id' => null,
-        ]);
-    }
-
-    #[Test]
-    public function user_can_access_managed_school_information()
+    public function superadmin_can_access_managed_school_information()
     {
         $school = School::factory()->create();
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
+        
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         Student::factory()->count(5)->create(['is_active' => true, 'school_id' => $school->id]);
 
@@ -332,7 +281,7 @@ class SchoolManagementUnitTest extends TestCase
 
         $response->assertJsonFragment(['id' => $userSchoolAdmin1->id]);
         $response->assertJsonFragment(['id' => $userSchoolAdmin2->id]);
-        $response->assertJsonMissing(['id' => $this->authUser->id]); 
+        $response->assertJsonMissing(['id' => $this->superAdminUser->id]); 
         $response->assertJsonMissing(['id' => $userRegularStaff->id]); 
 
         $this->assertEquals(2, count($response->json('data')));

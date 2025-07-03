@@ -11,11 +11,12 @@ use App\Models\ClassGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
+use Tests\Traits\AuthenticatesSchoolStaff;
 
 
-class StudentManagementUnitTest extends TestCase
+class StaffStudentManagementUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers;
+    use AuthenticatesSchoolStaff;
 
     protected $school;
 
@@ -26,10 +27,10 @@ class StudentManagementUnitTest extends TestCase
         if (!$school) {
             $school = School::factory()->create();
         }else{
-            $school = $this->authUser->school_id;
+            $school = $this->schoolStaffUser->school_id;
         }
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
     
         $defaultData = [
             'school_id' => $school->id,
@@ -44,7 +45,7 @@ class StudentManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_retrieve_student_list()
+    public function staff_can_retrieve_student_list()
     {
         $this->createStudent();
     
@@ -58,10 +59,10 @@ class StudentManagementUnitTest extends TestCase
     
 
     #[Test]
-    public function it_can_search_student_by_name()
+    public function staff_can_search_student_by_name()
     {
         $school = School::factory()->create(); 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         Student::create([
             'school_id' => $school->id,
@@ -78,9 +79,9 @@ class StudentManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_create_a_new_student()
+    public function staff_cannot_create_a_new_student()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $data = [
             'school_id' => $schoolId,
@@ -93,19 +94,13 @@ class StudentManagementUnitTest extends TestCase
 
         $response = $this->postJson('/api/student', $data);
 
-        $response->assertStatus(201)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Student created successfully',
-            ]);
-
-        $this->assertDatabaseHas('students', $data);
+        $response->assertStatus(403);
     }
 
     #[Test]
-    public function it_cannot_create_a_new_student_with_invalid_data()
+    public function staff_cannot_create_a_new_student_with_invalid_data()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $data = [
             'school_id' => $schoolId,
@@ -118,16 +113,13 @@ class StudentManagementUnitTest extends TestCase
 
         $response = $this->postJson('/api/student', $data);
 
-        $response->assertStatus(422)
-        ->assertJsonValidationErrors(['nis']);
-
-        $this->assertDatabaseCount('students', 0);
+        $response->assertStatus(403);
     }
 
     #[Test]
-    public function it_can_update_a_student()
+    public function staff_cannot_update_a_student()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $student = Student::factory()->create([
             'school_id' => $schoolId
@@ -144,22 +136,13 @@ class StudentManagementUnitTest extends TestCase
 
         $response = $this->putJson("/api/student/{$student->id}", $data);
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Student updated successfully',
-                'data' => [
-                    'student_name' => 'Updated Name',
-                ],
-            ]);
-
-        $this->assertDatabaseHas('students', $data);
+        $response->assertStatus(403);
     }
 
     #[Test]
-    public function it_cannot_update_a_student_with_invalid_data()
+    public function staff_cannot_update_a_student_with_invalid_data()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $student = Student::factory()->create([
             'school_id' => $schoolId
@@ -176,14 +159,13 @@ class StudentManagementUnitTest extends TestCase
 
         $response = $this->putJson("/api/student/{$student->id}", $data);
 
-        $response->assertStatus(422)
-        ->assertJsonValidationErrors(['student_name']);
+        $response->assertStatus(403);
     }
 
     #[Test]
-    public function it_can_delete_a_student()
+    public function staff_cannot_delete_a_student()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $student = Student::factory()->create([
             'school_id' => $schoolId
@@ -191,17 +173,12 @@ class StudentManagementUnitTest extends TestCase
 
         $response = $this->deleteJson("/api/student/{$student->id}");
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Student deleted successfully',
-            ]);
+        $response->assertStatus(403);
 
-        $this->assertDatabaseMissing('students', ['id' => $student->id]);
     }
 
     #[Test] 
-    public function it_can_retrieve_student_active_status_statistics()
+    public function staff_can_retrieve_student_active_status_statistics()
     {
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
@@ -211,7 +188,7 @@ class StudentManagementUnitTest extends TestCase
         $school->update(['latest_subscription' => now()]);
         $school->save();
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         Student::factory()->count(3)->create(['is_active' => true, 'gender' => 'male', 'school_id' => $school->id]);
         Student::factory()->count(2)->create(['is_active' => false, 'gender' => 'female', 'school_id' => $school->id]);
@@ -230,9 +207,9 @@ class StudentManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_filter_students_by_class()
+    public function staff_can_filter_students_by_class()
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $classA = ClassGroup::factory()->create(['school_id' => $schoolId]);
         $classB = ClassGroup::factory()->create(['school_id' => $schoolId]);
@@ -264,9 +241,9 @@ class StudentManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_sort_students_by_nis(): void
+    public function staff_can_sort_students_by_nis(): void
     {
-        $schoolId = $this->authUser->school_id;
+        $schoolId = $this->schoolStaffUser->school_id;
 
         $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
 
@@ -305,7 +282,7 @@ class StudentManagementUnitTest extends TestCase
     }
 
     #[Test] 
-    public function it_can_retrieve_total_active_student()
+    public function staff_can_retrieve_total_active_student()
     {
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
@@ -315,7 +292,7 @@ class StudentManagementUnitTest extends TestCase
         $school->update(['latest_subscription' => now()]);
         $school->save();
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         Student::factory()->count(3)->create(['is_active' => true, 'gender' => 'male', 'school_id' => $school->id]);
         Student::factory()->count(2)->create(['is_active' => false, 'gender' => 'female', 'school_id' => $school->id]);

@@ -10,10 +10,11 @@ use App\Models\ClassGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
+use Tests\Traits\AuthenticatesSuperAdmin;
 
-class FingerprintUnitTest extends TestCase
+class SuperAdminFingerprintUnitTest extends TestCase
 {
-    use RefreshDatabase, TestCaseHelpers;
+    use AuthenticatesSuperAdmin;
 
     private function createStudent($data = [])
     {
@@ -22,10 +23,10 @@ class FingerprintUnitTest extends TestCase
         if (!$school) {
             $school = School::factory()->create();
         }else{
-            $school = $this->authUser->school_id;
+            $school = $this->superAdminUser->school_id;
         }
 
-        $this->authUser->update(['school_id' => $school->id]);
+        $this->superAdminUser->update(['school_id' => $school->id]);
     
         $defaultData = [
             'school_id' => $school->id,
@@ -35,6 +36,9 @@ class FingerprintUnitTest extends TestCase
             'student_name' => 'Adam',
             'gender' => 'male',
         ];
+        
+
+        $this->actingAsSuperAdminWithSchool($school->id); 
 
         return $this->postJson('/api/student', array_merge($defaultData, $data));
     }
@@ -56,13 +60,15 @@ class FingerprintUnitTest extends TestCase
     #[Test]
     public function it_can_retrieve_class_groups()
     {
-        $school = School::factory()->create();
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
 
         ClassGroup::factory()->count(3)->sequence(
             ['class_name' => 'Class A'],
             ['class_name' => 'Class B'],
             ['class_name' => 'Class C'],
-        )->create(['school_id' => $school->id]);
+        )->create(['school_id' => $schoolId]);
         
         $this->assertDatabaseCount('class_groups', 3);
 
