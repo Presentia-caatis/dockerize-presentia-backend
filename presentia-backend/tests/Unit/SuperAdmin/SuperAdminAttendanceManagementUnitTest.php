@@ -60,7 +60,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance');
+        $response = $this->getJson('/api/attendance?school_id=' . $this->superAdminUser->school_id);
 
         $response->assertStatus(200)
             ->assertJson(['status' => 'success']);
@@ -100,7 +100,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?startDate='.now()->format('Y-m-d').'&endDate='.now()->format('Y-m-d'));
+        $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&startDate='.now()->format('Y-m-d').'&endDate='.now()->format('Y-m-d'));
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.data')
@@ -136,7 +136,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?classGroup='.$data['classGroup']->id);
+        $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&classGroup='.$data['classGroup']->id);
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.data')
@@ -178,8 +178,8 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?filter[check_in_status_id]='.$data['checkInStatus']->id);
-        
+        $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&filter[check_in_status_id]='.$data['checkInStatus']->id);
+         
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.data')
             ->assertJsonPath('data.data.0.check_in_status_id', $data['checkInStatus']->id);
@@ -200,7 +200,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?search='.$data['student']->student_name);
+        $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&search='.$data['student']->student_name);
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.data')
@@ -252,8 +252,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'check_in_time' => now()->format('Y-m-d H:i:s')
         ]);
 
-        // Urutkan ascending
-        $response = $this->getJson('/api/attendance?sort[student.student_name]=asc');
+        $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&sort[student.student_name]=asc');
 
         $response->assertStatus(200)
             ->assertJsonPath('data.data.0.student.student_name', 'Aaa Student')

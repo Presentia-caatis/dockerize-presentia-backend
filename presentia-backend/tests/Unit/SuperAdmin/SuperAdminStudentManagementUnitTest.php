@@ -8,9 +8,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\School;
 use App\Models\ClassGroup;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCaseHelpers;
 use Tests\Traits\AuthenticatesSuperAdmin;
 
 
@@ -31,8 +29,6 @@ class SuperAdminStudentManagementUnitTest extends TestCase
         }
 
         $this->superAdminUser->update(['school_id' => $school->id]);
-
-        $this->actingAsSuperAdminWithSchool($school->id); 
     
         $defaultData = [
             'school_id' => $school->id,
@@ -49,11 +45,13 @@ class SuperAdminStudentManagementUnitTest extends TestCase
     #[Test]
     public function superadmin_can_retrieve_student_list()
     {
-        $this->createStudent();
+        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
+
+        $this->createStudent(); 
     
         $this->assertDatabaseCount('students', 1);
     
-        $response = $this->getJson('/api/student');
+        $response = $this->getJson('/api/student?school_id=' . $this->superAdminUser->school_id);
 
         $response->assertStatus(200)
         ->assertJson(['status' => 'success']);
@@ -76,7 +74,7 @@ class SuperAdminStudentManagementUnitTest extends TestCase
             'gender' => 'male',
         ]);
 
-        $response = $this->getJson('/api/student?search=Adam');
+        $response = $this->getJson('/api/student?school_id=' . $schoolId . '&search=Adam');
 
         $response->assertStatus(200);
     }
@@ -269,7 +267,7 @@ class SuperAdminStudentManagementUnitTest extends TestCase
             'student_name' => 'Budi'
         ]);
 
-        $response = $this->getJson('/api/student?class_group_id=' . $classA->id);
+        $response = $this->getJson('/api/student?school_id=' . $schoolId . '&class_group_id=' . $classA->id);
 
         $response->assertStatus(200)
                 ->assertJsonFragment([
@@ -311,7 +309,7 @@ class SuperAdminStudentManagementUnitTest extends TestCase
             'student_name'   => 'Cantika',
         ]);
 
-        $responseAsc = $this->getJson('/api/student?sort[nis]=asc');
+        $responseAsc = $this->getJson('/api/student?school_id=' . $schoolId . '&sort[nis]=asc');
 
         $responseAsc->assertStatus(200)
                     ->assertJson([

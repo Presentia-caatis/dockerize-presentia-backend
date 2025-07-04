@@ -159,7 +159,7 @@ class StaffStudentAttendanceUnitTest extends TestCase
         
         $today = Carbon::today()->toDateString();
 
-        $response = $this->getJson('/api/attendance?startDate=' . $today . '&endDate=' . $today);
+        $response = $this->getJson('/api/attendance?school_id=' . $data['school']->id . '&startDate=' . $today . '&endDate=' . $today);
 
         $response->assertStatus(200)
                 ->assertJson([

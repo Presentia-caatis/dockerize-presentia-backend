@@ -32,7 +32,7 @@ class SuperAdminClassManagementUnitTest extends TestCase
         
         $this->assertDatabaseCount('class_groups', 3);
 
-        $response = $this->getJson('/api/class-group');
+        $response = $this->getJson('/api/class-group?school_id=' . $schoolId);
 
         $response->assertStatus(200)
             ->assertJsonStructure([

@@ -46,8 +46,8 @@ class SchoolAdminFingerprintUnitTest extends TestCase
         $this->createStudent();
     
         $this->assertDatabaseCount('students', 1);
-    
-        $response = $this->getJson('/api/student');
+     
+        $response = $this->getJson('/api/student?school_id=' . $this->schoolAdminUser->school_id);
 
         $response->assertStatus(200)
         ->assertJson(['status' => 'success']);
@@ -67,7 +67,7 @@ class SchoolAdminFingerprintUnitTest extends TestCase
         
         $this->assertDatabaseCount('class_groups', 3);
 
-        $response = $this->getJson('/api/class-group');
+        $response = $this->getJson("/api/class-group?school_id={$school->id}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([

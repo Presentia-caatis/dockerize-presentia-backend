@@ -51,7 +51,7 @@ class StaffStudentManagementUnitTest extends TestCase
     
         $this->assertDatabaseCount('students', 1);
     
-        $response = $this->getJson('/api/student');
+        $response = $this->getJson('/api/student?school_id=' . $this->schoolStaffUser->school_id);
 
         $response->assertStatus(200)
         ->assertJson(['status' => 'success']);
@@ -73,7 +73,7 @@ class StaffStudentManagementUnitTest extends TestCase
             'gender' => 'male',
         ]);
 
-        $response = $this->getJson('/api/student?search=Adam');
+        $response = $this->getJson('/api/student?search=Adam&school_id=' . $school->id);
 
         $response->assertStatus(200);
     }
@@ -228,7 +228,7 @@ class StaffStudentManagementUnitTest extends TestCase
             'student_name' => 'Budi'
         ]);
 
-        $response = $this->getJson('/api/student?class_group_id=' . $classA->id);
+        $response = $this->getJson('/api/student?class_group_id=' . $classA->id . '&school_id=' . $schoolId);
 
         $response->assertStatus(200)
                 ->assertJsonFragment([
@@ -268,7 +268,7 @@ class StaffStudentManagementUnitTest extends TestCase
             'student_name'   => 'Cantika',
         ]);
 
-        $responseAsc = $this->getJson('/api/student?sort[nis]=asc');
+        $responseAsc = $this->getJson('/api/student?sort[nis]=asc&school_id='. $schoolId);
 
         $responseAsc->assertStatus(200)
                     ->assertJson([

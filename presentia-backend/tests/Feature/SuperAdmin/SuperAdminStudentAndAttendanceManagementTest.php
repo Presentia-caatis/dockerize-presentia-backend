@@ -106,7 +106,7 @@ class SuperAdminStudentAndAttendanceManagementTest extends TestCase
 
 
         // --- 2. Tampilkan Presensi ---
-        $response = $this->getJson('/api/attendance?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d'));
+        $response = $this->getJson('/api/attendance?school_id='. $schoolId. '&startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d'));
 
         $response->assertStatus(200)
                  ->assertJson([

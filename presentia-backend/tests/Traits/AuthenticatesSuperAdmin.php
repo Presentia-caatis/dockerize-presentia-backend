@@ -17,6 +17,7 @@ trait AuthenticatesSuperAdmin
     protected $superAdminToken;
     protected $superAdminUser;
     protected $superAdminSchool;
+    protected $defaultSubscriptionPlan;
 
     protected function setUp(): void
     {
@@ -33,29 +34,26 @@ trait AuthenticatesSuperAdmin
         Permission::firstOrCreate(['name' => 'manage_attendance', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'assign_roles', 'guard_name' => 'web']);
         
-        // Pastikan semua permission yang ada diberikan ke super_admin (untuk testing)
-        // Ini adalah cara paling robust untuk memastikan super_admin punya semua akses
         $superAdminRole = Role::findByName('super_admin', 'web');
         $allPermissions = Permission::pluck('name')->toArray();
         $superAdminRole->givePermissionTo($allPermissions);
 
-        // Buat sekolah untuk super_admin (jika diperlukan untuk middleware 'school')
         $this->superAdminSchool = School::factory()->create();
-        SubscriptionPlan::factory()->create([
-            'id' => 1,
+        $this->defaultSubscriptionPlan = SubscriptionPlan::factory()->create([
             'billing_cycle_month' => 6,
             'price' => 84,
+            'subscription_name' => 'Default Plan for SuperAdmin Tests'
         ]);
 
         $this->superAdminSchool->update([
-            'subscription_plan_id' => 1, // Asumsikan id 1 untuk SubscriptionPlan yang baru dibuat
+            'subscription_plan_id' => $this->defaultSubscriptionPlan->id, 
             'latest_subscription' => Carbon::now()->subMonths(1)->format('Y-m-d H:i:s'),
-            'timezone' => 'Asia/Jakarta' // Penting untuk beberapa helper
+            'timezone' => 'Asia/Jakarta' 
         ]);
 
         $this->superAdminUser = User::factory()->create([
             'password' => bcrypt('password123'),
-            'school_id' => $this->superAdminSchool->id, // Asosiasikan dengan sekolah default
+            'school_id' => $this->superAdminSchool->id, 
             'email_verified_at' => now(),
         ]);
         $this->superAdminUser->assignRole('super_admin');
@@ -66,9 +64,6 @@ trait AuthenticatesSuperAdmin
         ]);
         $this->superAdminToken = $response->json('token');
 
-        // Untuk SuperAdmin, kita tidak mengatur School-Id secara default di sini.
-        // Karena superAdmin bisa mengakses data dari berbagai sekolah.
-        // Sebaliknya, kita akan menyediakan helper untuk itu.
         $this->withHeaders([
             'Authorization' => 'Bearer ' . $this->superAdminToken,
         ]);
@@ -85,7 +80,7 @@ trait AuthenticatesSuperAdmin
     {
         $headers = ['Authorization' => 'Bearer ' . $this->superAdminToken];
         if ($schoolId !== null) {
-            $headers['School-Id'] = $schoolId; // Menggunakan X-School-Id atau School-Id sesuai kebutuhan
+            $headers['School-Id'] = $schoolId; 
         }
         $this->withHeaders($headers);
     }

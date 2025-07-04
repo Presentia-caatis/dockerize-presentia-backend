@@ -92,7 +92,7 @@ class SuperAdminClassAndStudentManagementTest extends TestCase
 
 
         // --- 4. Tampilkan Siswa dengan Filtering Kelas ---
-        $response = $this->getJson("/api/student?class_group_id={$createdClassGroupId}");
+        $response = $this->getJson("/api/student?school_id={$schoolId}&class_group_id={$createdClassGroupId}");
 
         $response->assertStatus(200)
                  ->assertJson([

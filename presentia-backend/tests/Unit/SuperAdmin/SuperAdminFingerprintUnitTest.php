@@ -44,13 +44,13 @@ class SuperAdminFingerprintUnitTest extends TestCase
     }
 
     #[Test]
-    public function it_can_retrieve_student_list()
+    public function superadmin_can_retrieve_student_fingerprint_list()
     {
-        $this->createStudent();
-    
+        $response = $this->createStudent();
+        
         $this->assertDatabaseCount('students', 1);
     
-        $response = $this->getJson('/api/student');
+        $response = $this->getJson('/api/student?school_id=' . $this->superAdminUser->school_id);
 
         $response->assertStatus(200)
         ->assertJson(['status' => 'success']);
@@ -58,7 +58,7 @@ class SuperAdminFingerprintUnitTest extends TestCase
 
     
     #[Test]
-    public function it_can_retrieve_class_groups()
+    public function superadmin_can_retrieve_class_groups_fingerprint()
     {
         $schoolId = $this->superAdminUser->school_id;
 
@@ -72,7 +72,7 @@ class SuperAdminFingerprintUnitTest extends TestCase
         
         $this->assertDatabaseCount('class_groups', 3);
 
-        $response = $this->getJson('/api/class-group');
+        $response = $this->getJson("/api/class-group?school_id={$schoolId}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([

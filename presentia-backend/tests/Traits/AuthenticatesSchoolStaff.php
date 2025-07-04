@@ -36,13 +36,14 @@ trait AuthenticatesSchoolStaff
 
         $this->schoolForStaff = School::factory()->create();
 
-        SubscriptionPlan::factory()->create([
-            'id' => 1,
+        $this->defaultSubscriptionPlan = SubscriptionPlan::factory()->create([
             'billing_cycle_month' => 6,
             'price' => 84,
+            'subscription_name' => 'Default Plan for Staff Tests'
         ]);
+
         $this->schoolForStaff->update([
-            'subscription_plan_id' => 1,
+            'subscription_plan_id' => $this->defaultSubscriptionPlan->id, 
             'latest_subscription' => Carbon::now()->subMonths(1)->format('Y-m-d H:i:s'),
             'timezone' => 'Asia/Jakarta'
         ]);
