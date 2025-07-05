@@ -40,8 +40,8 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'date' => now()->format('Y-m-d')
         ]);
         
-        $checkInStatus = CheckInStatus::factory()->create();
-        $checkOutStatus = CheckOutStatus::factory()->create();
+        $checkInStatus = CheckInStatus::factory()->create(['school_id' => $school->id]);
+        $checkOutStatus = CheckOutStatus::factory()->create(['school_id' => $school->id]);
 
         return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
     }
@@ -260,7 +260,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_export_attendance_to_csv()
+    public function superadmin_can_export_attendance_to_excel()
     {
         $data = $this->createTestData();
 
@@ -273,7 +273,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->get('/api/attendance/export?startDate='.now()->subWeek()->format('Y-m-d').'&endDate='.now()->format('Y-m-d'));
+        $response = $this->get('/api/attendance/export?startDate='.now()->subWeek()->format('Y-m-d').'&endDate='.now()->format('Y-m-d') . '&classGroup=' . $data['student']->class_group_id);
+        
+        //dd($response->json());
 
         $response->assertStatus(200)
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

@@ -111,7 +111,7 @@ class SuperAdminClassAndStudentManagementTest extends TestCase
             'student_name' => 'Adam',
         ]);
 
-        $responseFiltered = $this->getJson("/api/student?class_group_id={$createdClassGroupId}");
+        $responseFiltered = $this->getJson("/api/student?school_id={$schoolId}&class_group_id={$createdClassGroupId}");
         
         $responseFiltered->assertJsonMissing([
             'id' => $studentWithoutClass->id,

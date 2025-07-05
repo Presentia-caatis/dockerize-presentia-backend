@@ -33,7 +33,7 @@ class SchoolAdminStudentAndAttendanceManagementTest extends TestCase
         
         $attendanceWindow = AttendanceWindow::factory()->create([
             'school_id' => $school->id,
-            'date' => now()->format('Y-m-d')
+            'date' => Carbon::today()->format('Y-m-d')
         ]);
         
         $checkInStatus = CheckInStatus::factory()->create(['school_id' => $school->id]);
@@ -50,7 +50,6 @@ class SchoolAdminStudentAndAttendanceManagementTest extends TestCase
         $schoolId = $this->schoolAdminUser->school_id;
 
         $data = $this->createTestData();
-        $school = $data['school'];
         $student = $data['student'];
         $attendanceWindow = $data['attendanceWindow'];
         $checkInStatus = $data['checkInStatus'];
@@ -120,7 +119,7 @@ class SchoolAdminStudentAndAttendanceManagementTest extends TestCase
         // --- 3. Export Presensi ---
         Storage::fake('public'); 
 
-        $response = $this->get('/api/attendance/export?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d'));
+        $response = $this->get('/api/attendance/export?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d') . '&classGroup=' . $student->class_group_id);
 
         $response->assertStatus(200)
                  ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

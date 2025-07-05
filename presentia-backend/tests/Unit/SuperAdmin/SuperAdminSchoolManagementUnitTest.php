@@ -153,16 +153,24 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
     #[Test]
     public function superadmin_can_create_school_with_valid_data()
     {
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+            'school_id' => null,
+        ]);
+        $user->assignRole('school_admin');
+
         SubscriptionPlan::factory()->create(['billing_cycle_month' => 0]);
 
         $payload = [
             'name' => 'Sekolah Baru',
             'address' => 'Jl. Pendidikan No. 123',
             'timezone' => 'Asia/Jakarta',
-            'logo_image' => UploadedFile::fake()->image('logo.jpg')
+            'logo_image' => UploadedFile::fake()->image('logo.jpg'),
+            'user_id' => $user->id
         ];
 
         $response = $this->postJson('/api/school', $payload);
+        //dd($response->json());
 
         $response->assertStatus(201)
             ->assertJson([
@@ -246,7 +254,9 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
         $school = School::factory()->create(['logo_image_path' => 'logos/test.jpg']);
         Storage::fake('public')->put('logos/test.jpg', 'dummy');
 
-        $response = $this->deleteJson("/api/school/{$school->id}");
+        $response = $this->deleteJson("/api/school/{$school->id}", [
+            'delete_confirmation' => 'I acknowledge that this action cannot be undone. Delete the school.',
+        ]);
 
         $response->assertStatus(200)
             ->assertJson([
