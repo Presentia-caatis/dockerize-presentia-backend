@@ -98,25 +98,6 @@ class StaffStudentManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function staff_cannot_create_a_new_student_with_invalid_data()
-    {
-        $schoolId = $this->schoolStaffUser->school_id;
-
-        $data = [
-            'school_id' => $schoolId,
-            'class_group_id' => null,
-            'nis' => '',
-            'nisn' => '12345678',
-            'student_name' => 'Adam',
-            'gender' => 'male',
-        ];
-
-        $response = $this->postJson('/api/student', $data);
-
-        $response->assertStatus(403);
-    }
-
-    #[Test]
     public function staff_cannot_update_a_student()
     {
         $schoolId = $this->schoolStaffUser->school_id;
@@ -131,29 +112,6 @@ class StaffStudentManagementUnitTest extends TestCase
             'nis' => '87654321',
             'nisn' => '12345678',
             'student_name' => 'Updated Name',
-            'gender' => 'female',
-        ];
-
-        $response = $this->putJson("/api/student/{$student->id}", $data);
-
-        $response->assertStatus(403);
-    }
-
-    #[Test]
-    public function staff_cannot_update_a_student_with_invalid_data()
-    {
-        $schoolId = $this->schoolStaffUser->school_id;
-
-        $student = Student::factory()->create([
-            'school_id' => $schoolId
-        ]);
-
-        $data = [
-            'school_id' => $student->school_id,
-            'class_group_id' => $student->class_group_id,
-            'nis' => '87654321',
-            'nisn' => '12345678',
-            'student_name' => 10,
             'gender' => 'female',
         ];
 

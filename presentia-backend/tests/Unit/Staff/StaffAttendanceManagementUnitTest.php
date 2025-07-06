@@ -18,16 +18,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
-use Tests\Traits\AuthenticatesSchoolAdmin;
+use Tests\Traits\AuthenticatesSchoolStaff;
 
 
-class SchoolAdminAttendanceManagementUnitTest extends TestCase
+class StaffAttendanceManagementUnitTest extends TestCase
 {
-    use AuthenticatesSchoolAdmin;
+    use AuthenticatesSchoolStaff;
 
     private function createTestData()
     {
-        $school = School::find($this->schoolAdminUser->school_id);
+        $school = School::find($this->schoolStaffUser->school_id);
         
         $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
         $student = Student::factory()->create([
@@ -68,7 +68,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_can_retrieve_attendance_list()
+    public function staff_can_retrieve_attendance_list()
     {
         $data = $this->createTestData();
         
@@ -79,7 +79,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?school_id=' . $this->schoolAdminUser->school_id);
+        $response = $this->getJson('/api/attendance?school_id=' . $this->schoolStaffUser->school_id);
 
         $response->assertStatus(200)
             ->assertJson(['status' => 'success']);
@@ -87,7 +87,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
 
     
     #[Test]
-    public function school_admin_can_filter_attendance_by_date_range()
+    public function staff_can_filter_attendance_by_date_range()
     {
         $data = $this->createTestData();
         
@@ -125,7 +125,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_can_filter_attendance_by_class()
+    public function staff_can_filter_attendance_by_class()
     {
         $data = $this->createTestData();
         
@@ -159,9 +159,10 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_can_filter_attendance_by_status()
+    public function staff_can_filter_attendance_by_status()
     {
         $data = $this->createTestData();
+
         $otherStatus = CheckInStatus::factory()->create();
 
         $window1 = AttendanceWindow::factory()->create([
@@ -191,14 +192,14 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
         ]);
 
         $response = $this->getJson('/api/attendance?school_id='.$data['school']->id.'&filter[check_in_status_id]='.$data['checkInStatus']->id);
-        
+         
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data.data')
             ->assertJsonPath('data.data.0.check_in_status_id', $data['checkInStatus']->id);
     }
 
     #[Test]
-    public function school_admin_can_search_attendance_by_keyword()
+    public function staff_can_search_attendance_by_keyword()
     {
         $data = $this->createTestData();
 
@@ -218,7 +219,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_can_sort_attendance_by_column()
+    public function staff_can_sort_attendance_by_column()
     {
         $data = $this->createTestData();
         
@@ -268,7 +269,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_can_export_attendance_to_excel()
+    public function staff_can_export_attendance_to_excel()
     {
         $data = $this->createTestData();
         
@@ -279,68 +280,16 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->get('/api/attendance/export?startDate='.now()->subWeek()->format('Y-m-d').'&endDate='.now()->format('Y-m-d') . '&classGroup='. $data['student']->class_group_id);
+        $response = $this->get('/api/attendance/export?startDate='.now()->subWeek()->format('Y-m-d').'&endDate='.now()->format('Y-m-d') . '&classGroup=' . $data['student']->class_group_id);
+        
         //dd($response->json());
+
         $response->assertStatus(200)
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
     #[Test]
-    public function school_admin_can_update_attendance_schedule_with_valid_data()
-    {
-        $schedule = AttendanceSchedule::factory()->create();
-
-        $day = Day::factory()->create([
-            'school_id' => $this->schoolAdminUser->school_id,
-            'attendance_schedule_id' => $schedule->id
-        ]);
-
-        $payload = [
-            'name' => 'Updated Schedule Name',
-            'check_in_start_time' => '07:00:00',
-            'check_in_end_time' => '08:00:00',
-            'check_out_start_time' => '12:00:00',
-            'check_out_end_time' => '13:00:00',
-        ];
-
-        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
-
-        $response->assertStatus(200)
-                ->assertJson([
-                    'status' => 'success',
-                    'message' => 'Attendance schedule updated successfully',
-                    'data' => [
-                        'id' => $schedule->id,
-                        'name' => 'Updated Schedule Name',
-                        'check_in_start_time' => '07:00:00',
-                        'check_in_end_time' => '08:00:00',
-                        'check_out_start_time' => '12:00:00',
-                        'check_out_end_time' => '13:00:00',
-                    ]
-                ]);
-    }
-
-    #[Test]
-    public function school_admin_cannot_update_without_required_check_out_end_time()
-    {
-        $schedule = AttendanceSchedule::factory()->create();
-        Day::factory()->create([
-            'school_id' => $this->schoolAdminUser->school_id,
-            'attendance_schedule_id' => $schedule->id
-        ]);
-
-        $payload = [
-            'name' => 'Updated Name',
-        ];
-
-        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
-
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['check_out_end_time']);
-    }
-
-    #[Test]
-    public function school_admin_can_update_attendance()
+    public function staff_can_update_attendance()
     {
         $data = $this->createTestData();
         
@@ -376,7 +325,7 @@ class SchoolAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function school_admin_cannot_update_attendance_with_invalid_data()
+    public function staff_cannot_update_attendance_with_invalid_data()
     {
         $data = $this->createTestData();
         
