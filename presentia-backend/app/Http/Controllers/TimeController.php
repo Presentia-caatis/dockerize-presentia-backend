@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 class TimeController extends Controller
 {
-    public function getCurrentTime(){
-        return now()->setTimezone('Asia/Jakarta')->toDateTimeString();;
+    public function getCurrentTime(Request $request){
+        return now()->setTimezone($request->query('timezone') ?? 'Asia/Jakarta')->toDateTimeString();;
     }
 }

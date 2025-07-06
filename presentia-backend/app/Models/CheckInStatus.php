@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class CheckInStatus extends Model
 {
-    use HasFactory;
     use BelongsToSchool;
-
+    use HasFactory;
+    
     protected $fillable = [
         'status_name',
         'description',
@@ -22,11 +22,5 @@ class CheckInStatus extends Model
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
-    }
-
-    public function schools()
-    {
-        return $this->belongsToMany(School::class, 'attendance_late_type_schools')
-                    ->withTimestamps();
     }
 }

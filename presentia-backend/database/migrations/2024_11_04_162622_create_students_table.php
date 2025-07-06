@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string("nisn")->unique();
             $table->string("student_name");
             $table->enum("gender",['male', 'female'])->default('male');
+            $table->unique(['nis', 'school_id']); 
             $table->timestamps();
         });
     }

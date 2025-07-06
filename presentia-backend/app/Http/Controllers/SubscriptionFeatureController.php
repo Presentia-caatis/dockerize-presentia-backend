@@ -8,10 +8,15 @@ use App\Models\SubscriptionFeature;
 
 class SubscriptionFeatureController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = SubscriptionFeature::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = SubscriptionFeature::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Subscription features retrieved successfully',

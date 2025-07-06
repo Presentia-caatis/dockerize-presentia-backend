@@ -17,7 +17,13 @@ class AttendanceScheduleFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'event_id' => null,
+            'name' => $this->faker->sentence(3),
+            'type' => $this->faker->randomElement(['default', 'event', 'holiday']),
+            'check_in_start_time' => $this->faker->time(),
+            'check_in_end_time' => $this->faker->time(),
+            'check_out_start_time' => $this->faker->time(),
+            'check_out_end_time' => $this->faker->time(),
         ];
     }
 }

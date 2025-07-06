@@ -2,20 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 
 use App\Models\AbsencePermitType;
+use Illuminate\Validation\ValidationException;
+use function App\Helpers\current_school_id;
 
 class AbsencePermitTypeController extends Controller
 {
-    public function index()
+    use Filterable;
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = AbsencePermitType::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $query = $this->applyFilters(AbsencePermitType::query(),  $request->input('filter', []), ['school_id']);
+
+        $data = $query->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit types retrieved successfully',
-            'data' => $data
+            'data' => $data 
         ]);
 
     }
@@ -24,10 +36,10 @@ class AbsencePermitTypeController extends Controller
     {
         $validatedData = $request->validate([
             'permit_name' => 'required|string',
-            'is_active' => 'required|boolean',
-            'school_id' => 'required|exists:schools,id',
+            'is_active' => 'required|boolean', 
         ]);
 
+        $validatedData['school_id'] = current_school_id();
 
         $data = AbsencePermitType::create($validatedData);
         return response()->json([
@@ -39,7 +51,7 @@ class AbsencePermitTypeController extends Controller
 
     public function getById($id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type retrieved successfully',
@@ -49,14 +61,14 @@ class AbsencePermitTypeController extends Controller
 
     public function update(Request $request, $id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         $validatedData = $request->validate([
-            'permit_name' => 'required|string',
-            'is_active' => 'required|boolean',
-            'school_id' => 'required|exists:schools,id',
+            'permit_name' => 'string',
+            'is_active' => 'boolean',
         ]);
 
         $absencePermitType->update($validatedData);
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Absence permit type updated successfully',
@@ -67,7 +79,7 @@ class AbsencePermitTypeController extends Controller
 
     public function destroy($id)
     {
-        $absencePermitType=AbsencePermitType::find($id);
+        $absencePermitType=AbsencePermitType::findOrFail($id);
         $absencePermitType->delete();
         return response()->json([
             'status' => 'success',

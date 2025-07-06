@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string("description")->nullable();
             $table->integer("late_duration");
             $table->boolean("is_active")->default(true);
+            $table->unique(['late_duration', 'school_id']); 
             $table->timestamps();
         });
     }

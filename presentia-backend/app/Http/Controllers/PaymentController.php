@@ -7,10 +7,15 @@ use Illuminate\Http\Request;
 use App\Models\Payment;
 class PaymentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = Payment::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $data = Payment::paginate($perPage);
         return response()->json([
             'status' => 'success',
             'message' => 'Payments retrieved successfully',

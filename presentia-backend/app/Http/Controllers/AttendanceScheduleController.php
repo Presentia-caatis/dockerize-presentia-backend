@@ -2,117 +2,69 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use App\Models\AttendanceSchedule;
+use App\Models\Day;
 use App\Models\Event;
 use App\Models\School;
+use App\Services\AttendanceWindowLoaderService;
 use Carbon\Carbon;
+use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use function App\Helpers\current_school;
-use function App\Helpers\current_school_timezone;
 
 class AttendanceScheduleController extends Controller
 {
+    use Filterable;
 
-    public function index()
+    public function index(Request $request)
     {
-        $nullEventSchedules = AttendanceSchedule::whereNull('event_id')->get()->map(function ($item) {
-            unset($item->event_id);
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1'
+        ]);
+
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $query = $this->applyFilters(AttendanceSchedule::with(['days']), $request->input('filter', []), ['school_id']);
+
+        $data = $query->paginate($perPage);
+
+        $modifiedData = $data->getCollection()->map(function ($item) {
+            if (!$item->event_id) {
+                unset($item->event_id);
+            }
             return $item;
         });
 
-        $existingEventSchedules = AttendanceSchedule::whereNotNull('event_id')->get();
-
-        $mergedSchedules = $nullEventSchedules->merge($existingEventSchedules);
+        $data->setCollection($modifiedData);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance schedule retrieved successfully',
-            'data' => $mergedSchedules
+            'data' => $data
         ]);
     }
 
     public function getById($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::with('days:name')->findOrFail($id);
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance windows retrieved successfully',
             'data' => $attendanceSchedule
         ]);
     }
-
-    public function showByType(Request $request)
-    {
-        $validatedData = $request->validate([
-            'type' => 'required|in:event,default,holiday',
-        ]);
-
-        $data = AttendanceSchedule::where('type', $request->type)->get();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Attendance windows retrieved successfully',
-            'data' => $data
-        ]);
-    }
-
-
-    public function storeEvent(Request $request)
-    {
-        $validatedData = $request->validate([
-            'event_id' => 'nullable',
-            'name' => 'required|string',
-            'type' => 'required|in:event',
-            'date' => 'required|date_format: Y-m-d',
-            'check_in_start_time' => 'required|date_format:H:i:s',
-            'check_in_end_time' => 'required|date_format:H:i:s|after:check_in_start_time',
-            'check_out_start_time' => 'required|date_format:H:i:s|after:check_in_end_time',
-            'check_out_end_time' => 'required|date_format:H:i:s|after:check_out_start_time',
-        ]);
-
-        $data = $validatedData;
-
-        if (!current_school_timezone()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'School timezone is not set'
-            ], 400);
-        }
-
-        if (!$data['event_id']) {
-            $event = Event::create([
-                'start_date' => Carbon::parse($data['check_in_start_time'])->format('Y-m-d'),
-                'end_date' => Carbon::parse($data['check_out_end_time'])->format('Y-m-d'),
-            ]);
-
-            $data['event_id'] = $event->id;
-        }
-
-        $attendanceSchedule = AttendanceSchedule::create($data);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Attendance schedule created successfully',
-            'data' => $attendanceSchedule
-        ], 201);
-    }
-
 
 
     public function update(Request $request, $id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         $validatedData = $request->validate([
-            'event_id' => 'nullable',
-            'name' => 'required|string',
-            'type' => 'required|in:event,default,holiday',
-            'date' => [
-                Rule::requiredIf($request->type === 'event'),
-                'date_format:Y-m-d'
-            ],
-            'check_in_start_time' => 'required|date_format:H:i:s',
-            'check_in_end_time' => 'required|date_format:H:i:s',
-            'check_out_start_time' => 'required|date_format:H:i:s',
+            'event_id' => 'sometimes|exists:events,id',
+            'name' => 'sometimes|string',
+            'check_in_start_time' => 'sometimes|date_format:H:i:s',
+            'check_in_end_time' => 'sometimes|date_format:H:i:s',
+            'check_out_start_time' => 'sometimes|date_format:H:i:s',
             'check_out_end_time' => 'required|date_format:H:i:s'
         ]);
 
@@ -128,7 +80,7 @@ class AttendanceScheduleController extends Controller
 
     public function destroy($id)
     {
-        $attendanceSchedule = AttendanceSchedule::find($id);
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
         if ($attendanceSchedule->type === 'holiday' || $attendanceSchedule->type === 'default') {
             abort(403, 'Cannot delete attendance schedule of type "holiday" or "default".');
         }
@@ -138,6 +90,25 @@ class AttendanceScheduleController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Attendance schedule deleted successfully'
+        ]);
+    }
+
+    public function assignToDay(Request $request, $id){
+        $attendanceSchedule = AttendanceSchedule::findOrFail($id);
+        $request->validate([
+            'days' => 'required|array|min:1|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday'
+        ]);
+
+        if(!($attendanceSchedule->type === 'holiday' || $attendanceSchedule->type === 'default')){
+            abort(403, "You can only change either holiday or default attendance schedule");
+        }
+
+        Day::whereIn('name',$request->days)->update(['attendance_schedule_id' => $attendanceSchedule->id]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Attendance schedule assigned to days successfully',
+            'data' => $attendanceSchedule->load('days')
         ]);
     }
 }

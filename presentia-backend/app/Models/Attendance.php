@@ -8,14 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
-    use BelongsToSchool;
     use HasFactory;
-
+    use BelongsToSchool;
+    
     protected $fillable = [
         'school_id',
         'id',
         'student_id',
+        'is_active',
+        "absence_permit_id",
         'check_in_status_id',
+        'check_out_status_id',
         'attendance_window_id',
         'check_in_time',
         'check_out_time',
@@ -36,8 +39,13 @@ class Attendance extends Model
         return $this->belongsTo(CheckInStatus::class);
     }
 
-    public function absencePermits()
+    public function checkOutStatus()
     {
-        return $this->hasMany(AbsencePermit::class);
+        return $this->belongsTo(CheckOutStatus::class);
+    }
+
+    public function absencePermit()
+    {
+        return $this->belongsTo(AbsencePermit::class);
     }
 }

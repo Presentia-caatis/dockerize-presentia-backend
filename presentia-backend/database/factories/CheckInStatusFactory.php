@@ -17,10 +17,11 @@ class CheckInStatusFactory extends Factory
     public function definition()
     {
         return [
-            'type_name' => $this->faker->word,
+            'school_id' => \App\Models\School::factory(),
+            'status_name' => $this->faker->word,
             'description' => $this->faker->sentence,
+            'late_duration' => $this->faker->numberBetween(1, 60), // Durasi keterlambatan dalam menit
             'is_active' => $this->faker->boolean,
-            'school_id' => \App\Models\School::factory(), 
         ];
     }
 }

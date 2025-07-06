@@ -2,16 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Filterable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Document;
+use function App\Helpers\current_school_id;
 
 class DocumentController extends Controller
 {
-    public function index()
+    use Filterable;
+    public function index(Request $request)
     {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1' 
+        ]);
 
-        $data = Document::all();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $query = $this->applyFilters(Document::query(),  $request->input('filter', []), ['school_id']);
+
+        $data = $query->paginate($perPage);
+
+        $data->getCollection()->transform(function ($document) {
+            $document->path = asset('storage/' . $document->path); // ✅ Full URL
+            return $document;
+        });
+
         return response()->json([
             'status' => 'success',
             'message' => 'Documents retrieved successfully',
@@ -22,16 +38,15 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'document_name' => 'required|string',
             'file' => 'required|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
 
-
         $path = $request->file('file')->store($request->file('file')->extension(),'public');
 
         $data = Document::create([
-            'school_id' => $request->user()->school_id,
+            'school_id' => current_school_id(),
             'document_name' => $request->document_name,
             'path' => $path
         ]);
@@ -46,7 +61,8 @@ class DocumentController extends Controller
 
     public function getById($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
+        $document->path = asset('storage/' . $document->path);
         return response()->json([
             'status' => 'success',
             'message' => 'Document retrieved successfully',
@@ -56,8 +72,8 @@ class DocumentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $document = Document::find($id);
-        $validatedData = $request->validate([
+        $document = Document::findOrFail($id);
+        $request->validate([
             'document_name' => 'sometimes|required|string',
             'file' => 'sometimes|file|mimes:jpg,jpeg,png,html,doc,docx,pdf',
         ]);
@@ -87,7 +103,7 @@ class DocumentController extends Controller
 
     public function destroy($id)
     {
-        $document = Document::find($id);
+        $document = Document::findOrFail($id);
         if ($document->path) {
             Storage::disk('public')->delete($document->path);
         }
