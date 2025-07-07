@@ -162,6 +162,33 @@ class UserController extends Controller
         ]);
     }
 
+    public function getSchoolUsers(Request $request)
+    {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1',
+            'search' => 'nullable|string'
+        ]);
+
+        $query = User::query();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $query = User::query()
+            ->where('school_id', current_school_id())
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            });
+
+        $query = $this->applyFilters($query, $request->input('filter', []));
+        $query = $this->applySort($query, $request->input('sort', []));
+
+        $data = $query->with('roles:name')->paginate($perPage);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'School users retrieved successfully',
+            'data' => $data
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validatedData = $request->validate([
