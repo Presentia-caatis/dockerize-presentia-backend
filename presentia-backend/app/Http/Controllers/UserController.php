@@ -173,7 +173,7 @@ class UserController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
 
         $query = User::query()
-            ->where('school_id', 1)
+            ->where('school_id', current_school_id())
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
             });
