@@ -103,7 +103,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         // Allow only super_admin and school_admin to manage link-to-school
         Route::middleware('permission:manage_school_users')->group(function () {
-            Route::post('/school/users', [UserController::class, 'getSchoolUsers']);
+            Route::get('/school/users', [UserController::class, 'getSchoolUsers']);
             Route::post('/school/assign/{id}', [UserController::class, 'assignToSchool']);
             Route::post('/school/remove/{id}', [UserController::class, 'removeFromSchool']);
         });
