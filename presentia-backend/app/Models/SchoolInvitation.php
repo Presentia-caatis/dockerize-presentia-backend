@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
 
 class SchoolInvitation extends Model
 {
+    use BelongsToSchool;
+    
     protected $fillable = [
         "sender_id",
         "receiver_id",

@@ -43,7 +43,8 @@ use App\Http\Controllers\{
     AttendanceSourceController,
     AttendanceSourceConnectionController,
     AttendanceSourceAuthController,
-    AttendanceReferenceController
+    AttendanceReferenceController,
+    SchoolInvitationController
 };
 
 //AUTH API
@@ -69,9 +70,27 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/current', [TimeController::class, 'getCurrentTime']);
     });
 
+    //SCHOOL INVITATION
+    Route::prefix('school-invitation')->group(function () {
+        Route::get('/receiver', [SchoolInvitationController::class, 'getByReceiver']);
+        Route::post('/respond', [SchoolInvitationController::class, 'respondInvitation']);
+
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/', [SchoolInvitationController::class, 'index']);
+        });
+
+        Route::middleware(['permission:manage_school_users', 'school'])->group(function () {
+            Route::get('/sender', [SchoolInvitationController::class, 'getBySender']);
+            Route::post('/', [SchoolInvitationController::class, 'store']);
+            Route::put('/{id}', [SchoolInvitationController::class, 'update']);
+            Route::delete('/{id}', [SchoolInvitationController::class, 'destroy']);
+        });
+
+    });
+
     // ROLE
     Route::prefix('role')->group(function () {
-        Route::middleware(["role_or_permission:manage_school_users|school_coadmin", "school"])->group(function () {
+        Route::middleware(["permission:manage_school_users", "school"])->group(function () {
             Route::get('/school', [RoleController::class, 'getSchoolRoles']);
             Route::post('/user/assign', [RoleController::class, 'assignToUser']);
         });
