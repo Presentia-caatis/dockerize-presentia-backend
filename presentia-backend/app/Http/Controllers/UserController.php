@@ -49,32 +49,25 @@ class UserController extends Controller
     }
 
 
-    public function unassignedUsers(Request $request)
+    public function getUnassignedUsers(Request $request)
     {
         $validated = $request->validate([
-            'search' => 'nullable|string',
             'perPage' => 'sometimes|integer|min:1',
         ]);
 
         $perPage = $validated['perPage'] ?? 10;
-        $search = $validated['search'] ?? null;
 
         $query = User::query()
             ->whereNull('school_id')
-            ->whereNull('school_token')
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
             })
-            ->select('id', 'fullname', 'email');
+            ->select('id', 'fullname', 'email', 'school_id');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        $query = $this->applyFilters($query, $request->input('filter', []));
+        $query = $this->applySort($query, $request->input('sort', []));
 
-        $users = $query->orderBy('fullname')->paginate($perPage);
+        $users = $query->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
@@ -107,8 +100,11 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $request->validate([
-            'school_id' => 'nullable|exists:schools,id'
+            'school_id' => 'nullable|exists:schools,id',
+            'role' => 'nullable|in:school_coadmin,school_staff'
         ]);
+
+        $role = $request->role ?? 'school_staff';
 
         // If the authenticated user is NOT a super_admin, use their current_school_id instead
         if (!auth()->user()->hasRole('super_admin')) {
@@ -118,6 +114,7 @@ class UserController extends Controller
             $user->school_id = $request->school_id;
         }
 
+        $user->syncRoles([$role]);
         $user->save();
 
         return response()->json([
@@ -136,6 +133,7 @@ class UserController extends Controller
         ]);
 
         $user = $request->user();
+        $user->syncRoles(["school_staff"]);
         $user->school_id = School::where("school_token", $request->school_token)->first()?->id;
         $user->save();
 
@@ -154,6 +152,8 @@ class UserController extends Controller
         }
 
         $user->school_id = null;
+        $user->syncRoles([]);
+        $user->forgetCachedPermissions();
         $user->save();
 
         return response()->json([
@@ -162,21 +162,21 @@ class UserController extends Controller
         ]);
     }
 
+
     public function getSchoolUsers(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
-            'search' => 'nullable|string'
         ]);
 
         $query = User::query();
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = User::query()
-            ->where('school_id', current_school_id())
+
+        $query = User::where('school_id', current_school_id())
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
-            });
+            })->has('roles');
 
         $query = $this->applyFilters($query, $request->input('filter', []));
         $query = $this->applySort($query, $request->input('sort', []));

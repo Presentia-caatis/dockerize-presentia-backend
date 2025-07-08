@@ -38,6 +38,33 @@ class RoleController extends Controller
         ]);
     }
 
+    public function getSchoolRoles(Request $request){
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1',
+            'pluckName' => 'sometimes|boolean'
+        ]);
+
+        $query = Role::query(); 
+        $query = $this->applyFilters($query, $request->input('filter', []));
+        $query = $this->applySort($query, $request->input('sort', []));
+
+        $query->where('name', 'LIKE', 'school%');
+
+        if($request->pluckName ?? false){
+            $data = $query->pluck('name', 'id');
+        }else{
+            $perPage = $validatedData['perPage'] ?? 10;
+            $data = $query->with('permissions')->paginate($perPage);
+        }
+        
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Roles retrieved successfully',
+            'data' => $data
+        ]);
+    }
+
     /**
      * Store a new role.
      */
@@ -112,7 +139,7 @@ class RoleController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
-        $user->assignRole($request->role);
+        $user->syncRoles([$request->role]);
         $user->load('roles');
 
         return response()->json([

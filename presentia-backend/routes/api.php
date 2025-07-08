@@ -70,15 +70,21 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // ROLE
-    Route::middleware('role:super_admin')->prefix('role')->group(function () {
-        Route::get('/', [RoleController::class, 'index']);
-        Route::post('/', [RoleController::class, 'store']);
-        Route::get('/{id}', [RoleController::class, 'show']);
-        Route::put('/{id}', [RoleController::class, 'update']);
-        Route::delete('/destroy-all', [RoleController::class, 'destroyAll']);
-        Route::delete('/{id}', [RoleController::class, 'destroy']);
-        Route::post('/user/assign', [RoleController::class, 'assignToUser']);
-        Route::post('/user/remove', [RoleController::class, 'removeFromUser']);
+    Route::prefix('role')->group(function () {
+        Route::middleware(["role_or_permission:manage_school_users|school_coadmin", "school"])->group(function () {
+            Route::get('/school', [RoleController::class, 'getSchoolRoles']);
+            Route::post('/user/assign', [RoleController::class, 'assignToUser']);
+        });
+
+        Route::middleware('role:super_admin')->group(function () {
+            Route::get('/', [RoleController::class, 'index']);
+            Route::post('/', [RoleController::class, 'store']);
+            Route::get('/{id}', [RoleController::class, 'show']);
+            Route::put('/{id}', [RoleController::class, 'update']);
+            Route::delete('/destroy-all', [RoleController::class, 'destroyAll']);
+            Route::delete('/{id}', [RoleController::class, 'destroy']);
+            Route::post('/user/remove', [RoleController::class, 'removeFromUser']);
+        });
     });
 
     // PERMISSION
@@ -102,16 +108,16 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::put('/change-password', [UserController::class, 'changePassword']);
 
         // Allow only super_admin and school_admin to manage link-to-school
-        Route::middleware('permission:manage_school_users')->group(function () {
-            Route::get('/school/users', [UserController::class, 'getSchoolUsers']);
+        Route::middleware(['permission:manage_school_users', 'school'])->group(function () {
+            Route::get('/school', [UserController::class, 'getSchoolUsers']);
             Route::post('/school/assign/{id}', [UserController::class, 'assignToSchool']);
             Route::post('/school/remove/{id}', [UserController::class, 'removeFromSchool']);
+            Route::get('/unassignedUsers', [UserController::class, 'getUnassignedUsers']);
         });
 
         // RESTRICT ALL OTHER  to users with 'super_admin' role
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/', [UserController::class, 'index']);
-            Route::get('/unassignedUsers', [UserController::class, 'unassignedUsers']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
@@ -177,7 +183,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // SCHOOL DATA
-    Route::middleware(['school', 'permission:basic_school'])->group(function () {
+    Route::middleware(['school'])->group(function () {
 
         // ATTENDANCE SOURCE
         Route::prefix('attendance-source')->group(function () {
