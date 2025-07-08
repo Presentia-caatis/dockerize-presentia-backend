@@ -69,6 +69,13 @@ class UserController extends Controller
 
         $users = $query->paginate($perPage);
 
+        $users->getCollection()->transform(function ($user) {
+            if ($user->profile_image_path) {
+                $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+            }
+            return $user;
+        });
+
         return response()->json([
             'status' => 'success',
             'message' => 'Unassigned users retrieved successfully',
@@ -76,24 +83,6 @@ class UserController extends Controller
         ]);
     }
 
-
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => ['required'],
-            'new_password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-        ]);
-
-        if (!Hash::check($request->current_password, $request->user()->password)) {
-            return response()->json(['message' => 'Password lama salah.'], 400);
-        }
-
-        $request->user()->update([
-            'password' => Hash::make($request->new_password),
-        ]);
-
-        return response()->json(['status' => 'success', 'message' => 'Password berhasil diganti.']);
-    }
 
     public function assignToSchool(Request $request, $id)
     {

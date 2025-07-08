@@ -105,7 +105,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/get-by-token', [UserController::class, 'getByToken']);
         Route::post('/school/assign-via-token', [UserController::class, 'assignToSchoolViaToken']);
         Route::put('/', [UserController::class, 'update']);
-        Route::put('/change-password', [UserController::class, 'changePassword']);
 
         // Allow only super_admin and school_admin to manage link-to-school
         Route::middleware(['permission:manage_school_users', 'school'])->group(function () {
