@@ -20,17 +20,17 @@ class RoleController extends Controller
             'pluckName' => 'sometimes|boolean'
         ]);
 
-        $query = Role::query(); 
+        $query = Role::query();
         $query = $this->applyFilters($query, $request->input('filter', []));
         $query = $this->applySort($query, $request->input('sort', []));
 
-        if($request->pluckName ?? false){
+        if ($request->pluckName ?? false) {
             $data = $query->pluck('name', 'id');
-        }else{
+        } else {
             $perPage = $validatedData['perPage'] ?? 10;
             $data = $query->with('permissions')->paginate($perPage);
         }
-        
+
 
         return response()->json([
             'status' => 'success',
@@ -39,25 +39,26 @@ class RoleController extends Controller
         ]);
     }
 
-    public function getSchoolRoles(Request $request){
+    public function getSchoolRoles(Request $request)
+    {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
             'pluckName' => 'sometimes|boolean'
         ]);
 
-        $query = Role::query(); 
+        $query = Role::query();
         $query = $this->applyFilters($query, $request->input('filter', []));
         $query = $this->applySort($query, $request->input('sort', []));
 
         $query->where('name', 'LIKE', 'school%');
 
-        if($request->pluckName ?? false){
+        if ($request->pluckName ?? false) {
             $data = $query->pluck('name', 'id');
-        }else{
+        } else {
             $perPage = $validatedData['perPage'] ?? 10;
             $data = $query->with('permissions')->paginate($perPage);
         }
-        
+
 
         return response()->json([
             'status' => 'success',
@@ -140,6 +141,36 @@ class RoleController extends Controller
         ]);
 
         $user = User::where("school_id", current_school_id())->findOrFail($request->user_id);
+
+
+        /** 
+         * check if the both role input 'school_coadmin' or 'school_staff' only be picked 
+         * by "school_admin" or "school_coadmin"
+         * */ 
+        if (auth()->user()->hasAnyRole(["school_admin", "school_coadmin"])) {
+            $request->validate(
+                [
+                    'role' => 'in:school_coadmin,school_staff'
+                ],
+                [
+                    'role.in' => "you can only assign 'school_coadmin' or 'school_staff' roles."
+                ]
+            );
+        }
+
+        /** 
+         * other than super_admin cannot assign super_admin role
+         * */ 
+        if(!auth()->user()->hasRole("super_admin") && $user->hasRole('super_admin')) abort(403, "you cannot assign this user");
+
+        /** 
+         * coadmin cannot change the owner (school_admin)
+         * */ 
+        if (auth()->user()->hasAnyRole(["school_coadmin"])) {
+            if ($user->hasAnyRole("school_admin")) {
+                abort(403, "you cannot assign the school owner ");
+            }            
+        }
 
         $user->syncRoles([$request->role]);
         $user->load('roles');
