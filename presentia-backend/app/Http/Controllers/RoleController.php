@@ -8,6 +8,7 @@ use App\Sortable;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use function App\Helpers\current_school_id;
 
 class RoleController extends Controller
 {
@@ -138,7 +139,8 @@ class RoleController extends Controller
             'role' => 'required|string|exists:roles,name',
         ]);
 
-        $user = User::findOrFail($request->user_id);
+        $user = User::where("school_id", current_school_id())->findOrFail($request->user_id);
+
         $user->syncRoles([$request->role]);
         $user->load('roles');
 
