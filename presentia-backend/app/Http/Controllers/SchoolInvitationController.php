@@ -61,12 +61,14 @@ class SchoolInvitationController extends Controller
         $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:id,name', 'sender', 'school')
             ->paginate($perPage);
 
-        if ($data->sender->profile_image_path) {
-            $data->sender->profile_image_path = asset('storage/' . $data->sender->profile_image_path);
-        }
+        foreach ($data as $invitation) {
+            if ($invitation->sender && $invitation->sender->profile_image_path) {
+                $invitation->sender->profile_image_path = asset('storage/' . $invitation->sender->profile_image_path);
+            }
 
-        if ($data->school->logo_image_path) {
-            $data->school->logo_image_path = asset('storage/' . $data->school->logo_image_path);
+            if ($invitation->school && $invitation->school->logo_image_path) {
+                $invitation->school->logo_image_path = asset('storage/' . $invitation->school->logo_image_path);
+            }
         }
 
         return response()->json([
