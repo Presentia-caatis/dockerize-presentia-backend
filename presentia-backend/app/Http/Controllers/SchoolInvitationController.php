@@ -61,6 +61,10 @@ class SchoolInvitationController extends Controller
         $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:id,name', 'sender', 'school')
             ->paginate($perPage);
 
+        if ($data->sender->logo_image_path) {
+            $data->sender->logo_image_path = asset('storage/' . $data->sender->logo_image_path);
+        }
+
         if ($data->school->logo_image_path) {
             $data->school->logo_image_path = asset('storage/' . $data->school->logo_image_path);
         }
@@ -156,13 +160,15 @@ class SchoolInvitationController extends Controller
             $request->validate([
                 'school_id' => 'nullable|exists:schools,id',
             ]);
-            if ($request->school_id) $validatedData["school_id"] = $request->school_id;
+            if ($request->school_id)
+                $validatedData["school_id"] = $request->school_id;
         }
 
-        if (isset($validatedData["receiver_id"]) || isset($validatedData["school_id"])) $this->checkDuplicateInvitation(
-            $validatedData["receiver_id"] ?? $invitation->receiver_id,
-            $validatedData["school_id"] ?? $invitation->school_id
-        );
+        if (isset($validatedData["receiver_id"]) || isset($validatedData["school_id"]))
+            $this->checkDuplicateInvitation(
+                $validatedData["receiver_id"] ?? $invitation->receiver_id,
+                $validatedData["school_id"] ?? $invitation->school_id
+            );
 
         $invitation->update($validatedData);
 
