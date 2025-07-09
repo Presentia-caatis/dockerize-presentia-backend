@@ -58,7 +58,8 @@ class SchoolInvitationController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:name', 'sender', 'school')->paginate($perPage);
+        $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:id,name', 'sender', 'school')
+            ->paginate($perPage);
 
         return response()->json([
             'status' => 'success',
@@ -121,13 +122,14 @@ class SchoolInvitationController extends Controller
         ]);
     }
 
-    public function checkDuplicateInvitation($reciever_id, $school_id){
+    public function checkDuplicateInvitation($reciever_id, $school_id)
+    {
         $invitation = SchoolInvitation::where('receiver_id', $reciever_id)
             ->where('school_id', $school_id)
             ->where('status', "pending")
             ->first();
-    
-        if ($invitation){
+
+        if ($invitation) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'The request conflicts with an existing invitation for this user and school.'
@@ -135,9 +137,10 @@ class SchoolInvitationController extends Controller
         }
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         $invitation = SchoolInvitation::findOrFail($id);
-        
+
         $validatedData = $request->validate([
             'receiver_id' => 'nullable|exists:users,id',
             'role_to_assign_id' => 'nullable|exists:roles,id',
@@ -151,8 +154,9 @@ class SchoolInvitationController extends Controller
         }
 
         if (isset($validatedData["receiver_id"]) || isset($validatedData["school_id"])) $this->checkDuplicateInvitation(
-            $validatedData["receiver_id"] ?? $invitation->receiver_id, 
-            $validatedData["school_id"] ?? $invitation->school_id);
+            $validatedData["receiver_id"] ?? $invitation->receiver_id,
+            $validatedData["school_id"] ?? $invitation->school_id
+        );
 
         $invitation->update($validatedData);
 
@@ -163,7 +167,8 @@ class SchoolInvitationController extends Controller
         ]);
     }
 
-    public function destroy($id){
+    public function destroy($id)
+    {
         $invitation = SchoolInvitation::findOrFail($id);
         $invitation->delete();
         return response()->json([
