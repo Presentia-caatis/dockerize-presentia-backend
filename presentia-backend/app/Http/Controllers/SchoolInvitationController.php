@@ -18,7 +18,7 @@ class SchoolInvitationController extends Controller
             'perPage' => 'sometimes|integer|min:1'
         ]);
 
-        $query = SchoolInvitation::withoutGlobalScope(SchoolScope::class);
+        $query = SchoolInvitation::query();
         $perPage = $validatedData['perPage'] ?? 10;
 
         $query = $this->applyFilters($query, $request->input('filter', []));
