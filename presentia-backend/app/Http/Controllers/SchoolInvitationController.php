@@ -59,17 +59,8 @@ class SchoolInvitationController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
 
         $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:id,name', 'sender', 'school')
+            ->orderBy('created_at', 'desc')
             ->paginate($perPage);
-
-        foreach ($data as $invitation) {
-            if ($invitation->sender && $invitation->sender->profile_image_path) {
-                $invitation->sender->profile_image_path = asset('storage/' . $invitation->sender->profile_image_path);
-            }
-
-            if ($invitation->school && $invitation->school->logo_image_path) {
-                $invitation->school->logo_image_path = asset('storage/' . $invitation->school->logo_image_path);
-            }
-        }
 
         return response()->json([
             'status' => 'success',
