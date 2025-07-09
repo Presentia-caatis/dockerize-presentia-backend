@@ -51,6 +51,9 @@ class RoleController extends Controller
         $query = $this->applySort($query, $request->input('sort', []));
 
         $query->where('name', 'LIKE', 'school%');
+        if(auth()->user()->hasRole('super_coadmin')){
+            $query->where('name', '!=', 'school_admin');
+        }
 
         if ($request->pluckName ?? false) {
             $data = $query->pluck('name', 'id');
@@ -142,34 +145,64 @@ class RoleController extends Controller
 
         $user = User::where("school_id", current_school_id())->findOrFail($request->user_id);
 
-
         /** 
-         * check if the both role input 'school_coadmin' or 'school_staff' only be picked 
-         * by "school_admin" or "school_coadmin"
-         * */ 
-        if (auth()->user()->hasAnyRole(["school_admin", "school_coadmin"])) {
+         * other than super_admin cannot assign super_admin role
+         * */
+        if (!auth()->user()->hasRole("super_admin") && $user->hasRole('super_admin'))
+            abort(403, "you cannot assign this user");
+
+        /**
+         * Check if the currently logged-in user is a 'school_coadmin'.
+         * If they are, validate that the role they are trying to assign is one of the allowed types.
+         */
+        if (auth()->user()->hasRole(["school_coadmin"])) {
+            /** 
+             * Coadmin cannot change the owner (school_admin)
+             * */
+            if ($user->hasRole("school_admin")) {
+                abort(403, "you cannot assign the school owner ");
+            }
             $request->validate(
                 [
                     'role' => 'in:school_coadmin,school_staff'
                 ],
                 [
-                    'role.in' => "you can only assign 'school_coadmin' or 'school_staff' roles."
+                    'role.in' => "The selected role must be one of the following: 'school_coadmin', or 'school_staff'."
                 ]
             );
         }
 
-        /** 
-         * other than super_admin cannot assign super_admin role
-         * */ 
-        if(!auth()->user()->hasRole("super_admin") && $user->hasRole('super_admin')) abort(403, "you cannot assign this user");
+        /**
+         * Check if the currently logged-in user is a 'school_admin'.
+         * If they are, validate that the role they are trying to assign is one of the allowed types.
+         */
 
-        /** 
-         * coadmin cannot change the owner (school_admin)
-         * */ 
-        if (auth()->user()->hasAnyRole(["school_coadmin"])) {
-            if ($user->hasAnyRole("school_admin")) {
-                abort(403, "you cannot assign the school owner ");
-            }            
+        if (auth()->user()->hasRole(["school_admin"])) {
+            $request->validate(
+                [
+                    'role' => 'in:school_admin,school_coadmin,school_staff'
+                ],
+                [
+                    'role.in' => "The selected role must be one of the following: 'school_admin', 'school_coadmin', or 'school_staff'."
+                ]
+            );
+        }
+
+        /**
+         * If the role being assigned is 'school_admin', which requires special handling.
+         * The goal is to ensure there is only one 'school_admin' by demoting the old one
+         */
+        if ($request->role == 'school_admin'){
+            //the promotion is handled by the previous admin.
+            if (auth()->user()->hasRole(["school_admin"])) {
+                auth()->user()->syncRoles('school_coadmin');
+                auth()->user()->save();
+            } else {
+                //the promotion is handled by super_admin.
+                User::whereHas('roles', function($q) {
+                    $q->where('name', 'school_admin');
+                })->where('school_id', $user->school_id)->firstOrFail()->syncRoles('school_coadmin')->save();
+            }
         }
 
         $user->syncRoles([$request->role]);
@@ -185,15 +218,12 @@ class RoleController extends Controller
     /**
      * Remove a role from a user.
      */
-    public function removeFromUser(Request $request)
+    public function removeRoleFromUser($id)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|string|exists:roles,name',
-        ]);
-
-        $user = User::findOrFail($request->user_id);
-        $user->removeRole($request->role);
+        $user = User::findOrFail($id);
+        $user->syncRoles([]);
+        $user->forgetCachedPermissions();
+        $user->save();
 
         return response()->json([
             'status' => 'success',
