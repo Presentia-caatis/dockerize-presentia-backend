@@ -9,7 +9,7 @@ use Spatie\Permission\Models\Role;
 class SchoolInvitation extends Model
 {
     use BelongsToSchool;
-    
+
     protected $fillable = [
         "sender_id",
         "receiver_id",
@@ -30,7 +30,7 @@ class SchoolInvitation extends Model
 
     public function school()
     {
-        return $this->belongsTo(School::class, 'school_id'); 
+        return $this->belongsTo(School::class, 'school_id');
     }
 
     public function roleToAssign()

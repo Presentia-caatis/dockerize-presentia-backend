@@ -73,7 +73,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     //SCHOOL INVITATION
     Route::prefix('school-invitation')->group(function () {
         Route::get('/receiver', [SchoolInvitationController::class, 'getByReceiver']);
-        Route::post('/respond', [SchoolInvitationController::class, 'respondInvitation']);
+        Route::post('/respond/{id}', [SchoolInvitationController::class, 'respondInvitation']);
 
         Route::middleware(['permission:manage_school_users', 'school'])->group(function () {
             Route::get('/', [SchoolInvitationController::class, 'index']);
@@ -82,7 +82,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::put('/{id}', [SchoolInvitationController::class, 'update']);
             Route::delete('/{id}', [SchoolInvitationController::class, 'destroy']);
         });
-
     });
 
     // ROLE
