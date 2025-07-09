@@ -61,8 +61,8 @@ class SchoolInvitationController extends Controller
         $data = SchoolInvitation::withoutGlobalScope(SchoolScope::class)->where('receiver_id', auth()->user()->id)->with('roleToAssign:id,name', 'sender', 'school')
             ->paginate($perPage);
 
-        if ($data->sender->logo_image_path) {
-            $data->sender->logo_image_path = asset('storage/' . $data->sender->logo_image_path);
+        if ($data->sender->profile_image_path) {
+            $data->sender->profile_image_path = asset('storage/' . $data->sender->profile_image_path);
         }
 
         if ($data->school->logo_image_path) {
