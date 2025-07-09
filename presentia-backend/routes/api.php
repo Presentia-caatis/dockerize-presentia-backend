@@ -75,11 +75,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::get('/receiver', [SchoolInvitationController::class, 'getByReceiver']);
         Route::post('/respond', [SchoolInvitationController::class, 'respondInvitation']);
 
-        Route::middleware('role:super_admin')->group(function () {
-            Route::get('/', [SchoolInvitationController::class, 'index']);
-        });
-
         Route::middleware(['permission:manage_school_users', 'school'])->group(function () {
+            Route::get('/', [SchoolInvitationController::class, 'index']);
             Route::get('/sender', [SchoolInvitationController::class, 'getBySender']);
             Route::post('/', [SchoolInvitationController::class, 'store']);
             Route::put('/{id}', [SchoolInvitationController::class, 'update']);
