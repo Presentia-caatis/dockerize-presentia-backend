@@ -56,7 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
 
         if ($value) {
-            return Storage::url($value);
+            return asset('storage/' . $value);
         }
         return null;
     }

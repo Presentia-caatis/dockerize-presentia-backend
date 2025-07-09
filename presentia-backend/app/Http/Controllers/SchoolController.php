@@ -29,12 +29,12 @@ class SchoolController extends Controller
 
         $data = School::paginate($perPage);
 
-        $data->getCollection()->transform(function ($school) {
-            if ($school->logo_image_path) {
-                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-            }
-            return $school;
-        });
+        // $data->getCollection()->transform(function ($school) {
+        //     if ($school->logo_image_path) {
+        //         $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+        //     }
+        //     return $school;
+        // });
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',

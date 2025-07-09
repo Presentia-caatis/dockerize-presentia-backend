@@ -24,7 +24,7 @@ class School extends Model
     public function getLogoImagePathAttribute($value)
     {
         if ($value) {
-            return Storage::url($value);
+            return asset('storage/' . $value);
         }
         return null;
     }
