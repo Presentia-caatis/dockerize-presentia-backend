@@ -85,6 +85,8 @@ class SchoolInvitationController extends Controller
             $validatedData["school_id"] = $validatedData["sender_id"]?->school_id;
         }
 
+        $this->checkDuplicateInvitation($validatedData["receiver_id"], $validatedData["school_id"]);
+
         $invitation = SchoolInvitation::create($validatedData);
 
         return response()->json([
@@ -119,6 +121,20 @@ class SchoolInvitationController extends Controller
         ]);
     }
 
+    public function checkDuplicateInvitation($reciever_id, $school_id){
+        $invitation = SchoolInvitation::where('receiver_id', $reciever_id)
+            ->where('school_id', $school_id)
+            ->where('status', "pending")
+            ->first();
+    
+        if ($invitation){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'The request conflicts with an existing invitation for this user and school.'
+            ], 409);
+        }
+    }
+
     public function update(Request $request, $id){
         $invitation = SchoolInvitation::findOrFail($id);
         
@@ -133,6 +149,10 @@ class SchoolInvitationController extends Controller
             ]);
             if ($request->school_id) $validatedData["school_id"] = $request->school_id;
         }
+
+        if (isset($validatedData["receiver_id"]) || isset($validatedData["school_id"])) $this->checkDuplicateInvitation(
+            $validatedData["receiver_id"] ?? $invitation->receiver_id, 
+            $validatedData["school_id"] ?? $invitation->school_id);
 
         $invitation->update($validatedData);
 
