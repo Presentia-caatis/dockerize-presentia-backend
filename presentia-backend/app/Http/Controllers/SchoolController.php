@@ -45,9 +45,9 @@ class SchoolController extends Controller
     public function getById($id)
     {
         $school = School::findOrFail($id);
-        if ($school->logo_image_path) {
-            $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-        }
+        // if ($school->logo_image_path) {
+        //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+        // }
 
         unset($school->school_token);
 
@@ -193,9 +193,9 @@ class SchoolController extends Controller
                     'is_active' => true,
                 ],
             ]);
-            if($request->logo_image){
-                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-            }
+            // if($request->logo_image){
+            //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+            // }
             
 
             \DB::commit();
@@ -243,10 +243,6 @@ class SchoolController extends Controller
 
 
         $school->update($validatedData);
-
-        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
-            $school->logo_image_path = $school->logo_image_path ? asset('storage/' . $school->logo_image_path) : null;
-        }
 
         return response()->json([
             'status' => 'success',

@@ -33,12 +33,12 @@ class UserController extends Controller
 
         $data = $query->with('roles:name')->paginate($perPage);
 
-        $data->getCollection()->transform(function ($user) {
-            if ($user->profile_image_path) {
-                $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-            }
-            return $user;
-        });
+        // $data->getCollection()->transform(function ($user) {
+        //     if ($user->profile_image_path) {
+        //         $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        //     }
+        //     return $user;
+        // });
 
 
         return response()->json([
@@ -69,12 +69,12 @@ class UserController extends Controller
 
         $users = $query->paginate($perPage);
 
-        $users->getCollection()->transform(function ($user) {
-            if ($user->profile_image_path) {
-                $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-            }
-            return $user;
-        });
+        // $users->getCollection()->transform(function ($user) {
+        //     if ($user->profile_image_path) {
+        //         $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        //     }
+        //     return $user;
+        // });
 
         return response()->json([
             'status' => 'success',
@@ -197,7 +197,7 @@ class UserController extends Controller
 
         $user = User::create($validatedData);
 
-        $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // $user->profile_image_path = asset('storage/' . $user->profile_image_path);
 
         return response()->json([
             'status' => 'success',
@@ -210,9 +210,9 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if ($user->profile_image_path) {
-            $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-        }
+        // if ($user->profile_image_path) {
+        //     $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // }
         return response()->json([
             'status' => 'success',
             'message' => 'User retrieved successfully',
@@ -228,9 +228,9 @@ class UserController extends Controller
             throw new UnauthorizedHttpException('Bearer', 'User not authenticated');
         }
 
-        if ($user->profile_image_path) {
-            $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-        }
+        // if ($user->profile_image_path) {
+        //     $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // }
 
         return response()->json([
             'status' => 'success',
@@ -293,9 +293,9 @@ class UserController extends Controller
 
         $user->update($validatedData);
 
-        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
-            $user->profile_image_path = $user->profile_image_path ? asset('storage/' . $user->profile_image_path) : null;
-        }
+        // if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
+        //     $user->profile_image_path = $user->profile_image_path ? asset('storage/' . $user->profile_image_path) : null;
+        // }
 
         return response()->json([
             'status' => 'success',
