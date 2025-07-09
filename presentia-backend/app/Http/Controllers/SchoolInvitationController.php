@@ -103,8 +103,9 @@ class SchoolInvitationController extends Controller
             'status' => 'required|in:accepted,rejected'
         ]);
 
+        $invitation = SchoolInvitation::findOrFail($id);
+
         if ($validatedData['status'] == 'accepted') {
-            $invitation = SchoolInvitation::findOrFail($id);
             $receiver = User::findOrFail($invitation->receiver_id);
 
             $receiver->syncRoles([$invitation->roleToAssign->name]);
@@ -117,10 +118,11 @@ class SchoolInvitationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'School invitation accepted successfully',
+            'message' => 'School invitation responded successfully',
             'data' => $invitation
         ]);
     }
+
 
     public function checkDuplicateInvitation($reciever_id, $school_id)
     {
