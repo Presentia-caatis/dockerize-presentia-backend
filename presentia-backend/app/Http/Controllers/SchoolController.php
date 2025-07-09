@@ -33,7 +33,6 @@ class SchoolController extends Controller
             if ($school->logo_image_path) {
                 $school->logo_image_path = asset('storage/' . $school->logo_image_path);
             }
-            $this->validateRole($school);
             return $school;
         });
         return response()->json([
@@ -59,11 +58,6 @@ class SchoolController extends Controller
         ]);
     }
 
-    private function validateRole(School &$school)
-    {
-        if (!auth()->user()->hasRole(['super_admin', 'school_admin'])) {
-        }
-    }
     public function taskSchedulerToogle($id)
     {
         $school = School::findOrFail($id);

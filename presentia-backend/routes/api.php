@@ -98,7 +98,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::put('/{id}', [RoleController::class, 'update']);
             Route::delete('/destroy-all', [RoleController::class, 'destroyAll']);
             Route::delete('/{id}', [RoleController::class, 'destroy']);
-            Route::post('/user/remove', [RoleController::class, 'removeFromUser']);
+            Route::post('/user/remove/{id}', [RoleController::class, 'removeRoleFromUser']);
         });
     });
 
