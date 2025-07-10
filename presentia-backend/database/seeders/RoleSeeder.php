@@ -58,6 +58,7 @@ class RoleSeeder extends Seeder
         ]);
 
         $schoolCoadmin->givePermissionTo([
+            'manage_school_users',
             'manage_schools',
             'manage_students',
             'manage_attendance',

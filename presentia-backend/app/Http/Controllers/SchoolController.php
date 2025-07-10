@@ -29,13 +29,12 @@ class SchoolController extends Controller
 
         $data = School::paginate($perPage);
 
-        $data->getCollection()->transform(function ($school) {
-            if ($school->logo_image_path) {
-                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-            }
-            $this->validateRole($school);
-            return $school;
-        });
+        // $data->getCollection()->transform(function ($school) {
+        //     if ($school->logo_image_path) {
+        //         $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+        //     }
+        //     return $school;
+        // });
         return response()->json([
             'status' => 'success',
             'message' => 'Schools retrieved successfully',
@@ -46,9 +45,9 @@ class SchoolController extends Controller
     public function getById($id)
     {
         $school = School::findOrFail($id);
-        if ($school->logo_image_path) {
-            $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-        }
+        // if ($school->logo_image_path) {
+        //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+        // }
 
         unset($school->school_token);
 
@@ -59,11 +58,6 @@ class SchoolController extends Controller
         ]);
     }
 
-    private function validateRole(School &$school)
-    {
-        if (!auth()->user()->hasRole(['super_admin', 'school_admin'])) {
-        }
-    }
     public function taskSchedulerToogle($id)
     {
         $school = School::findOrFail($id);
@@ -199,9 +193,9 @@ class SchoolController extends Controller
                     'is_active' => true,
                 ],
             ]);
-            if($request->logo_image){
-                $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-            }
+            // if($request->logo_image){
+            //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+            // }
             
 
             \DB::commit();
@@ -249,10 +243,6 @@ class SchoolController extends Controller
 
 
         $school->update($validatedData);
-
-        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
-            $school->logo_image_path = $school->logo_image_path ? asset('storage/' . $school->logo_image_path) : null;
-        }
 
         return response()->json([
             'status' => 'success',

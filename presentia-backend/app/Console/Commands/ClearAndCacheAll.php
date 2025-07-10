@@ -25,13 +25,13 @@ class ClearAndCacheAll extends Command
      */
     public function handle()
     {
-        // Run clear:cache
-        $this->info('Clearing application cache...');
-        $this->call('cache:clear');
-
         // Run clear:config
         $this->info('Clearing configuration cache...');
         $this->call('config:clear');
+        
+        // Run clear:cache
+        $this->info('Clearing application cache...');
+        $this->call('cache:clear');
 
         // Run config:cache
         $this->info('Caching configuration...');
