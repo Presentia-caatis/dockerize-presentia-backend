@@ -156,18 +156,21 @@ class UserController extends Controller
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
+            'role' => 'sometimes|in:school_admin,school_coadmin,school_staff'
         ]);
 
         $query = User::query();
         $perPage = $validatedData['perPage'] ?? 10;
-
 
         $query = User::where('school_id', current_school_id())
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
             })->has('roles');
 
-        $query = $this->applyFilters($query, $request->input('filter', []));
+        if(isset($validatedData['role'])) $query->whereHas('roles', function ($q) use ($validatedData) {
+            $q->where('name', $validatedData['role']);
+        });
+
         $query = $this->applySort($query, $request->input('sort', []));
 
         $data = $query->with('roles:name')->paginate($perPage);
