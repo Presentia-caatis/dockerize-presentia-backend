@@ -79,14 +79,14 @@ class AttendanceWindowController extends Controller
 
         $dataSchedule = $dayData->attendanceSchedule;
         $attendanceWindowInDate = AttendanceWindow::where('date', $request->date)->first();
-        if($attendanceWindowInDate && $attendanceWindowInDate->event && !$attendanceWindowInDate->event->is_scheduler_active){
+        if ($attendanceWindowInDate && $attendanceWindowInDate->event && !$attendanceWindowInDate->event->is_scheduler_active) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Attendance windows already exists for this date'
             ], 400);
         }
 
-        if(AttendanceWindow::where('date', $request->date)->first()?->event?->type == 'event_holiday'){
+        if (AttendanceWindow::where('date', $request->date)->first()?->event?->type == 'event_holiday') {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Ateeendance windows cannot be generated for holiday event'
@@ -148,7 +148,7 @@ class AttendanceWindowController extends Controller
             $attendanceWindow["check_out_status"][$name] = $checkOutStatusesData[$statusId] ?? 0;
         }
 
-        
+
         $attendanceWindow["total_all"] = $totalAll;
 
         return response()->json([
@@ -162,8 +162,9 @@ class AttendanceWindowController extends Controller
     {
         $attendanceWindow = AttendanceWindow::findOrFail($id);
 
-        $validatedData = $validatedData = $request->validate([
+        $validatedData = $request->validate([
             'name' => 'nullable|string',
+            'type' => 'nullable|in:default,event,holiday,event_holiday',
             'date' => 'nullable|date_format:Y-m-d',
             'check_in_start_time' => 'required_with:check_in_end_time|date_format:H:i:s',
             'check_in_end_time' => 'required_with:check_in_start_time|date_format:H:i:s|after:check_in_start_time',
@@ -179,6 +180,7 @@ class AttendanceWindowController extends Controller
             'data' => $attendanceWindow
         ]);
     }
+
 
     public function destroy($id)
     {
