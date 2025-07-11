@@ -28,9 +28,10 @@ trait AuthenticatesSchoolAdmin
         Permission::firstOrCreate(['name' => 'manage_students', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_schools', 'guard_name' => 'web']); 
         Permission::firstOrCreate(['name' => 'manage_attendance', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'manage_school_users', 'guard_name' => 'web']);
 
         $schoolAdminRole->givePermissionTo([
-            'basic_school', 'manage_students', 'manage_schools', 'manage_attendance',
+            'basic_school', 'manage_students', 'manage_schools', 'manage_attendance', 'manage_school_users'
         ]);
 
         $this->schoolForAdmin = School::factory()->create();
@@ -52,6 +53,9 @@ trait AuthenticatesSchoolAdmin
             'email_verified_at' => now(),
         ]);
         $this->schoolAdminUser->assignRole('school_admin');
+
+        config(['school.id' => $this->schoolForAdmin->id]); 
+        config(['app.timezone' => 'Asia/Jakarta']);
 
         $response = $this->postJson('api/login', [
             'email_or_username' => $this->schoolAdminUser->email,
