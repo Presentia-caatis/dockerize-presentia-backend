@@ -197,7 +197,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // SCHOOL DATA
-    Route::middleware(['school'])->group(function () {
+    Route::middleware(['school', 'permission:basic_school'])->group(function () {
 
         // ATTENDANCE SOURCE
         Route::prefix('attendance-source')->group(function () {
@@ -254,17 +254,21 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
 
         // ATTENDANCE
-        Route::middleware('permission:manage_attendance')->prefix('attendance')->group(function () {
-            Route::get('/export', [AttendanceController::class, 'exportAttendance']);
-            Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
-            Route::post('/file', [AttendanceController::class, 'storeFromFile']);
-            Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+        Route::prefix('attendance')->group(function () {
             Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
-            Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
-            Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
-            Route::get('/{id}', [AttendanceController::class, 'getById']);
-            Route::put('/{id}', [AttendanceController::class, 'update']);
-            Route::delete('/{id}', [AttendanceController::class, 'destroy']);
+
+            Route::middleware('permission:manage_attendance')->group(function () {
+                Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+                Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
+                Route::post('/file', [AttendanceController::class, 'storeFromFile']);
+                Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+                Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
+                Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
+                Route::get('/{id}', [AttendanceController::class, 'getById']);
+                Route::put('/{id}', [AttendanceController::class, 'update']);
+                Route::delete('/{id}', [AttendanceController::class, 'destroy']);
+            });
+
         });
 
         Route::middleware('permission:manage_schools')->group(function () {
