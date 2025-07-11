@@ -312,7 +312,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::prefix('attendance-window')->group(function () {
                 Route::get('/', [AttendanceWindowController::class, 'index']);
                 Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
-                Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('role:super_admin,school_coadmin,school_admin');
+                Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('role:super_admin|school_coadmin|school_admin');
                 Route::get('/{id}', [AttendanceWindowController::class, 'getById']);
                 Route::put('/{id}', [AttendanceWindowController::class, 'update']);
                 Route::delete('/{id}', [AttendanceWindowController::class, 'destroy']);
