@@ -109,11 +109,14 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
+        //Check if the table is exist
         if (!Schema::hasTable('schools') || DB::table('schools')->count() === 0) {
             return;
         }
 
+        //Get the active school only
         $schoolsQuery = App\Models\School::where('is_task_scheduling_active', true);
+
 
         $maxLateDurations = CheckInStatus::withoutGlobalScope(SchoolScope::class)
             ->selectRaw('school_id, MAX(late_duration) as max_late_duration')
