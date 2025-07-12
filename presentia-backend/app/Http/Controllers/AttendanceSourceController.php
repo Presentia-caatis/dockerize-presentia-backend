@@ -15,7 +15,7 @@ class AttendanceSourceController extends Controller
         $this->attendanceSourceService = $attendanceSourceService;
     }
 
-    public function index(Request $request)
+    public function getAll(Request $request)
     {
         return $this->attendanceSourceService->getAllData($request);
     }

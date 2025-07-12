@@ -21,7 +21,7 @@ class AttendanceReferenceController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function getAll(Request $request): JsonResponse
     {
         $data = $this->attendanceReferenceService->getCombinedReferences($request);
 

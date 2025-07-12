@@ -15,7 +15,7 @@ class AttendanceSourceConnectionController extends Controller
         $this->attendanceSourceConnectionService = new AttendanceSourceConnectionService(new AttendanceSourceService());
     }
 
-    public function getAllData(Request $request)
+    public function getAll(Request $request)
     {
         return $this->attendanceSourceConnectionService->getAllData($request);
     }

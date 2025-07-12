@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 class SchoolInvitationController extends Controller
 {
     use Filterable, Sortable;
-    public function index(Request $request)
+    public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1'

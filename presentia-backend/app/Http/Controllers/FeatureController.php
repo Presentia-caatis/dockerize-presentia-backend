@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Feature;
 class FeatureController extends Controller
 {
-    public function index(Request $request)
+    public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1' 

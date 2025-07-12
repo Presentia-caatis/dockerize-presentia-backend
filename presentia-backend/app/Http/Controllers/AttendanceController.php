@@ -26,7 +26,7 @@ class AttendanceController extends Controller
 {
     use Filterable, Sortable;
 
-    public function index(Request $request)
+    public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'startDate' => ['required_with:endDate', 'date_format:Y-m-d'],

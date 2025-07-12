@@ -16,7 +16,7 @@ class SemesterController extends Controller
         $this->semesterService = $semesterService;
     }
 
-    public function index(Request $request)
+    public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1'
