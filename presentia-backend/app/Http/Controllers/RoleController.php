@@ -96,7 +96,7 @@ class RoleController extends Controller
     /**
      * Show a single role.
      */
-    public function show($id)
+    public function getById($id)
     {
         $role = Role::with('permissions')->findOrFail($id);
         return response()->json([

@@ -55,7 +55,7 @@ class PermissionController extends Controller
     }
 
 
-    public function show($id)
+    public function getById($id)
     {
         $permission = Permission::findOrFail($id);
 

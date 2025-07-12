@@ -95,7 +95,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/', [RoleController::class, 'getAll']);
             Route::post('/', [RoleController::class, 'store']);
-            Route::get('/{id}', [RoleController::class, 'show']);
+            Route::get('/{id}', [RoleController::class, 'getById']);
             Route::put('/{id}', [RoleController::class, 'update']);
             Route::delete('/destroy-all', [RoleController::class, 'destroyAll']);
             Route::delete('/{id}', [RoleController::class, 'destroy']);
@@ -107,7 +107,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::middleware('role:super_admin')->prefix('permission')->group(function () {
         Route::get('/', [PermissionController::class, 'getAll']);
         Route::post('/', [PermissionController::class, 'store']);
-        Route::get('/{id}', [PermissionController::class, 'show']);
+        Route::get('/{id}', [PermissionController::class, 'getById']);
         Route::put('/{id}', [PermissionController::class, 'update']);
         Route::delete('/destroy-all', [PermissionController::class, 'destroyAll']);
         Route::delete('/{id}', [PermissionController::class, 'destroy']);
