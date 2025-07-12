@@ -59,9 +59,7 @@ class UserController extends Controller
 
         $query = User::query()
             ->whereNull('school_id')
-            ->whereDoesntHave('roles', function ($q) {
-                $q->where('name', 'super_admin');
-            })
+            ->whereDoesntHave('roles')
             ->select('id', 'fullname', 'email', 'school_id');
 
         $query = $this->applyFilters($query, $request->input('filter', []));

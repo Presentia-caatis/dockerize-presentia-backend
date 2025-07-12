@@ -79,8 +79,25 @@ class SchoolController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
+        $now = Carbon::now($validatedData['timezone'] ?? 'Asia/Jakarta');
+        $year = $now->year;
+
+        if ($now->lessThan(Carbon::create($year, 6, 10))) {
+            
+            $period = 'even';
+            $academicYear = ($year - 1) . '/' . $year;
+            $semesterStart = Carbon::create($year, 1, 30)->toDateString();
+            $semesterEnd = Carbon::create($year, 6, 30)->toDateString();
+        } else {
+            $period = 'odd';
+            $academicYear = $year . '/' . ($year + 1);
+            $semesterStart = Carbon::create($year, 7, 28)->toDateString();
+            $semesterEnd = Carbon::create($year, 12, 20)->toDateString();
+        }
+
         try {
             \DB::beginTransaction();
+
 
             if ($request->hasFile('logo_image')) {
                 $validatedData['logo_image_path'] = $request->file('logo_image')->store($request->file('logo_image')->extension(), 'public');
@@ -96,6 +113,15 @@ class SchoolController extends Controller
 
             $school = School::create($validatedData);
 
+            $semester = \App\Models\Semester::create([
+                'school_id' => $school->id,
+                'academic_year' => $academicYear,
+                'period' => $period,
+                'start_date' => $semesterStart,
+                'end_date' => $semesterEnd,
+                'is_active' => true,
+            ]);
+
             $user = User::findOrFail($validatedData['user_id']);
             if ($user->school_id !== null) {
                 return response()->json([
@@ -105,7 +131,7 @@ class SchoolController extends Controller
             }
 
             $user->school_id = $school->id;
-            $user->assignRole('school_admin');
+            $user->syncRoles(['school_admin']);
             $user->save();
 
             $defaultAttendanceSchedule = AttendanceSchedule::create([
@@ -116,12 +142,14 @@ class SchoolController extends Controller
                 'check_in_end_time' => '06:30:00',
                 'check_out_start_time' => '16:00:00',
                 'check_out_end_time' => '17:00:00',
+                'semester_id' => $semester->id,
             ]);
 
             $holidayAttendanceSchedule = AttendanceSchedule::create([
                 'event_id' => null,
                 'type' => 'holiday',
                 'name' => 'Holiday Schedule',
+                'semester_id' => $semester->id
             ]);
 
             $weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -130,6 +158,7 @@ class SchoolController extends Controller
                     'attendance_schedule_id' => $defaultAttendanceSchedule->id,
                     'school_id' => $school->id,
                     'name' => $day,
+                    'semester_id' => $semester->id
                 ]);
             }
 
@@ -139,6 +168,7 @@ class SchoolController extends Controller
                     'attendance_schedule_id' => $holidayAttendanceSchedule->id,
                     'school_id' => $school->id,
                     'name' => $day,
+                    'semester_id' => $semester->id
                 ]);
             }
 
@@ -147,22 +177,22 @@ class SchoolController extends Controller
                     'status_name' => 'Late',
                     'description' => 'Student checked in after the allowed time with a grace period of 15 minutes.',
                     'late_duration' => 15,
-                    'is_active' => true,
                     'school_id' => $school->id,
+                    'semester_id' => $semester->id
                 ],
                 [
                     'status_name' => 'On Time',
                     'description' => 'Student checked in within the designated time frame.',
                     'late_duration' => 0,
-                    'is_active' => true,
                     'school_id' => $school->id,
+                    'semester_id' => $semester->id
                 ],
                 [
                     'status_name' => 'Absent',
                     'description' => 'Student did not check in and is considered absent for the day.',
                     'late_duration' => -1,
-                    'is_active' => true,
                     'school_id' => $school->id,
+                    'semester_id' => $semester->id
                 ],
             ]);
 
@@ -172,12 +202,14 @@ class SchoolController extends Controller
                     'description' => 'Student did not check out, indicating absence for the day.',
                     'late_duration' => -1,
                     'school_id' => $school->id,
+                    'semester_id' => $semester->id
                 ],
                 [
                     'status_name' => 'present',
                     'description' => 'Student successfully checked out within the allowed time.',
                     'late_duration' => 0,
                     'school_id' => $school->id,
+                    'semester_id' => $semester->id
                 ],
             ]);
 
@@ -186,17 +218,15 @@ class SchoolController extends Controller
                     'school_id' => $school->id,
                     'permit_name' => 'Sick',
                     'is_active' => true,
+                    'semester_id' => $semester->id
                 ],
                 [
                     'school_id' => $school->id,
                     'permit_name' => 'Dispensation',
                     'is_active' => true,
+                    'semester_id' => $semester->id
                 ],
             ]);
-            // if($request->logo_image){
-            //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
-            // }
-
 
             \DB::commit();
 
@@ -273,9 +303,9 @@ class SchoolController extends Controller
 
         User::where('school_id', $school->id)->update(['school_id' => null]);
 
-
-        $attendanceScheduleIds = Day::pluck('attendance_schedule_id');
-        AttendanceSchedule::whereIn('id', $attendanceScheduleIds)->delete();
+        AttendanceSchedule::whereHas('semester', function ($q) use ($school) {
+            $q->where('school_id', $school->id);
+        })->delete();
 
         if ($school->logo_image_path) {
             Storage::disk('public')->delete($school->logo_image_path);

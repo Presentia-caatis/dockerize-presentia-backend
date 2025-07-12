@@ -14,7 +14,8 @@ class Day extends Model
     protected $fillable = [
         'attendance_schedule_id',
         'school_id',
-        'name'
+        'name',
+        'semester_id'
     ];
 
 

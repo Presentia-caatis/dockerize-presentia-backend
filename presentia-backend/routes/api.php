@@ -128,7 +128,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/school', [UserController::class, 'getSchoolUsers']);
             Route::post('/school/assign/{id}', [UserController::class, 'assignToSchool']);
             Route::post('/school/remove/{id}', [UserController::class, 'removeFromSchool']);
-            Route::get('/unassignedUsers', [UserController::class, 'getUnassignedUsers']);
+            Route::get('/unassignedUsers', [UserController::class, 'getUnassignedUsers'])->withoutMiddleware('school');
         });
 
         // RESTRICT ALL OTHER  to users with 'super_admin' role

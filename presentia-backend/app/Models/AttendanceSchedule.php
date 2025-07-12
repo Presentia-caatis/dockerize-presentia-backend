@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class AttendanceSchedule extends Model
 {
     use HasFactory;
-    use BelongsToSchool, BelongsToSemester;
+    use BelongsToSemester;
 
     protected $fillable = [
         'event_id',
@@ -31,6 +31,10 @@ class AttendanceSchedule extends Model
     public function event()
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function semester(){
+        return $this->belongsTo(Semester::class);
     }
 
     public function schools()
