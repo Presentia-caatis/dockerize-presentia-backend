@@ -48,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'semester' => \App\Http\Middleware\SemesterMiddleware::class,
             'school' => \App\Http\Middleware\SchoolMiddleware::class,
             'valid-adms' => \App\Http\Middleware\ADMSMiddleware::class,
         ]);

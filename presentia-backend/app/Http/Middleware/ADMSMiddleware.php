@@ -17,8 +17,7 @@ class ADMSMiddleware
     {
         $authHeader = $request->header('Authorization');
         $token = str_replace('Bearer ', '', $authHeader);
-
-
+        
         $validToken = config('app.adms_token');
         
         if (!$validToken || $token !== $validToken) {
