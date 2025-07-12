@@ -14,27 +14,25 @@ class EnrollmentController extends Controller
         $this->enrollmentService = $enrollmentService;
     }
 
-    // GET /enrollments
     public function getAll()
     {
         $enrollments = $this->enrollmentService->getAll();
         return response()->json([
             'status' => 'success',
+            'message' => 'Enrollments retrieved successfully',
             'data' => $enrollments,
         ]);
     }
 
-    // GET /enrollments/{id}
     public function getById($id)
     {
         $enrollment = $this->enrollmentService->getById($id);
         return response()->json([
             'status' => 'success',
+            'message' => 'Enrollment retrieved successfully',
             'data' => $enrollment,
         ]);
     }
-
-    // POST /enrollments
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -48,11 +46,11 @@ class EnrollmentController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Enrollment created successfully',
             'data' => $enrollment,
         ], 201);
     }
 
-    // PUT/PATCH /enrollments/{id}
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
@@ -66,11 +64,11 @@ class EnrollmentController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Enrollment updated successfully',
             'data' => $enrollment,
         ]);
     }
 
-    // DELETE /enrollments/{id}
     public function destroy($id)
     {
         $this->enrollmentService->delete($id);

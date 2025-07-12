@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use App\Services\SemesterService;
 use function App\Helpers\current_school_id;
 
-
 class SemesterController extends Controller
 {
     protected $semesterService;
@@ -26,6 +25,7 @@ class SemesterController extends Controller
 
         return response()->json([
             'status' => 'success',
+            'message' => 'Semesters retrieved successfully',
             'data' => $semesters,
         ]);
     }
@@ -41,15 +41,17 @@ class SemesterController extends Controller
         ]);
 
         $validatedData["school_id"] = current_school_id();
-        
+
         $semester = $this->semesterService->create($validatedData);
         return response()->json([
             'status' => 'success',
+            'message' => 'Semester created successfully',
             'data' => $semester,
         ], 201);
     }
 
-    public function getByCurrentTime(){
+    public function getByCurrentTime()
+    {
         return response()->json([
             'status' => 'success',
             'message' => 'Current semester retrieved successfully',
@@ -62,10 +64,10 @@ class SemesterController extends Controller
         $semester = $this->semesterService->getById($id);
         return response()->json([
             'status' => 'success',
+            'message' => 'Semester retrieved successfully',
             'data' => $semester,
         ]);
     }
-
 
     public function update(Request $request, $id)
     {
@@ -75,11 +77,12 @@ class SemesterController extends Controller
             'start_date'     => 'sometimes|required|date|date_format:Y-m-d',
             'end_date'       => 'sometimes|required|date|date_format:Y-m-d|after_or_equal:start_date',
             'is_active'      => 'boolean',
-        ]);        
+        ]);
 
         $semester = $this->semesterService->update($id, $validatedData);
         return response()->json([
             'status' => 'success',
+            'message' => 'Semester updated successfully',
             'data' => $semester,
         ]);
     }
@@ -93,11 +96,12 @@ class SemesterController extends Controller
         ]);
     }
 
-    public function isActiveToogle($id){
+    public function isActiveToogle($id)
+    {
         $semester = $this->semesterService->isActiveToogle($id);
         return response()->json([
             'status' => 'success',
-            'message' => 'Semester is updated successfully',
+            'message' => 'Semester active status toggled successfully',
             'data' => $semester,
         ]);
     }
