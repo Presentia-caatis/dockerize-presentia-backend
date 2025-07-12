@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use App\Models\Scopes\SchoolScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceWindow extends Model
 {
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
     use HasFactory;
 
     protected $fillable = [
@@ -25,7 +26,7 @@ class AttendanceWindow extends Model
         'check_in_end_time',
         'check_out_start_time',
         'check_out_end_time',
-        'scheduler_active'
+        'semester_id'
     ];
 
     public static function validateOverlap($date, $checkInStart, $checkInEnd, $checkOutStart, $checkOutEnd, $ignoreId = null, $isValidateDefaultSchedule = false)
@@ -113,6 +114,10 @@ class AttendanceWindow extends Model
         if (!empty($errors)) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    public function semester(){
+        return $this->belongsTo(Semester::class);
     }
 
 }

@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
     use HasFactory;
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
     protected $fillable = [
         'school_id',
         'class_group_id',
@@ -20,9 +21,9 @@ class Student extends Model
         'gender',
     ];
 
-    public function classGroup()
+    public function classGroups()
     {
-        return $this->belongsTo(ClassGroup::class);
+        return $this->belongsToMany(ClassGroup::class, 'enrollments');
     }
 
     public function attendances()
@@ -32,5 +33,9 @@ class Student extends Model
 
     public function school() {
         return $this->belongsTo(School::class);
+    }
+
+    public function semesters(){
+        return $this->belongsToMany(Semester::class, 'enrollments');
     }
 }

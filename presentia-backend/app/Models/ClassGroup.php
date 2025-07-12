@@ -18,11 +18,16 @@ class ClassGroup extends Model
 
     public function students()
     {
-        return $this->hasMany(Student::class);
+        return $this->belongsToMany(Student::class, 'enrollments');
+    
     }
 
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function semesters(){
+        return $this->belongsToMany(Semester::class, 'enrollments');
     }
 }

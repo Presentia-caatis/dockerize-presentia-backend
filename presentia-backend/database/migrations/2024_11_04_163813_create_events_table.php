@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_scheduler_active')->default(true);
             

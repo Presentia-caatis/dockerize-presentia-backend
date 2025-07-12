@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignId('class_group_id')->constrained("class_groups")->cascadeOnDelete();
             $table->foreignId('student_id')->constrained("students")->cascadeOnDelete();
             $table->foreignId('school_id')->constrained("schools")->cascadeOnDelete();
+            $table->unique(
+                ['semester_id', 'class_group_id', 'student_id', 'school_id'],
+                'enrollment_unique_group'
+            );
             $table->timestamps();
         });
     }

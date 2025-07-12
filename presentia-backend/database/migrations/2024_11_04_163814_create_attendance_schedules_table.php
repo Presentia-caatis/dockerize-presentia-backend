@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('attendance_schedules', function (Blueprint $table) {
             $table->id();
             $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->string('name');
             $table->enum('type', ['default', 'event' , 'holiday', 'event_holiday'])->default('event');
             $table->time('check_in_start_time')->nullable();

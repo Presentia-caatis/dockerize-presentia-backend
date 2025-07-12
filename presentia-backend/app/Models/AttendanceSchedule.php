@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class AttendanceSchedule extends Model
 {
     use HasFactory;
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
 
     protected $fillable = [
         'event_id',
@@ -18,7 +19,8 @@ class AttendanceSchedule extends Model
         'check_in_start_time',
         'check_in_end_time',
         'check_out_start_time',
-        'check_out_end_time'
+        'check_out_end_time',
+        'semester_id'
     ];
 
     public function days() 

@@ -16,29 +16,22 @@ class StudentController extends Controller
 {
     use Filterable, Sortable;
     
+    public function getAllUnfilteredSemesters(){
+        
+    }
+
+
     public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
-            'class_group_id' => 'sometimes|exists:class_groups,id',
-            'search' => 'nullable|string|min:1'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
-        $search = $validatedData['search'] ?? null;
         $query = Student::with('classGroup');
 
         $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
         $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
-
-
-        if ($request->has('class_group_id')) {
-            $query->where('class_group_id', $request->class_group_id);
-        }
-
-        if ($search) {
-            $query->where('student_name', 'like', "%$search%");
-        }
 
         $data = $query->paginate($perPage);
 

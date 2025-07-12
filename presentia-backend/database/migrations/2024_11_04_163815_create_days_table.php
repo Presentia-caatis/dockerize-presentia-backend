@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('attendance_schedule_id')->constrained('attendance_schedules')->cascadeOnDelete();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->enum('name', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             $table->unique(['name', 'school_id']);
             $table->timestamps();

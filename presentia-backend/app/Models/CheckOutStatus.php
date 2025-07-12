@@ -3,19 +3,21 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CheckOutStatus extends Model
 {
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
     use HasFactory;
 
     protected $fillable = [
         'status_name',
         'description',
         'late_duration',
-        'school_id'
+        'school_id',
+        'semester_id'
     ];
 
     public function attendances()
@@ -23,9 +25,7 @@ class CheckOutStatus extends Model
         return $this->hasMany(Attendance::class);
     }
 
-    public function schools()
-    {
-        return $this->belongsToMany(School::class, 'attendance_late_type_schools')
-                    ->withTimestamps();
+    public function semester(){
+        return $this->belongsTo(Semester::class);
     }
 }

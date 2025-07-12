@@ -123,7 +123,7 @@ class AttendanceWindowLoaderService
         $occurrencesCount = 0;
         while (($endDate && $currentDate->lessThanOrEqualTo($endDate)) || $occurrencesCount < $this->event->occurrences) {
             foreach ($desiredDays as $day) {
-                $dayOfWeek = ucfirst(strtolower($day)); // Ensure correct format (e.g., "Monday")
+                $dayOfWeek = ucfirst(strtolower($day));
                 $date = $currentDate->copy()->startOfWeek(CarbonInterface::SUNDAY)->next($dayOfWeek);
     
                 if (!$endDate || $date->lessThanOrEqualTo($endDate)) {
@@ -186,10 +186,9 @@ class AttendanceWindowLoaderService
 
             if ($this->event->yearly_dates) {
                 foreach ($this->event->yearly_dates as $yearlyDate) {
-                    // Attach the current year to the 'm-d' format
                     $fullDate = $currentDate->year . '-' . $yearlyDate;
                     if(!$this->isBetweenDateLimit(Carbon::parse($fullDate))) continue;
-                    $datesToProcess[] = Carbon::parse($fullDate)->format('Y-m-d'); // Store only the year
+                    $datesToProcess[] = Carbon::parse($fullDate)->format('Y-m-d');
                     $occurrencesCount++;
                 }
             }

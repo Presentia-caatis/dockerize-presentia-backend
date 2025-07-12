@@ -17,11 +17,13 @@ class SchoolScope implements Scope
 
     public function apply(Builder $builder, Model $model)
     {
-        if ($model->getConnection()->getSchemaBuilder()->hasColumn($model->getTable(), 'school_id')) {
-            $builder->where('school_id', $this->schoolId ?? config('school.id'));
+        $table = $model->getTable();
+
+        if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'school_id')) {
+            $builder->where("{$table}.school_id", $this->schoolId ?? config('school.id'));
         } else {
-            $builder->whereHas('schools', function ($query) {
-                $query->where('school_id', $this->schoolId ?? config('school.id'));
+            $builder->whereHas('schools', function ($query) use ($table) {
+                $query->where("{$table}.school_id", $this->schoolId ?? config('school.id'));
             });
         }
     }

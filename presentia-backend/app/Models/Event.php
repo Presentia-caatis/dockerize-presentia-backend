@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ class Event extends Model
 {
     /** @use HasFactory<\Database\Factories\EventFactory> */
     use HasFactory;
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
 
     protected $fillable = [
         'school_id',
@@ -25,7 +26,8 @@ class Event extends Model
         'days_of_week',
         'interval',
         'weeks_of_month',
-        'yearly_dates'
+        'yearly_dates',
+        'semester_id'
     ];
 
     protected $casts = [
@@ -43,6 +45,10 @@ class Event extends Model
     public function attendanceSchedule()
     {
         return $this->hasOne(AttendanceSchedule::class);
+    }
+
+    public function semester(){
+        return $this->belongsTo(Semester::class);
     }
 
     public function isOccurringOn($date)

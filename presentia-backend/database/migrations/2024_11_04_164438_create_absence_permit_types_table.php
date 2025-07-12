@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string("permit_name");
             $table->boolean("is_active")->default(true);
             $table->foreignId("school_id")->constrained("schools")->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->timestamps();
             $table->unique(['school_id','permit_name']);
         });

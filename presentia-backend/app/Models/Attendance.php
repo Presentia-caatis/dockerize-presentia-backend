@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
     use HasFactory;
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
     
     protected $fillable = [
         'school_id',
@@ -22,6 +23,7 @@ class Attendance extends Model
         'attendance_window_id',
         'check_in_time',
         'check_out_time',
+        'semester_id'
     ];
 
     public function attendanceWindow()
@@ -47,5 +49,9 @@ class Attendance extends Model
     public function absencePermit()
     {
         return $this->belongsTo(AbsencePermit::class);
+    }
+
+    public function semester(){
+        return $this->belongsTo(Semester::class);
     }
 }

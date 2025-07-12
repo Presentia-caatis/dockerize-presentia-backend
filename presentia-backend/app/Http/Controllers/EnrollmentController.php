@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\EnrollmentService;
+use function App\Helpers\current_school_id;
+use function App\Helpers\current_semester_id;
 
 class EnrollmentController extends Controller
 {
@@ -14,9 +16,14 @@ class EnrollmentController extends Controller
         $this->enrollmentService = $enrollmentService;
     }
 
-    public function getAll()
+    public function getAll(Request $request)
     {
-        $enrollments = $this->enrollmentService->getAll();
+        $validatedDataData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1'
+        ]);
+
+        $enrollments = $this->enrollmentService->getAll($validatedDataData);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Enrollments retrieved successfully',
@@ -35,14 +42,15 @@ class EnrollmentController extends Controller
     }
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'semester_id'    => 'required|integer|exists:semesters,id',
+        $validatedData = $request->validate([
             'class_group_id' => 'required|integer|exists:class_groups,id',
             'student_id'     => 'required|integer|exists:students,id',
-            'school_id'      => 'required|integer|exists:schools,id',
         ]);
 
-        $enrollment = $this->enrollmentService->create($validated);
+        $validatedData['school_id'] = current_school_id();
+        $validatedData['semester_id'] = current_semester_id();
+
+        $enrollment = $this->enrollmentService->create($validatedData);
 
         return response()->json([
             'status' => 'success',
@@ -53,14 +61,14 @@ class EnrollmentController extends Controller
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        $validatedData = $request->validate([
             'semester_id'    => 'sometimes|required|integer|exists:semesters,id',
             'class_group_id' => 'sometimes|required|integer|exists:class_groups,id',
             'student_id'     => 'sometimes|required|integer|exists:students,id',
-            'school_id'      => 'sometimes|required|integer|exists:schools,id',
         ]);
 
-        $enrollment = $this->enrollmentService->update($id, $validated);
+
+        $enrollment = $this->enrollmentService->update($id, $validatedData);
 
         return response()->json([
             'status' => 'success',

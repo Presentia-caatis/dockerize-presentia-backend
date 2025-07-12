@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\BelongsToSchool;
+use App\BelongsToSemester;
 use Illuminate\Database\Eloquent\Model;
 
 class Enrollment extends Model
 {
-    use BelongsToSchool;
+    use BelongsToSchool, BelongsToSemester;
     protected $fillable = [
         'semester_id',
         'class_group_id',

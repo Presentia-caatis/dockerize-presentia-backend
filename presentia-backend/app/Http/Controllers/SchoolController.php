@@ -196,7 +196,7 @@ class SchoolController extends Controller
             // if($request->logo_image){
             //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
             // }
-            
+
 
             \DB::commit();
 
@@ -261,15 +261,21 @@ class SchoolController extends Controller
                 'string',
                 function ($attribute, $value, $fail) use ($expectedConfirmation) {
                     if (trim(strtolower($value)) !== strtolower($expectedConfirmation)) {
-                        $fail('The confirmation sentence is incorrect.');
+                        $fail('The confirmation sentence should be: ' . $expectedConfirmation);
                     }
                 },
-            ],
+            ]
+        ], [
+            'delete_confirmation.required' => 'The delete confirmation field is required. Please fill in with: ' . $expectedConfirmation,
         ]);
 
         $school = School::findOrFail($id);
 
         User::where('school_id', $school->id)->update(['school_id' => null]);
+
+
+        $attendanceScheduleIds = Day::pluck('attendance_schedule_id');
+        AttendanceSchedule::whereIn('id', $attendanceScheduleIds)->delete();
 
         if ($school->logo_image_path) {
             Storage::disk('public')->delete($school->logo_image_path);

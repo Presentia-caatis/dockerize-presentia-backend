@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId("school_id")->constrained("schools")->cascadeOnDelete();
             $table->foreignId("student_id")->constrained("students")->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->foreignId('absence_permit_id')->nullable()->constrained('absence_permits');
             $table->foreignId("check_in_status_id")->constrained("check_in_statuses");
             $table->foreignId("check_out_status_id")->constrained("check_out_statuses");

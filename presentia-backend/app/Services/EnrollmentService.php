@@ -6,26 +6,30 @@ use App\Models\Enrollment;
 
 class EnrollmentService
 {
-    public function getAll()
+    public function getAll(array $data)
     {
-        return Enrollment::all();
+        $perPage = $data['perPage'] ?? 10;
+        return Enrollment::with(['student', 'classGroup', 'semester'])->paginate($perPage);
     }
 
     public function getById($id)
     {
-        return Enrollment::findOrFail($id);
+        // Use with() before findOrFail()
+        return Enrollment::with(['student', 'classGroup', 'semester'])->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return Enrollment::create($data);
+        $enrollment = Enrollment::create($data);
+        // Use load() to eager load relations
+        return $enrollment->load(['student', 'classGroup', 'semester']);
     }
 
     public function update($id, array $data)
     {
         $enrollment = Enrollment::findOrFail($id);
         $enrollment->update($data);
-        return $enrollment;
+        return $enrollment->load(['student', 'classGroup', 'semester']);
     }
 
     public function delete($id)

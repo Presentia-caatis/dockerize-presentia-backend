@@ -45,7 +45,8 @@ use App\Http\Controllers\{
     AttendanceSourceAuthController,
     AttendanceReferenceController,
     SchoolInvitationController,
-    SemesterController
+    SemesterController,
+    EnrollmentController
 };
 
 //AUTH API
@@ -197,6 +198,14 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::delete('{id}', [SemesterController::class, 'destroy']);
     });
 
+    Route::middleware(['school-semester'])->prefix('enrollment')->group(function() {
+        Route::get('/', [EnrollmentController::class, 'getAll']);
+        Route::post('/', [EnrollmentController::class, 'store']);
+        Route::get('{id}', [EnrollmentController::class, 'getById']);
+        Route::put('{id}', [EnrollmentController::class, 'update']);
+        Route::delete('{id}', [EnrollmentController::class, 'destroy']);
+    });
+
     // JOB
     Route::middleware('role:super_admin')->prefix('job')->group(function () {
         Route::get('/failed', [JobController::class, 'failedJobs']);
@@ -284,6 +293,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         Route::middleware('permission:manage_schools')->group(function () {
 
+            
             // ATTENDANCE LATE TYPE
             Route::prefix('check-in-status')->group(function () {
                 Route::get('/', [CheckInStatusController::class, 'getAll'])->withoutMiddleware('permission:manage_schools');

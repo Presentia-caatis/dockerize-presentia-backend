@@ -9,7 +9,6 @@ if (!function_exists('current_school_id')) {
     }
 }
 
-
 if (!function_exists('current_school')) {
     function current_school()
     {

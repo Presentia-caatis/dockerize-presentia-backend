@@ -23,14 +23,23 @@ class SemesterMiddleware
             $semesterId = Semester::findOrfail($request->header('Semester-Id'))->id;
         } else {
             $now = now()->timezone(current_school_timezone())->toDateString();
+
             $semester = Semester::where('start_date', '<=', $now)
                 ->where('end_date', '>=', $now)
                 ->where('is_active', true)
                 ->first();
 
             if (!$semester) {
-                abort(422, "There is no active semester in current date");
+                $semester = Semester::where('start_date', '>', $now)
+                    ->where('is_active', true)
+                    ->orderBy('start_date', 'asc')
+                    ->first();
             }
+
+            if (!$semester) {
+                abort(422, "There is no active semester in the current or upcoming dates.");
+            }
+
             $semesterId = $semester->id;
         }
 

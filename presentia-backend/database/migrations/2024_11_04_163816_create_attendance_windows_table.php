@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('attendance_windows', function (Blueprint $table) {
             $table->id();
             $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->foreignId('day_id')->constrained('days');
             $table->string('name');
