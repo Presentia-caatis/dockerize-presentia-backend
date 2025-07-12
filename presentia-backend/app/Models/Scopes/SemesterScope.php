@@ -13,11 +13,13 @@ class SemesterScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        if ($model->getConnection()->getSchemaBuilder()->hasColumn($model->getTable(), 'semester_id')) {
-            $builder->where('semester_id', config('semester.id'));
+        $table = $model->getTable();
+
+        if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'semester_id')) {
+            $builder->where("{$table}.semester_id", config('semester.id'));
         } else {
-            $builder->whereHas('semesters', function ($query) {
-                $query->where('semester_id', config('semester.id'));
+            $builder->whereHas('semesters', function ($query) use ($table) {
+                $query->where("{$table}.semester_id", config('semester.id'));
             });
         }
     }
