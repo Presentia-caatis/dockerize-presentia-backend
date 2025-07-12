@@ -256,9 +256,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // ATTENDANCE
         Route::prefix('attendance')->group(function () {
             Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
+            Route::get('/export', [AttendanceController::class, 'exportAttendance']);
 
-            Route::middleware('permission:manage_attendance')->group(function () {
-                Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+            Route::middleware('permission:manage_attendance')->group(function () {    
                 Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
                 Route::post('/file', [AttendanceController::class, 'storeFromFile']);
                 Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
@@ -275,7 +275,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ATTENDANCE LATE TYPE
             Route::prefix('check-in-status')->group(function () {
-                Route::get('/', [CheckInStatusController::class, 'index']);
+                Route::get('/', [CheckInStatusController::class, 'index'])->withoutMiddleware('permission:manage_schools');
                 Route::post('/', [CheckInStatusController::class, 'store']);
                 Route::get('/{id}', [CheckInStatusController::class, 'getById']);
                 Route::put('/{id}', [CheckInStatusController::class, 'update']);
@@ -293,7 +293,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ABSENCE PERMIT TYPE
             Route::prefix('absence-permit-type')->group(function () {
-                Route::get('/', [AbsencePermitTypeController::class, 'index']);
+                Route::get('/', [AbsencePermitTypeController::class, 'index'])->withoutMiddleware('permission:manage_schools');;
                 Route::post('/', [AbsencePermitTypeController::class, 'store']);
                 Route::get('/{id}', [AbsencePermitTypeController::class, 'getById']);
                 Route::put('/{id}', [AbsencePermitTypeController::class, 'update']);
