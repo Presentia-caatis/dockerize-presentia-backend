@@ -293,7 +293,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ABSENCE PERMIT TYPE
             Route::prefix('absence-permit-type')->group(function () {
-                Route::get('/', [AbsencePermitTypeController::class, 'index'])->withoutMiddleware('permission:manage_schools');;
+                Route::get('/', [AbsencePermitTypeController::class, 'index'])->withoutMiddleware('permission:manage_schools');
                 Route::post('/', [AbsencePermitTypeController::class, 'store']);
                 Route::get('/{id}', [AbsencePermitTypeController::class, 'getById']);
                 Route::put('/{id}', [AbsencePermitTypeController::class, 'update']);
@@ -325,7 +325,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ATTENDANCE SCHEDULE
             Route::prefix('attendance-schedule')->group(function () {
-                Route::get('/', [AttendanceScheduleController::class, 'index']);
+                Route::get('/', [AttendanceScheduleController::class, 'index'])->withoutMiddleware('permission:manage_schools');;
                 Route::put('/assign-to-day/{id}', [AttendanceScheduleController::class, 'assignToDay']);
                 Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
                 Route::put('/{id}', [AttendanceScheduleController::class, 'update']);
