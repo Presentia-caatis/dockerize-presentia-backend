@@ -22,7 +22,7 @@ class SemesterMiddleware
         if ($request->header('Semester-Id')) {
             $semesterId = Semester::findOrfail($request->header('Semester-Id'))->id;
         } else {
-            $now = now()->timezone(current_school_timezone());
+            $now = now()->timezone(current_school_timezone())->toDateString();
             $semester = Semester::where('start_date', '<=', $now)
                 ->where('end_date', '>=', $now)
                 ->where('is_active', true)

@@ -6,6 +6,7 @@ use App\Filterable;
 use App\Models\Semester;
 use App\Sortable;
 use Illuminate\Validation\ValidationException;
+use function App\Helpers\current_school_timezone;
 
 class SemesterService
 {
@@ -47,6 +48,20 @@ class SemesterService
         $semester = Semester::findOrFail($id);
         $semester->delete();
         return true;
+    }
+
+    public function getByCurrentTime(){
+        $now = now()->timezone(current_school_timezone())->toDateString();
+        $semester = Semester::where('start_date', '<=', $now)
+                ->where('end_date', '>=', $now)
+                ->where('is_active', true)
+                ->first();
+
+        if (!$semester) {
+            abort(422, "There is no active semester in current date");
+        }
+
+        return $semester;
     }
 
     protected function checkDateOverlap($startDate, $endDate, $ignoreId = null)

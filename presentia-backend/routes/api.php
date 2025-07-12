@@ -192,10 +192,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::middleware(['school'])->prefix('semester')->group(function () {
         Route::get('/', [SemesterController::class, 'index']);
         Route::post('/', [SemesterController::class, 'store']);
-        Route::get('{id}', [SemesterController::class, 'show']);
+        Route::get('/current', [SemesterController::class, 'getByCurrentTime']);
+        Route::put('/is-active-toogle/{id}', [SemesterController::class, 'isActiveToogle']);
+        Route::get('{id}', [SemesterController::class, 'getById']);
         Route::put('{id}', [SemesterController::class, 'update']);
         Route::delete('{id}', [SemesterController::class, 'destroy']);
-        Route::put('/is-active-toogle/{id}', [SemesterController::class, 'isActiveToogle']);
     });
 
     // JOB
