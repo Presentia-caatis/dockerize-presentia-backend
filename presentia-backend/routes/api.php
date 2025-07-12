@@ -44,7 +44,8 @@ use App\Http\Controllers\{
     AttendanceSourceConnectionController,
     AttendanceSourceAuthController,
     AttendanceReferenceController,
-    SchoolInvitationController
+    SchoolInvitationController,
+    SemesterController
 };
 
 //AUTH API
@@ -174,6 +175,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
     });
 
+
+
     // SCHOOL
     Route::prefix('school')->group(function () {
         Route::get('/', [SchoolController::class, 'index']);
@@ -184,6 +187,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::put('/{id}', [SchoolController::class, 'update']);
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
+    });
+
+    Route::middleware(['school'])->prefix('semester')->group(function () {
+        Route::get('/', [SemesterController::class, 'index']);
+        Route::post('/', [SemesterController::class, 'store']);
+        Route::get('{id}', [SemesterController::class, 'show']);
+        Route::put('{id}', [SemesterController::class, 'update']);
+        Route::delete('{id}', [SemesterController::class, 'destroy']);
+        Route::put('/is-active-toogle/{id}', [SemesterController::class, 'isActiveToogle']);
     });
 
     // JOB

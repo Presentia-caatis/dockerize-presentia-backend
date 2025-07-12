@@ -53,6 +53,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'valid-adms' => \App\Http\Middleware\ADMSMiddleware::class,
         ]);
 
+        $middleware->appendToGroup('school-semester', [
+            'school',
+            'semester',
+        ]);
+
         $middleware->validateCsrfTokens(except: [
             '*',
         ]);

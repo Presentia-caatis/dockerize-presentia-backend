@@ -71,4 +71,11 @@ class SemesterService
             ]);
         }
     }
+
+    public function isActiveToogle($id){
+        $semester = Semester::findOrFail($id);
+        $semester->is_active = !$semester->is_active;
+        $semester->save();
+        return $semester;
+    }
 }

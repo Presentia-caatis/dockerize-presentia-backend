@@ -98,4 +98,13 @@ class SemesterController extends Controller
             'message' => 'Semester deleted successfully',
         ]);
     }
+
+    public function isActiveToogle($id){
+        $semester = $this->semesterService->isActiveToogle($id);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Semester is updated successfully',
+            'data' => $semester,
+        ]);
+    }
 }
