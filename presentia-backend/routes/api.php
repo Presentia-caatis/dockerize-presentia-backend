@@ -176,14 +176,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     // SCHOOL
     Route::prefix('school')->group(function () {
-        Route::get('/', [SchoolController::class, 'index']);
-
         Route::middleware('role:super_admin')->group(function () {
             Route::post('/', [SchoolController::class, 'store']);
             Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
-            Route::put('/{id}', [SchoolController::class, 'update']);
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
+        
+        Route::get('/', [SchoolController::class, 'index']);
+        Route::put('/{id}', [SchoolController::class, 'update']);
+        
     });
 
     // JOB
