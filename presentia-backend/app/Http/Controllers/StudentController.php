@@ -24,7 +24,7 @@ class StudentController extends Controller
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
-        $query = Student::with('classGroups');
+        $query = Student::query();
 
         $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
         $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
@@ -154,7 +154,8 @@ class StudentController extends Controller
     public function getById($id)
     {
         $student = Student::findOrFail($id);
-        $student->load(['classGroup', 'school']);
+        
+        $student->load('school');
         return response()->json([
             'status' => 'success',
             'message' => 'Student retrieved successfully',

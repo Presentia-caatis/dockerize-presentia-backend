@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 
 use App\Models\ClassGroup;
 
+use function App\Helpers\current_semester_id;
+
 class ClassGroupController extends Controller
 {
     use Filterable, Sortable;
@@ -22,11 +24,14 @@ class ClassGroupController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
 
         $query = $this->applyFilters(ClassGroup::query(),  $request->input('filter', []), ['school_id']);
-        $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []), ['school_id']);
 
-        $data = $query->withCount('students')->paginate($perPage);
+        $data = $query->withCount(['students as students_count' => function ($q) {
+            $q->withoutGlobalScope(SemesterScope::class)
+                ->where('enrollments.semester_id', current_semester_id());
+        }])->paginate($perPage);
 
-        if ($validatedData['unfilteredSemester'] ?? false){
+        if ($validatedData['unfilteredSemester'] ?? false) {
             $query->withoutGlobalScope(SemesterScope::class);
         }
 
@@ -56,7 +61,12 @@ class ClassGroupController extends Controller
 
     public function getById($id)
     {
-        $classGroup = ClassGroup::findOrFail($id);
+
+        $classGroup = ClassGroup::with(['students' => function ($q) {
+            $q->withoutGlobalScope(SemesterScope::class)->wherePivot('semester_id', current_semester_id());
+        }])
+            ->findOrFail($id);
+
         $classGroup->load('school');
         return response()->json([
             'status' => 'success',
