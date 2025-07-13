@@ -24,6 +24,23 @@ class StaffSchoolManagementUnitTest extends TestCase
     use AuthenticatesSchoolStaff;
 
     #[Test]
+    public function staff_can_access_managed_school_information()
+    {
+        $school = School::factory()->create();
+
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
+
+        Student::factory()->count(5)->create(['is_active' => true, 'school_id' => $school->id]);
+
+        $response = $this->getJson('/api/dashboard-statistic/static');
+
+        $response->assertStatus(200)
+            ->assertJsonFragment([
+             'active_students' => 5,
+            ]);
+    }
+
+    #[Test]
     public function user_can_register_as_staff_with_valid_token(): void
     {
         $this->schoolStaffUser->update(['school_id' => null]);  
