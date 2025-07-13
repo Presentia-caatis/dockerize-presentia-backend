@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -51,7 +52,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
-    public function school(){
+    public function getProfileImagePathAttribute($value)
+    {
+
+        if ($value) {
+            return asset('storage/' . $value);
+        }
+        return null;
+    }
+
+    public function school()
+    {
         return $this->belongsTo(School::class);
     }
 }

@@ -33,12 +33,12 @@ class UserController extends Controller
 
         $data = $query->with('roles:name')->paginate($perPage);
 
-        $data->getCollection()->transform(function ($user) {
-            if ($user->profile_image_path) {
-                $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-            }
-            return $user;
-        });
+        // $data->getCollection()->transform(function ($user) {
+        //     if ($user->profile_image_path) {
+        //         $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        //     }
+        //     return $user;
+        // });
 
 
         return response()->json([
@@ -49,32 +49,32 @@ class UserController extends Controller
     }
 
 
-    public function unassignedUsers(Request $request)
+    public function getUnassignedUsers(Request $request)
     {
         $validated = $request->validate([
-            'search' => 'nullable|string',
             'perPage' => 'sometimes|integer|min:1',
         ]);
 
         $perPage = $validated['perPage'] ?? 10;
-        $search = $validated['search'] ?? null;
 
         $query = User::query()
             ->whereNull('school_id')
-            ->whereNull('school_token')
             ->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'super_admin');
             })
-            ->select('id', 'fullname', 'email');
+            ->select('id', 'fullname', 'email', 'school_id');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        $query = $this->applyFilters($query, $request->input('filter', []));
+        $query = $this->applySort($query, $request->input('sort', []));
 
-        $users = $query->orderBy('fullname')->paginate($perPage);
+        $users = $query->paginate($perPage);
+
+        // $users->getCollection()->transform(function ($user) {
+        //     if ($user->profile_image_path) {
+        //         $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        //     }
+        //     return $user;
+        // });
 
         return response()->json([
             'status' => 'success',
@@ -84,31 +84,16 @@ class UserController extends Controller
     }
 
 
-    public function changePassword(Request $request)
-    {
-        $request->validate([
-            'current_password' => ['required'],
-            'new_password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-        ]);
-
-        if (!Hash::check($request->current_password, $request->user()->password)) {
-            return response()->json(['message' => 'Password lama salah.'], 400);
-        }
-
-        $request->user()->update([
-            'password' => Hash::make($request->new_password),
-        ]);
-
-        return response()->json(['status' => 'success', 'message' => 'Password berhasil diganti.']);
-    }
-
     public function assignToSchool(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
         $request->validate([
-            'school_id' => 'nullable|exists:schools,id'
+            'school_id' => 'nullable|exists:schools,id',
+            'role' => 'nullable|in:school_coadmin,school_staff'
         ]);
+
+        $role = $request->role ?? 'school_staff';
 
         // If the authenticated user is NOT a super_admin, use their current_school_id instead
         if (!auth()->user()->hasRole('super_admin')) {
@@ -118,6 +103,7 @@ class UserController extends Controller
             $user->school_id = $request->school_id;
         }
 
+        $user->syncRoles([$role]);
         $user->save();
 
         return response()->json([
@@ -136,6 +122,7 @@ class UserController extends Controller
         ]);
 
         $user = $request->user();
+        $user->syncRoles(["school_staff"]);
         $user->school_id = School::where("school_token", $request->school_token)->first()?->id;
         $user->save();
 
@@ -154,11 +141,43 @@ class UserController extends Controller
         }
 
         $user->school_id = null;
+        $user->syncRoles([]);
+        $user->forgetCachedPermissions();
         $user->save();
 
         return response()->json([
             'status' => 'success',
             'message' => 'User removed from school successfully',
+        ]);
+    }
+
+
+    public function getSchoolUsers(Request $request)
+    {
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1',
+            'role' => 'sometimes|in:school_admin,school_coadmin,school_staff'
+        ]);
+
+        $query = User::query();
+        $perPage = $validatedData['perPage'] ?? 10;
+
+        $query = User::where('school_id', current_school_id())
+            ->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            })->has('roles');
+
+        if(isset($validatedData['role'])) $query->whereHas('roles', function ($q) use ($validatedData) {
+            $q->where('name', $validatedData['role']);
+        });
+
+        $query = $this->applySort($query, $request->input('sort', []));
+
+        $data = $query->with('roles:name')->paginate($perPage);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'School users retrieved successfully',
+            'data' => $data
         ]);
     }
 
@@ -181,7 +200,7 @@ class UserController extends Controller
 
         $user = User::create($validatedData);
 
-        $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // $user->profile_image_path = asset('storage/' . $user->profile_image_path);
 
         return response()->json([
             'status' => 'success',
@@ -194,9 +213,9 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if ($user->profile_image_path) {
-            $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-        }
+        // if ($user->profile_image_path) {
+        //     $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // }
         return response()->json([
             'status' => 'success',
             'message' => 'User retrieved successfully',
@@ -212,9 +231,9 @@ class UserController extends Controller
             throw new UnauthorizedHttpException('Bearer', 'User not authenticated');
         }
 
-        if ($user->profile_image_path) {
-            $user->profile_image_path = asset('storage/' . $user->profile_image_path);
-        }
+        // if ($user->profile_image_path) {
+        //     $user->profile_image_path = asset('storage/' . $user->profile_image_path);
+        // }
 
         return response()->json([
             'status' => 'success',
@@ -277,9 +296,9 @@ class UserController extends Controller
 
         $user->update($validatedData);
 
-        if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
-            $user->profile_image_path = $user->profile_image_path ? asset('storage/' . $user->profile_image_path) : null;
-        }
+        // if (empty($validatedData['remove_image']) || !$validatedData['remove_image']) {
+        //     $user->profile_image_path = $user->profile_image_path ? asset('storage/' . $user->profile_image_path) : null;
+        // }
 
         return response()->json([
             'status' => 'success',

@@ -19,10 +19,10 @@ class SchoolMiddleware
     {
         $schoolId = 0;
         if(!$skipChecks){
-            if(!auth()->user()->hasRole('super_admin')){
-                $schoolId = auth()->user()?->school_id;
-            } else {
+            if(auth()->user()->hasRole('super_admin')){
                 $schoolId = $request->header('School-Id');
+            } else if (auth()->user()->hasPermissionTo("basic_school")){
+                $schoolId = auth()->user()?->school_id;
             }
 
             if($schoolId == null){

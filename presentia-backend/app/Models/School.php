@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class School extends Model
 {
@@ -19,6 +20,14 @@ class School extends Model
         'school_token',
         'logo_image_path'
     ];
+
+    public function getLogoImagePathAttribute($value)
+    {
+        if ($value) {
+            return asset('storage/' . $value);
+        }
+        return null;
+    }
 
 
     public function subscriptionPlan()
