@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Filterable;
 use App\Jobs\ImportStudentJob;
 use App\Models\Scopes\SemesterScope;
+use App\Models\Semester;
 use App\Sortable;
 use Illuminate\Http\Request;
 
@@ -26,10 +27,10 @@ class StudentController extends Controller
         $perPage = $validatedData['perPage'] ?? 10;
         $query = Student::query();
 
-        $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
-        $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
+        $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []), ['school_id']);
 
-        if ($validatedData['unfilteredSemester'] ?? false){
+        if ($validatedData['unfilteredSemester'] ?? false) {
             $query->withoutGlobalScope(SemesterScope::class);
         }
 
@@ -47,7 +48,6 @@ class StudentController extends Controller
     {
         $validatedData = $request->validate([
             'school_id' => 'required|exists:schools,id',
-            'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
             'nis' => 'required|string',
             'nisn' => 'required|string',
@@ -57,7 +57,6 @@ class StudentController extends Controller
 
 
         $data = Student::create($validatedData);
-        $data->load(['classGroup']);
         return response()->json([
             'status' => 'success',
             'message' => 'Student created successfully',
@@ -137,7 +136,8 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                ImportStudentJob::dispatch($students, $schoolId)->onQueue('import-student');;
+                ImportStudentJob::dispatch($students, $schoolId)->onQueue('import-student');
+                ;
             }
         }
 
@@ -153,21 +153,38 @@ class StudentController extends Controller
 
     public function getById($id)
     {
-        $student = Student::findOrFail($id);
+        $student = Student::withoutGlobalScope(SemesterScope::class)
+            ->with([
+                'classGroups' => function ($q) {
+                    $q->withPivot('semester_id');
+                }
+            ])
+            ->findOrFail($id);
+
+        $data = $student->toArray();
+
+        $semesterIds = collect($data['class_groups'])->pluck('pivot.semester_id')->unique()->filter();
+
+        $semesters = Semester::whereIn('id', $semesterIds)->get()->keyBy('id');
         
-        $student->load('school');
+        foreach ($data['class_groups'] as &$cg) {
+            $semesterId = $cg['pivot']['semester_id'] ?? null;
+            $cg['semester'] = $semesterId ? $semesters[$semesterId] ?? null : null;
+            unset($cg['pivot']);
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Student retrieved successfully',
-            'data' => $student
+            'data' => $data
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $student = Student::findOrFail($id);
+        $student = Student::withoutGlobalScope(SemesterScope::class)
+            ->findOrFail($id);
         $validatedData = $request->validate([
-            'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
             'nis' => 'nullable|string',
             'nisn' => 'nullable|string',
@@ -176,7 +193,6 @@ class StudentController extends Controller
         ]);
 
         $student->update($validatedData);
-        $student->load(['classGroup']);
 
         return response()->json([
             'status' => 'success',
@@ -187,7 +203,8 @@ class StudentController extends Controller
 
     public function destroy($id)
     {
-        $student = Student::findOrFail($id);
+        $student = Student::withoutGlobalScope(SemesterScope::class)
+            ->findOrFail($id);
         $student->delete();
         return response()->json([
             'status' => 'success',

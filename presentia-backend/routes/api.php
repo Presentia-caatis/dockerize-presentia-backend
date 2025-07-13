@@ -243,7 +243,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
 
         // CLASS GROUP
-        Route::prefix('class-group')->group(function () {
+        Route::prefix('class-group')->withoutMiddleware('semester')->group(function () {
             Route::get('/{id}', [ClassGroupController::class, 'getById']);
 
             Route::middleware('permission:manage_schools')->group(function () {
@@ -261,15 +261,14 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         // STUDENT
         Route::prefix('student')->group(function () {
-            Route::get('/{id}', [StudentController::class, 'getById']);
-
             Route::get('/csv', [StudentController::class, 'exportStudents'])->middleware('role:super_admin');
-
+            Route::get('/{id}', [StudentController::class, 'getById'])->withoutMiddleware('semester');
+        
             Route::middleware('permission:manage_students')->group(function () {
-                Route::post('/', [StudentController::class, 'store']);
+                Route::post('/', [StudentController::class, 'store'])->withoutMiddleware('semester');
                 Route::post('/store-via-file', [StudentController::class, 'storeViaFile']);
-                Route::put('/{id}', [StudentController::class, 'update']);
-                Route::delete('/{id}', [StudentController::class, 'destroy']);
+                Route::put('/{id}', [StudentController::class, 'update'])->withoutMiddleware('semester');
+                Route::delete('/{id}', [StudentController::class, 'destroy'])->withoutMiddleware('semester');
             });
         });
 
