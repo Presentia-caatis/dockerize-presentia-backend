@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
+use App\Models\Scopes\SemesterScope;
 use App\Sortable;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,8 @@ class ClassGroupController extends Controller
     public function getAll(Request $request)
     {
         $validatedData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1'
+            'perPage' => 'sometimes|integer|min:1',
+            'unfilteredSemester' => 'sometimes|boolean'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -23,6 +25,10 @@ class ClassGroupController extends Controller
         $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
 
         $data = $query->withCount('students')->paginate($perPage);
+
+        if ($validatedData['unfilteredSemester'] ?? false){
+            $query->withoutGlobalScope(SemesterScope::class);
+        }
 
         return response()->json([
             'status' => 'success',

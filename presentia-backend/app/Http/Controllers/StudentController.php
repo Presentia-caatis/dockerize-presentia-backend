@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
-use App\Http\Requests\ExcelFileRequest;
 use App\Jobs\ImportStudentJob;
-use App\Models\ClassGroup;
+use App\Models\Scopes\SemesterScope;
 use App\Sortable;
 use Illuminate\Http\Request;
 
@@ -15,23 +14,24 @@ use Maatwebsite\Excel\Facades\Excel;
 class StudentController extends Controller
 {
     use Filterable, Sortable;
-    
-    public function getAllUnfilteredSemesters(){
-        
-    }
 
 
     public function getAll(Request $request)
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
+            'unfilteredSemester' => 'sometimes|boolean'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
-        $query = Student::with('classGroup');
+        $query = Student::with('classGroups');
 
         $query = $this->applyFilters($query,  $request->input('filter', []), ['school_id']);
         $query = $this->applySort($query, $request->input('sort' ,[]), ['school_id']);
+
+        if ($validatedData['unfilteredSemester'] ?? false){
+            $query->withoutGlobalScope(SemesterScope::class);
+        }
 
         $data = $query->paginate($perPage);
 

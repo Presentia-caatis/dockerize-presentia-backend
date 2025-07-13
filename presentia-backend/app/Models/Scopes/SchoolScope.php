@@ -18,12 +18,14 @@ class SchoolScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         $table = $model->getTable();
-
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'school_id')) {
             $builder->where("{$table}.school_id", $this->schoolId ?? config('school.id'));
         } else {
-            $builder->whereHas('schools', function ($query) use ($table) {
-                $query->where("{$table}.school_id", $this->schoolId ?? config('school.id'));
+            $relation = $model->schools();
+            $pivotTable = method_exists($relation, 'getTable') ? $relation->getTable() : 'school_id';
+    
+            $builder->whereHas('schools', function ($query) use ($pivotTable) {
+                $query->where("{$pivotTable}.school_id", $this->schoolId ?? config('school.id'));
             });
         }
     }

@@ -18,6 +18,4 @@ class Semester extends Model
         'is_active',
     ];
 
-    
-
 }

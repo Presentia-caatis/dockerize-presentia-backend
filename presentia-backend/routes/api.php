@@ -217,7 +217,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // SCHOOL DATA
-    Route::middleware(['school', 'permission:basic_school'])->group(function () {
+    Route::middleware(['school-semester', 'permission:basic_school'])->group(function () {
 
         // ATTENDANCE SOURCE
         Route::prefix('attendance-source')->group(function () {
@@ -370,7 +370,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 });
 
 // PUBLIC SCHOOL DATA
-Route::middleware(['school:true'])->group(function () {
+Route::middleware(['school:true', 'semester'])->group(function () {
     Route::get('student', [StudentController::class, 'getAll']);
     Route::get('class-group', [ClassGroupController::class, 'getAll']);
     Route::get('attendance', [AttendanceController::class, 'getAll']);

@@ -14,12 +14,14 @@ class SemesterScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         $table = $model->getTable();
-
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'semester_id')) {
             $builder->where("{$table}.semester_id", config('semester.id'));
         } else {
-            $builder->whereHas('semesters', function ($query) use ($table) {
-                $query->where("{$table}.semester_id", config('semester.id'));
+            $relation = $model->semesters();
+            $pivotTable = $relation->getTable();
+
+            $builder->whereHas('semesters', function ($query) use ($pivotTable) {
+                $query->where("{$pivotTable}.semester_id", config('semester.id'));
             });
         }
     }
