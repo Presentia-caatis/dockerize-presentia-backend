@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use App\Models\CheckInStatus;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use function App\Helpers\current_school;
+use function App\Helpers\current_school_id;
+use function App\Helpers\current_semester_id;
 
 class CheckInStatusController extends Controller
 {
@@ -44,7 +47,8 @@ class CheckInStatusController extends Controller
             ]);
 
             $validatedData['is_active'] = true;
-            $validatedData['school_id'] = config('school.id');
+            $validatedData['school_id'] = current_school_id();
+            $validatedData['semester_id'] = current_semester_id();
 
             $data = CheckInStatus::create($validatedData);
 
