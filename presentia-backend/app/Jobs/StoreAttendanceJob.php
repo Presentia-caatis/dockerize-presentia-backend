@@ -8,8 +8,10 @@ use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
 use App\Models\FailedStoreAttendanceJob;
 use App\Models\Scopes\SchoolScope;
+use App\Models\Scopes\SemesterScope;
 use App\Models\Student;
 use App\Services\BelongsToSchoolService;
+use App\Services\SemesterService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,9 +42,11 @@ class StoreAttendanceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        config(['school.id' => Student::withoutGlobalScope(SchoolScope::class)->find($this->jsonInput[0]['id'])?->school_id]);
+        config(['school.id' => Student::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])->find($this->jsonInput[0]['id'])?->school_id]);
         $schoolId = current_school_id();
         $schoolTimezone = current_school_timezone(); //get the school's timezone 
+
+        config(['semester.id' => (new SemesterService)->getByCurrentTime()->id]);
 
         // (new BelongsToSchoolService($schoolId))->apply();
 
@@ -79,6 +83,14 @@ class StoreAttendanceJob implements ShouldQueue
         //>>
 
         $isInAttendanceSession = false;
+
+        \Log::info('Semester_Id', [config('semester.id')]);
+        \Log::info('attendanceWindows', [$attendanceWindows ? $attendanceWindows->toArray() : []]);
+        \Log::info('checkInStatuses', [$checkInStatuses ? $checkInStatuses->toArray() : []]);
+        \Log::info('absenceCheckInStatus', [$absenceCheckInStatus ? $absenceCheckInStatus->toArray() : []]);
+        \Log::info('checkOutStatuses', [$checkOutStatuses ?: []]);
+        \Log::info('isInAttendanceSession', [$isInAttendanceSession]);
+        return;
 
         foreach ($this->jsonInput as $student) {
             $studentId = $student['id']; //get student id
@@ -177,11 +189,11 @@ class StoreAttendanceJob implements ShouldQueue
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
                     if (!$attendance->check_in_time) {
-                        $this->setResponse("warning" ,$studentId, "Siswa belum presensi masuk");
+                        $this->setResponse("warning", $studentId, "Siswa belum presensi masuk");
                         $this->logFailure($studentId, $checkTime, 'Student has not checked in yet', $attendanceWindow->id);
                     }
                 }
-                $this->setResponse("success" ,$studentId, "Presensi berhasil");
+                $this->setResponse("success", $studentId, "Presensi berhasil");
                 break;
             }
 
@@ -206,7 +218,8 @@ class StoreAttendanceJob implements ShouldQueue
         ]);
     }
 
-    private function setResponse($status ,$studentId, $message, $error = ""){
+    private function setResponse($status, $studentId, $message, $error = "")
+    {
         $this->response[$studentId][] = [
             'status' => $status,
             'message' => $message,

@@ -279,7 +279,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             Route::middleware('permission:manage_attendance')->group(function () {    
                 Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
-                Route::post('/file', [AttendanceController::class, 'storeFromFile']);
+                Route::post('/file', [AttendanceController::class, 'storeFromFile'])->middleware('role:super_admin');
                 Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
                 Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
                 Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);

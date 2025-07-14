@@ -11,11 +11,11 @@ use Illuminate\Http\Request;
 
 use App\Models\Student;
 use Maatwebsite\Excel\Facades\Excel;
+use function App\Helpers\current_semester_id;
 
 class StudentController extends Controller
 {
     use Filterable, Sortable;
-
 
     public function getAll(Request $request)
     {
@@ -32,8 +32,16 @@ class StudentController extends Controller
 
         if ($validatedData['unfilteredSemester'] ?? false) {
             $query->withoutGlobalScope(SemesterScope::class);
+        } else {
+            $query->with([
+                'enrollments' => function ($q) {
+                    $q->select('id', 'student_id', 'semester_id', 'class_group_id')
+                        ->with('classGroup:id,school_id,class_name,created_at,updated_at');
+                }
+            ]);
         }
 
+        
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -156,7 +164,8 @@ class StudentController extends Controller
         $student = Student::withoutGlobalScope(SemesterScope::class)
             ->with([
                 'classGroups' => function ($q) {
-                    $q->withPivot('semester_id');
+                    $q->withoutGlobalScope(SemesterScope::class)
+                        ->withPivot('semester_id');
                 }
             ])
             ->findOrFail($id);
@@ -166,7 +175,7 @@ class StudentController extends Controller
         $semesterIds = collect($data['class_groups'])->pluck('pivot.semester_id')->unique()->filter();
 
         $semesters = Semester::whereIn('id', $semesterIds)->get()->keyBy('id');
-        
+
         foreach ($data['class_groups'] as &$cg) {
             $semesterId = $cg['pivot']['semester_id'] ?? null;
             $cg['semester'] = $semesterId ? $semesters[$semesterId] ?? null : null;

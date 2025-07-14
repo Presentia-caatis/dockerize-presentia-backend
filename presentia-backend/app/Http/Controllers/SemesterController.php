@@ -72,7 +72,7 @@ class SemesterController extends Controller
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'academic_year'  => ['required', 'string', 'regex:/^\d{4}\/\d{4}$/'],
+            'academic_year'  => ['sometimes', 'string', 'regex:/^\d{4}\/\d{4}$/'],
             'period'         => 'sometimes|required|string|in:odd,even',
             'start_date'     => 'sometimes|required|date|date_format:Y-m-d',
             'end_date'       => 'sometimes|required|date|date_format:Y-m-d|after_or_equal:start_date',

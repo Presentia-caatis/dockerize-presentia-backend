@@ -38,4 +38,8 @@ class Student extends Model
     public function semesters(){
         return $this->belongsToMany(Semester::class, 'enrollments');
     }
+
+    public function enrollments() {
+        return $this->hasMany(Enrollment::class);
+    }
 }

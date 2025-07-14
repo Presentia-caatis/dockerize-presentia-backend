@@ -11,6 +11,7 @@ use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
 use App\Models\Event;
+use App\Models\Scopes\SemesterScope;
 use App\Models\Student;
 use App\Sortable;
 use Carbon\Carbon;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 use App\Models\Attendance;
 use function App\Helpers\current_school_id;
 use function App\Helpers\current_school_timezone;
+use function App\Helpers\current_semester_id;
 use function App\Helpers\stringify_convert_timezone_to_utc;
 
 
@@ -60,29 +62,45 @@ class AttendanceController extends Controller
             'isExcludeCheckInAbsentStudent' => 'nullable|boolean'
         ]);
 
-
         $perPage = $validatedData['perPage'] ?? 10;
-
         $simplify = $validatedData['simplify'] ?? false;
         $isExcludeCheckInAbsentStudent = $validatedData['isExcludeCheckInAbsentStudent'] ?? false;
 
         if ($simplify) {
             $query = Attendance::with([
-                'student:id,student_name,nis,nisn,gender,class_group_id',
-                'student.classGroup:id,class_name',
+                'student' => function ($q) {
+                    $q->with([
+                        'enrollments' => function ($q2) {
+                            $q2->select('id', 'student_id', 'semester_id', 'class_group_id')
+                                ->with('classGroup:id,class_name');
+                        }
+                    ])->select('id', 'student_name', 'nis', 'nisn', 'gender');
+                },
                 'checkInStatus:id,status_name',
                 'attendanceWindow:id,date',
                 'absencePermit'
             ])->select([
-                'attendances.id',
-                'attendances.student_id',
-                'attendances.check_in_status_id',
-                'attendances.attendance_window_id',
-                'attendances.check_in_time',
-                'attendances.check_out_time'
-            ]);
+                        'attendances.id',
+                        'attendances.student_id',
+                        'attendances.check_in_status_id',
+                        'attendances.attendance_window_id',
+                        'attendances.check_in_time',
+                        'attendances.check_out_time'
+                    ]);
         } else {
-            $query = Attendance::with('student', 'checkInStatus', 'student.classGroup', 'attendanceWindow', 'absencePermit.absencePermitType');
+            $query = Attendance::with([
+                'student' => function ($q) {
+                    $q->with([
+                        'enrollments' => function ($q2) {
+                            $q2->select('id', 'student_id', 'semester_id', 'class_group_id')
+                                ->with('classGroup:id,school_id,class_name,created_at,updated_at');
+                        }
+                    ]);
+                },
+                'checkInStatus',
+                'attendanceWindow',
+                'absencePermit.absencePermitType'
+            ]);
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
@@ -97,7 +115,9 @@ class AttendanceController extends Controller
         if (!empty($validatedData['classGroup']) && $validatedData['classGroup'] !== 'all') {
             $classGroupIds = explode(',', $validatedData['classGroup']);
             $query->whereHas('student', function ($q) use ($classGroupIds) {
-                $q->whereIn('class_group_id', $classGroupIds);
+                $q->whereHas('enrollments', function ($q) use ($classGroupIds) {
+                    $q->whereIn('class_group_id', $classGroupIds);
+                });
             });
         }
 
@@ -110,7 +130,6 @@ class AttendanceController extends Controller
             $query->where('check_in_status_id', '!=', CheckInStatus::where('late_duration', -1)->first()->id);
         }
 
-
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -119,6 +138,7 @@ class AttendanceController extends Controller
             'data' => $data
         ]);
     }
+
 
     public function adjustAttendance(Request $request)
     {
@@ -216,6 +236,7 @@ class AttendanceController extends Controller
         $request->validate([
             'nis' => 'required',
         ]);
+
         $studentId = Student::where('nis', $request->nis)->firstOrFail()?->id;
 
         $jsonFile = [
