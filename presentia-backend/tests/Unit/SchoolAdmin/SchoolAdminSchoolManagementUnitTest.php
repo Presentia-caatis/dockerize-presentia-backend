@@ -98,7 +98,7 @@ class SchoolAdminSchoolManagementUnitTest extends TestCase
         $user = User::factory()->create(['school_id' => $schoolId, 'email_verified_at' => now()]);
 
         $response = $this->deleteJson("/api/school/remove/{$user->id}");
-        $response->dump();
+        $response->dump();  
 
         $response->assertStatus(200)
                 ->assertJson([
@@ -107,6 +107,51 @@ class SchoolAdminSchoolManagementUnitTest extends TestCase
                 ]);
 
         $this->assertNull($user->fresh()->school_id);
+    }
+
+    #[Test]
+    public function school_admin_can_update_school_with_valid_data()
+    {
+        $schoolId = $this->schoolForAdmin->id;
+        Storage::fake('public');
+
+        $payload = [
+            'name' => 'Sekolah Updated',
+            'address' => 'Jl. Baru No. 456',
+            'logo_image' => UploadedFile::fake()->image('new-logo.jpg')
+        ];
+
+        $response = $this->putJson("/api/school/{$schoolId}", $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'success',
+                'message' => 'School updated successfully'
+            ]);
+
+        $this->assertDatabaseHas('schools', [
+            'id' => $schoolId,
+            'name' => 'Sekolah Updated',
+            'address' => 'Jl. Baru No. 456'
+        ]);
+
+        $updatedSchool = School::find($schoolId);
+        Storage::disk('public')->assertExists($updatedSchool->logo_image_path);
+    }
+
+    #[Test]
+    public function system_rejects_school_update_with_invalid_data()
+    {
+        $school = School::factory()->create();
+
+        $payload = [
+            'subscription_plan_id' => 9999 // ID tidak ada
+        ];
+
+        $response = $this->putJson("/api/school/{$school->id}", $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['subscription_plan_id']);
     }
 
 }
