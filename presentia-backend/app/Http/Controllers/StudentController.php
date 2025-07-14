@@ -111,7 +111,7 @@ class StudentController extends Controller
             foreach ($chunk as $row) {
                 try {
                     // Basic validation
-                    if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3]) || empty($row[4])) {
+                    if (count($row) < 5 || empty($row[0]) || empty($row[1]) || empty($row[2]) || empty($row[3])) {
                         $failedCount++;
                         $failedRows[] = ['row' => $row, 'error' => 'Incomplete or missing data'];
                         continue;

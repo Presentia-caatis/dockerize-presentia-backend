@@ -176,14 +176,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     // SCHOOL
     Route::prefix('school')->group(function () {
-        Route::get('/', [SchoolController::class, 'index']);
-
         Route::middleware('role:super_admin')->group(function () {
             Route::post('/', [SchoolController::class, 'store']);
             Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
-            Route::put('/{id}', [SchoolController::class, 'update']);
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
+        
+        Route::get('/', [SchoolController::class, 'index']);
+        Route::put('/{id}', [SchoolController::class, 'update']);
+        
     });
 
     // JOB
@@ -197,7 +198,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // SCHOOL DATA
-    Route::middleware(['school'])->group(function () {
+    Route::middleware(['school', 'permission:basic_school'])->group(function () {
 
         // ATTENDANCE SOURCE
         Route::prefix('attendance-source')->group(function () {
@@ -254,24 +255,28 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         });
 
         // ATTENDANCE
-        Route::middleware('permission:manage_attendance')->prefix('attendance')->group(function () {
-            Route::get('/export', [AttendanceController::class, 'exportAttendance']);
-            Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
-            Route::post('/file', [AttendanceController::class, 'storeFromFile']);
-            Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+        Route::prefix('attendance')->group(function () {
             Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
-            Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
-            Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
-            Route::get('/{id}', [AttendanceController::class, 'getById']);
-            Route::put('/{id}', [AttendanceController::class, 'update']);
-            Route::delete('/{id}', [AttendanceController::class, 'destroy']);
+            Route::get('/export', [AttendanceController::class, 'exportAttendance']);
+
+            Route::middleware('permission:manage_attendance')->group(function () {    
+                Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
+                Route::post('/file', [AttendanceController::class, 'storeFromFile']);
+                Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
+                Route::post('/mark-absent', [AttendanceController::class, 'markAbsentStudents']);
+                Route::delete('/clear-records/{attendanceWindowId}', [AttendanceController::class, 'clearAttendanceRecords']);
+                Route::get('/{id}', [AttendanceController::class, 'getById']);
+                Route::put('/{id}', [AttendanceController::class, 'update']);
+                Route::delete('/{id}', [AttendanceController::class, 'destroy']);
+            });
+
         });
 
         Route::middleware('permission:manage_schools')->group(function () {
 
             // ATTENDANCE LATE TYPE
             Route::prefix('check-in-status')->group(function () {
-                Route::get('/', [CheckInStatusController::class, 'index']);
+                Route::get('/', [CheckInStatusController::class, 'index'])->withoutMiddleware('permission:manage_schools');
                 Route::post('/', [CheckInStatusController::class, 'store']);
                 Route::get('/{id}', [CheckInStatusController::class, 'getById']);
                 Route::put('/{id}', [CheckInStatusController::class, 'update']);
@@ -289,7 +294,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ABSENCE PERMIT TYPE
             Route::prefix('absence-permit-type')->group(function () {
-                Route::get('/', [AbsencePermitTypeController::class, 'index']);
+                Route::get('/', [AbsencePermitTypeController::class, 'index'])->withoutMiddleware('permission:manage_schools');
                 Route::post('/', [AbsencePermitTypeController::class, 'store']);
                 Route::get('/{id}', [AbsencePermitTypeController::class, 'getById']);
                 Route::put('/{id}', [AbsencePermitTypeController::class, 'update']);
@@ -312,7 +317,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::prefix('attendance-window')->group(function () {
                 Route::get('/', [AttendanceWindowController::class, 'index']);
                 Route::get('/get-utc', [AttendanceWindowController::class, 'getAllInUtcFormat']);
-                Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('role:super_admin,school_coadmin,school_admin');
+                Route::post('/generate-window', [AttendanceWindowController::class, 'generateWindow'])->middleware('role:super_admin|school_coadmin|school_admin');
                 Route::get('/{id}', [AttendanceWindowController::class, 'getById']);
                 Route::put('/{id}', [AttendanceWindowController::class, 'update']);
                 Route::delete('/{id}', [AttendanceWindowController::class, 'destroy']);
@@ -321,7 +326,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
             // ATTENDANCE SCHEDULE
             Route::prefix('attendance-schedule')->group(function () {
-                Route::get('/', [AttendanceScheduleController::class, 'index']);
+                Route::get('/', [AttendanceScheduleController::class, 'index'])->withoutMiddleware('permission:manage_schools');;
                 Route::put('/assign-to-day/{id}', [AttendanceScheduleController::class, 'assignToDay']);
                 Route::get('/{id}', [AttendanceScheduleController::class, 'getById']);
                 Route::put('/{id}', [AttendanceScheduleController::class, 'update']);

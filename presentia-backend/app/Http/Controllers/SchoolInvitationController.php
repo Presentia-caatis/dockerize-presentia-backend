@@ -84,7 +84,7 @@ class SchoolInvitationController extends Controller
             ]);
             $validatedData["school_id"] = $request->school_id;
         } else {
-            $validatedData["school_id"] = $validatedData["sender_id"]?->school_id;
+            $validatedData["school_id"] = User::findOrFail(auth()->user()->id)->school_id;
         }
 
         $this->checkDuplicateInvitation($validatedData["receiver_id"], $validatedData["school_id"]);
