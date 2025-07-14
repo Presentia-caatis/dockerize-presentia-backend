@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Student;
 use Maatwebsite\Excel\Facades\Excel;
+use function App\Helpers\current_school_id;
 
 class StudentController extends Controller
 {
@@ -53,7 +54,6 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'school_id' => 'required|exists:schools,id',
             'class_group_id' => 'nullable|exists:class_groups,id',
             'is_active' => 'nullable|boolean',
             'nis' => 'required|string',
@@ -62,7 +62,7 @@ class StudentController extends Controller
             'gender' => 'required|in:male,female',
         ]);
 
-
+        $validatedData['school_id'] = current_school_id();
         $data = Student::create($validatedData);
         $data->load(['classGroup']);
         return response()->json([
