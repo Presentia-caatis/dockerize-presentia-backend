@@ -242,9 +242,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         // STUDENT
         Route::prefix('student')->group(function () {
-            Route::get('/{id}', [StudentController::class, 'getById']);
-
             Route::get('/csv', [StudentController::class, 'exportStudents'])->middleware('role:super_admin');
+            Route::get('/{id}', [StudentController::class, 'getById']);
 
             Route::middleware('permission:manage_students')->group(function () {
                 Route::post('/', [StudentController::class, 'store']);

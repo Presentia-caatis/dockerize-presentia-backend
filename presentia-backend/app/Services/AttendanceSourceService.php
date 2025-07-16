@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AttendanceSource;
 use App\Models\Scopes\SchoolScope;
 use Illuminate\Http\Request;
+use function App\Helpers\current_school_id;
 
 class AttendanceSourceService {
     public function getAllData(Request $request)
@@ -57,7 +58,7 @@ class AttendanceSourceService {
             'base_url' => 'required|string',
         ]);
 
-        $validatedData['school_id'] = config('school.id');
+        $validatedData['school_id'] = current_school_id();
 
         $data = AttendanceSource::create($validatedData);
 
