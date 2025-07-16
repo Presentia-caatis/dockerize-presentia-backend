@@ -15,7 +15,7 @@ class AttendanceSourceService {
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $data = AttendanceSource::WithoutGlobalScope(SchoolScope::class)->paginate($perPage);
+        $data = AttendanceSource::paginate($perPage);
 
         return response()->json([
             'status' => 'success',
