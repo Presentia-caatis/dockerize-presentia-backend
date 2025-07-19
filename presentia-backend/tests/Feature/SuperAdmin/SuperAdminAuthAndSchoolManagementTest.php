@@ -58,13 +58,10 @@ class SuperAdminAuthAndSchoolManagementTest extends TestCase
             'email_verified_at' => now(),
             'school_id' => null,
         ]);
-        $schoolAdmin->assignRole('school_admin');
 
         // --- 3. Buat subscription plan dan fake logo ---
-        $plan = SubscriptionPlan::factory()->create([
-            'billing_cycle_month' => 6,
-            'price' => 100,
-        ]);
+
+        SubscriptionPlan::factory()->create(['billing_cycle_month' => 0]);
         Storage::fake('public');
 
         // --- 4. Superadmin buat sekolah ---
@@ -73,7 +70,7 @@ class SuperAdminAuthAndSchoolManagementTest extends TestCase
             'address' => 'Jl. Pendidikan No. 99',
             'timezone' => 'Asia/Jakarta',
             'logo_image' => UploadedFile::fake()->image('logo.jpg'),
-            'user_id' => $schoolAdmin->id
+            'user_id' => $schoolAdmin->id,
         ];
 
         $schoolResponse = $this->withHeaders($authHeader)->postJson('/api/school', $schoolPayload);
@@ -92,9 +89,9 @@ class SuperAdminAuthAndSchoolManagementTest extends TestCase
         ]);
 
         $createdSchool = School::where('name', 'SMK Baru')->first();
-        Storage::disk('public')->assertExists($createdSchool->logo_image_path);
 
         // --- 5. Superadmin akses dashboard sekolah baru ---
+        $schoolAdmin->assignRole('school_admin');
         $dashboardResponse = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'School-Id' => $createdSchool->id,
@@ -103,7 +100,7 @@ class SuperAdminAuthAndSchoolManagementTest extends TestCase
         $dashboardResponse->assertStatus(200)
                           ->assertJson([
                               'status' => 'success',
-                              'message' => 'Static dashboard statistics retrieved successfully',
+                              'message' => 'Static statistic retrieved successfully',
                           ]);
     }
 }

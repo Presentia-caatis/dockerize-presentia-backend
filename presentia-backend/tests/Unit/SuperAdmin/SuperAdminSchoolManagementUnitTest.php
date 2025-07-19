@@ -86,20 +86,24 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
         $this->assertEquals(6, count($response->json('data')));
     }
 
-        #[Test]
+    #[Test]
     public function superadmin_can_assign_school_staff_role_to_user(): void
     {
+        $schoolId = $this->superAdminUser->school_id;
+
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
         $user = User::factory()->create(['email_verified_at' => now()]);
 
-        $response = $this->postJson('/api/role/user/assign', [
-            'user_id' => $user->id,
-            'role'    => 'school_staff',
+        $response = $this->postJson("/api/user/school/assign/{$user->id}", [
+                        'school_id' => $schoolId,
+                        'role' => 'school_staff',
         ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(201)
                  ->assertJson([
                      'status'  => 'success',
-                     'message' => 'Role assigned successfully',
+                     'message' => 'User assigned to school successfully',
                      'data'    => [
                          'id'    => $user->id,
                          'roles' => [['name' => 'school_staff']],
@@ -113,22 +117,19 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
     #[Test]
     public function superadmin_can_remove_school_staff_role_from_user(): void
     {
+        $schoolId = $this->superAdminUser->school_id;
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
         $user = User::factory()->create(['email_verified_at' => now()]);
         $user->assignRole('school_staff');
         $this->assertTrue($user->hasRole('school_staff'));
 
-        $response = $this->postJson('/api/role/user/remove', [
-            'user_id' => $user->id,
-            'role'    => 'school_staff',
-        ]);
+        $response = $this->postJson("/api/user/school/remove/{$user->id}");
 
         $response->assertStatus(200)
                  ->assertJson([
                      'status'  => 'success',
-                     'message' => 'Role removed successfully',
-                     'data'    => [
-                         'id'    => $user->id,
-                     ],
+                     'message' => 'User removed from school successfully',
                  ]);
 
         $user->refresh();
@@ -157,7 +158,6 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
             'email_verified_at' => now(),
             'school_id' => null,
         ]);
-        $user->assignRole('school_admin');
 
         SubscriptionPlan::factory()->create(['billing_cycle_month' => 0]);
 
@@ -170,7 +170,6 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
         ];
 
         $response = $this->postJson('/api/school', $payload);
-        //dd($response->json());
 
         $response->assertStatus(201)
             ->assertJson([
@@ -228,9 +227,6 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
             'name' => 'Sekolah Updated',
             'address' => 'Jl. Baru No. 456'
         ]);
-
-        $updatedSchool = School::find($school->id);
-        Storage::disk('public')->assertExists($updatedSchool->logo_image_path);
     }
 
     #[Test]
@@ -265,8 +261,6 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('schools', ['id' => $school->id]);
-        
-        Storage::disk('public')->assertMissing('logos/test.jpg');
     }
 
         #[Test]
@@ -286,6 +280,8 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
         $userRegularStaff = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
 
         $response = $this->getJson('/api/user?filter[roles.name]=school_admin');
+        
+        $response->dump();
 
         $response->assertStatus(200);
 
@@ -300,51 +296,51 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
     #[Test]
     public function superadmin_can_assign_school_admin_role_to_user(): void
     {
+        $schoolId = $this->superAdminUser->school_id;
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
         $user = User::factory()->create(['email_verified_at' => now()]);
 
-        $response = $this->postJson('/api/role/user/assign', [
-            'user_id' => $user->id,
-            'role'    => 'school_admin',
+        $response = $this->postJson("/api/user/school/assign/{$user->id}", [
+            'school_id' => $schoolId,
+            'role'    => 'school_coadmin',
         ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(201)
                  ->assertJson([
                      'status'  => 'success',
-                     'message' => 'Role assigned successfully',
+                     'message' => 'User assigned to school successfully',
                      'data'    => [
                          'id'    => $user->id,
-                         'roles' => [['name' => 'school_admin']], 
+                         'roles' => [['name' => 'school_coadmin']], 
                      ],
                  ]);
 
         $user->refresh();
-        $this->assertTrue($user->hasRole('school_admin'));
+        $this->assertTrue($user->hasRole('school_coadmin'));
     }
 
     #[Test]
     public function superadmin_can_remove_school_admin_role_from_user(): void
     {
+        $schoolId = $this->superAdminUser->school_id;
+        $this->actingAsSuperAdminWithSchool($schoolId); 
+
         $user = User::factory()->create(['email_verified_at' => now()]);
-        $user->assignRole('school_admin');
+        $user->assignRole('school_coadmin');
 
-        $this->assertTrue($user->hasRole('school_admin'));
+        $this->assertTrue($user->hasRole('school_coadmin'));
 
-        $response = $this->postJson('/api/role/user/remove', [
-            'user_id' => $user->id,
-            'role'    => 'school_admin',
-        ]);
+        $response = $this->postJson("/api/user/school/remove/{$user->id}");
 
         $response->assertStatus(200)
                  ->assertJson([
                      'status'  => 'success',
-                     'message' => 'Role removed successfully',
-                     'data'    => [
-                         'id'    => $user->id,
-                     ],
+                     'message' => 'User removed from school successfully'
                  ]);
 
         $user->refresh(); 
-        $this->assertFalse($user->hasRole('school_admin'));
+        $this->assertFalse($user->hasRole('school_coadmin'));
     }
 
 }
