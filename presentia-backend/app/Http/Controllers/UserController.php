@@ -109,7 +109,7 @@ class UserController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'User assigned to school successfully',
-            'data' => $user->load('school')
+            'data' => $user->load('school', 'roles')
         ], 201);
     }
 
