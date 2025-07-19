@@ -74,7 +74,6 @@ class SuperAdminAuthAndSchoolManagementTest extends TestCase
         ];
 
         $schoolResponse = $this->withHeaders($authHeader)->postJson('/api/school', $schoolPayload);
-        $schoolResponse->dump();
 
         $schoolResponse->assertStatus(201)
                        ->assertJson([

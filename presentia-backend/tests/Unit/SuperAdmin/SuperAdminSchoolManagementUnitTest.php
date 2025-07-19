@@ -280,8 +280,6 @@ class SuperAdminSchoolManagementUnitTest extends TestCase
         $userRegularStaff = User::factory()->create(['school_id' => $school1->id, 'email_verified_at' => now()]);
 
         $response = $this->getJson('/api/user?filter[roles.name]=school_admin');
-        
-        $response->dump();
 
         $response->assertStatus(200);
 
