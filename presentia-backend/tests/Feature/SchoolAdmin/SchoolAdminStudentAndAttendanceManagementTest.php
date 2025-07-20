@@ -36,8 +36,29 @@ class SchoolAdminStudentAndAttendanceManagementTest extends TestCase
             'date' => Carbon::today()->format('Y-m-d')
         ]);
         
-        $checkInStatus = CheckInStatus::factory()->create(['school_id' => $school->id]);
-        $checkOutStatus = CheckOutStatus::factory()->create(['school_id' => $school->id]);
+        $checkInStatus = CheckInStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => 0,
+                "is_active" => true
+            ]);
+        
+        $checkInStatus2 = CheckInStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => -1,
+                "is_active" => true
+            ]);
+
+        $checkOutStatus = CheckOutStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => 0,
+                "is_active" => true
+            ]);
+
+        $checkOutStatus2 = CheckOutStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => -1,
+                "is_active" => true
+            ]);
 
         return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
     }
@@ -54,18 +75,6 @@ class SchoolAdminStudentAndAttendanceManagementTest extends TestCase
         $attendanceWindow = $data['attendanceWindow'];
         $checkInStatus = $data['checkInStatus'];
         $checkOutStatus = $data['checkOutStatus'];
-
-        $checkInStatusAbsent = CheckInStatus::factory()->create([
-            'school_id' => $schoolId,
-            'late_duration' => -1,
-            'status_name' => 'Absent'
-        ]);
-        $checkOutStatusAbsent = CheckOutStatus::factory()->create([
-            'school_id' => $schoolId,
-            'late_duration' => -1,
-            'status_name' => 'Absent Checkout'
-        ]);
-
 
         // --- 1. Input Presensi (Manual) ---
         $today = Carbon::today(); 

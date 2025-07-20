@@ -22,27 +22,48 @@ class SuperAdminStudentAndAttendanceManagementTest extends TestCase
 {
     use WithFaker, AuthenticatesSuperAdmin;
 
-    // private function createTestData()
-    // {
-    //     $school = School::find($this->superAdminUser->school_id);
-    //     $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
+    private function createTestData()
+    {
+        $school = School::find($this->superAdminUser->school_id);
+        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
         
-    //     $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
-    //     $student = Student::factory()->create([
-    //         'school_id' => $school->id,
-    //         'class_group_id' => $classGroup->id
-    //     ]);
+        $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
+        $student = Student::factory()->create([
+            'school_id' => $school->id,
+            'class_group_id' => $classGroup->id
+        ]);
         
-    //     $attendanceWindow = AttendanceWindow::factory()->create([
-    //         'school_id' => $school->id,
-    //         'date' => now()->format('Y-m-d')
-    //     ]);
+        $attendanceWindow = AttendanceWindow::factory()->create([
+            'school_id' => $school->id,
+            'date' => now()->format('Y-m-d')
+        ]);
         
-    //     $checkInStatus = CheckInStatus::factory()->create(['school_id' => $school->id]);
-    //     $checkOutStatus = CheckOutStatus::factory()->create(['school_id' => $school->id]);
+        $checkInStatus = CheckInStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => 0,
+                "is_active" => true
+            ]);
+        
+        $checkInStatus2 = CheckInStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => -1,
+                "is_active" => true
+            ]);
 
-    //     return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
-    // }
+        $checkOutStatus = CheckOutStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => 0,
+                "is_active" => true
+            ]);
+
+        $checkOutStatus2 = CheckOutStatus::factory()->create([
+                'school_id' => $school->id,
+                'late_duration' => -1,
+                "is_active" => true
+            ]);
+
+        return compact('school', 'classGroup', 'student', 'attendanceWindow', 'checkInStatus', 'checkOutStatus');
+    }
 
 
     #[Test]
@@ -50,26 +71,13 @@ class SuperAdminStudentAndAttendanceManagementTest extends TestCase
     {
         // --- 0. Initial Setup ---
         $schoolId = $this->superAdminUser->school_id;
-        $this->actingAsSuperAdminWithSchool($schoolId);
 
-        // $data = $this->createTestData();
-        // $school = $data['school'];
-        // $student = $data['student'];
-        // $attendanceWindow = $data['attendanceWindow'];
-        // $checkInStatus = $data['checkInStatus'];
-        // $checkOutStatus = $data['checkOutStatus'];
-
-        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
-        $student = Student::factory()->create([
-            'school_id' => $schoolId,
-            'class_group_id' => $classGroup->id
-        ]);
-        $attendanceWindow = AttendanceWindow::factory()->create([
-            'school_id' => $schoolId,
-            'date' => now()->format('Y-m-d')
-        ]);
-        $checkInStatus = CheckInStatus::factory()->create(['school_id' => $schoolId]);
-        $checkOutStatus = CheckOutStatus::factory()->create(['school_id' => $schoolId]);
+        $data = $this->createTestData();
+        $school = $data['school'];
+        $student = $data['student'];
+        $attendanceWindow = $data['attendanceWindow'];
+        $checkInStatus = $data['checkInStatus'];
+        $checkOutStatus = $data['checkOutStatus'];
 
         // --- 1. Input Presensi (Manual) ---
         $today = Carbon::today(); 
@@ -129,7 +137,7 @@ class SuperAdminStudentAndAttendanceManagementTest extends TestCase
 
         $this->actingAsSuperAdminWithSchool($schoolId);
         $response = $this->get('/api/attendance/export?startDate=' . $today->format('Y-m-d') . '&endDate=' . $today->format('Y-m-d') . '&classGroup=' . $student->class_group_id);
-        $response->dump();
+        //$response->dump();
         $response->assertStatus(200)
                  ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }

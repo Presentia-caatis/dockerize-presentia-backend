@@ -25,6 +25,7 @@ trait AuthenticatesSuperAdmin
 
         $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'school_coadmin', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'school_staff', 'guard_name' => 'web']);
         
         Permission::firstOrCreate(['name' => 'manage_school_users', 'guard_name' => 'web']);
@@ -33,6 +34,7 @@ trait AuthenticatesSuperAdmin
         Permission::firstOrCreate(['name' => 'manage_schools', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_attendance', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'assign_roles', 'guard_name' => 'web']);
+        Permission::firstOrCreate(['name' => 'manage_school_users', 'guard_name' => 'web']);
         
         $superAdminRole = Role::findByName('super_admin', 'web');
         $allPermissions = Permission::pluck('name')->toArray();

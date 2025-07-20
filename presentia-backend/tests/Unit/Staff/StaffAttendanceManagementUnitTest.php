@@ -19,16 +19,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCaseHelpers;
-use Tests\Traits\AuthenticatesSuperAdmin;
+use Tests\Traits\AuthenticatesSchoolStaff;
 
 
-class SuperAdminAttendanceManagementUnitTest extends TestCase
+class StaffAttendanceManagementUnitTest extends TestCase
 {
-    use AuthenticatesSuperAdmin;
+    use AuthenticatesSchoolStaff;
 
     private function createTestData()
     {
-        $school = School::find($this->superAdminUser->school_id);
+        $school = School::find($this->schoolStaffUser->school_id);
         
         $classGroup = ClassGroup::factory()->create(['school_id' => $school->id]);
         $student = Student::factory()->create([
@@ -79,8 +79,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
         $school->update(['latest_subscription' => now()]);
         $school->save();
 
-        $this->superAdminUser->update(['school_id' => $school->id]);
-        $this->actingAsSuperAdminWithSchool($school->id); 
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         Student::factory()->count(3)->create(['is_active' => true, 'gender' => 'male', 'school_id' => $school->id]);
         Student::factory()->count(2)->create(['is_active' => false, 'gender' => 'female', 'school_id' => $school->id]);
@@ -107,8 +106,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->superAdminUser->update(['school_id' => $school->id]);
-        $this->actingAsSuperAdminWithSchool($school->id); 
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         Student::factory()->count(5)->create(['is_active' => true, 'school_id' => $school->id]);
         CheckInStatus::factory()->count(3)->create();
@@ -128,8 +126,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->superAdminUser->update(['school_id' => $school->id]);
-        $this->actingAsSuperAdminWithSchool($school->id); 
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         $statuses = CheckInStatus::factory()->sequence(
             ['late_duration' => -1, 'status_name' => 'Absent'],
@@ -186,8 +183,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
 
         $school = School::factory()->create();
         config(['school.id' => $school->id]);
-        $this->superAdminUser->update(['school_id' => $school->id]);
-        $this->actingAsSuperAdminWithSchool($school->id); 
+        $this->schoolStaffUser->update(['school_id' => $school->id]);
 
         $statuses = CheckInStatus::factory()->sequence(
             ['late_duration' => -1, 'status_name' => 'Absent'],
@@ -257,11 +253,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_retrieve_attendance_list()
+    public function staff_can_retrieve_attendance_list()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         Attendance::factory()->create([
             'student_id' => $data['student']->id,
@@ -270,7 +264,7 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
             'school_id' => $data['school']->id
         ]);
 
-        $response = $this->getJson('/api/attendance?school_id=' . $this->superAdminUser->school_id);
+        $response = $this->getJson('/api/attendance?school_id=' . $this->schoolStaffUser->school_id);
 
         $response->assertStatus(200)
             ->assertJson(['status' => 'success']);
@@ -278,11 +272,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
 
     
     #[Test]
-    public function superadmin_can_filter_attendance_by_date_range()
+    public function staff_can_filter_attendance_by_date_range()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $todayWindow = AttendanceWindow::factory()->create([
             'date' => now()->format('Y-m-d'),
@@ -318,11 +310,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_filter_attendance_by_class()
+    public function staff_can_filter_attendance_by_class()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $otherClass = ClassGroup::factory()->create(['school_id' => $data['school']->id]);
         $otherStudent = Student::factory()->create([
@@ -354,11 +344,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_filter_attendance_by_status()
+    public function staff_can_filter_attendance_by_status()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
 
         $otherStatus = CheckInStatus::factory()->create();
 
@@ -396,11 +384,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_search_attendance_by_keyword()
+    public function staff_can_search_attendance_by_keyword()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
 
         // Presensi yang sesuai pencarian
         Attendance::factory()->create([
@@ -418,11 +404,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_sort_attendance_by_column()
+    public function staff_can_sort_attendance_by_column()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         $studentA = Student::factory()->create([
             'school_id' => $data['school']->id,
@@ -470,11 +454,9 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
     }
 
     #[Test]
-    public function superadmin_can_export_attendance_to_excel()
+    public function staff_can_export_attendance_to_excel()
     {
         $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
         
         Attendance::factory()->create([
             'student_id' => $data['student']->id,
@@ -489,128 +471,6 @@ class SuperAdminAttendanceManagementUnitTest extends TestCase
 
         $response->assertStatus(200)
             ->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    }
-
-    #[Test]
-    public function superadmin_can_update_attendance_schedule_with_valid_data()
-    {
-        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
-
-        $schedule = AttendanceSchedule::factory()->create();
-
-        $day = Day::factory()->create([
-            'school_id' => $this->superAdminUser->school_id,
-            'attendance_schedule_id' => $schedule->id
-        ]);
-
-        $payload = [
-            'name' => 'Updated Schedule Name',
-            'check_in_start_time' => '07:00:00',
-            'check_in_end_time' => '08:00:00',
-            'check_out_start_time' => '12:00:00',
-            'check_out_end_time' => '13:00:00',
-        ];
-
-        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
-
-        $response->assertStatus(200)
-                ->assertJson([
-                    'status' => 'success',
-                    'message' => 'Attendance schedule updated successfully',
-                    'data' => [
-                        'id' => $schedule->id,
-                        'name' => 'Updated Schedule Name',
-                        'check_in_start_time' => '07:00:00',
-                        'check_in_end_time' => '08:00:00',
-                        'check_out_start_time' => '12:00:00',
-                        'check_out_end_time' => '13:00:00',
-                    ]
-                ]);
-    }
-
-    #[Test]
-    public function superadmin_cannot_update_without_required_check_out_end_time()
-    {
-        $this->actingAsSuperAdminWithSchool($this->superAdminUser->school_id); 
-
-        $schedule = AttendanceSchedule::factory()->create();
-        Day::factory()->create([
-            'school_id' => $this->superAdminUser->school_id,
-            'attendance_schedule_id' => $schedule->id
-        ]);
-
-        $payload = [
-            'name' => 'Updated Name',
-        ];
-
-        $response = $this->putJson("/api/attendance-schedule/{$schedule->id}", $payload);
-
-        $response->assertStatus(422)
-                ->assertJsonValidationErrors(['check_out_end_time']);
-    }
-
-    #[Test]
-    public function superadmin_can_update_attendance()
-    {
-        $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
-        
-        $attendance = Attendance::factory()->create([
-            'student_id' => $data['student']->id,
-            'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_status_id' => $data['checkInStatus']->id,
-            'school_id' => $data['school']->id,
-            'check_in_time' => now()->subHour()->format('Y-m-d H:i:s')
-        ]);
-
-        $updateData = [
-            'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_time' => now()->format('Y-m-d H:i:s'),
-            'check_in_status_id' => $data['checkInStatus']->id,
-            'check_out_time' => now()->addHours(5)->format('Y-m-d H:i:s'),
-            'check_out_status_id' => $data['checkOutStatus']->id
-        ];
-
-        $response = $this->putJson("/api/attendance/{$attendance->id}", $updateData);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'success',
-                'message' => 'Attendance updated successfully'
-            ]);
-
-        $this->assertDatabaseHas('attendances', [
-            'id' => $attendance->id,
-            'check_in_time' => now()->format('Y-m-d H:i:s'),
-            'check_out_time' => now()->addHours(5)->format('Y-m-d H:i:s')
-        ]);
-    }
-
-    #[Test]
-    public function superadmin_cannot_update_attendance_with_invalid_data()
-    {
-        $data = $this->createTestData();
-
-        $this->actingAsSuperAdminWithSchool($data['school']->id); 
-        
-        $attendance = Attendance::factory()->create([
-            'student_id' => $data['student']->id,
-            'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_status_id' => $data['checkInStatus']->id,
-            'school_id' => $data['school']->id
-        ]);
-
-        $invalidData = [
-            'attendance_window_id' => $data['attendanceWindow']->id,
-            'check_in_time' => 'invalid-date-format',
-            'check_in_status_id' => $data['checkInStatus']->id
-        ];
-
-        $response = $this->putJson("/api/attendance/{$attendance->id}", $invalidData);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['check_in_time']);
     }
 
 }
