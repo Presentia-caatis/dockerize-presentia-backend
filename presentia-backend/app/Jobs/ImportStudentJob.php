@@ -14,7 +14,7 @@ class ImportStudentJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $students, $schoolId, $method;
+    protected $students, $schoolId;
 
     public function __construct($students, $schoolId)
     {
@@ -43,17 +43,13 @@ class ImportStudentJob implements ShouldQueue
             $student['class_group_id'] = $existingClassGroups[$student['class_group_name']];
             unset($student['class_group_name']);
 
-            if ($this->method == "put") {
-                $updateStudent = Student::withoutGlobalScope(SchoolScope::class)
-                    ->where('nisn', $student['nisn'])
-                    ->where('school_id', $this->schoolId)
-                    ->first();
+            $studentData = Student::withoutGlobalScope(SchoolScope::class)
+                ->where('nisn', $student['nisn'])
+                ->where('school_id', $this->schoolId)
+                ->first();
                 
-                if ($updateStudent) {
-                    $updateStudent->update($student);
-                } else {
-                    Student::create($student);
-                }
+            if ($studentData) {
+                $studentData->update($student);
             } else {
                 Student::insert($student); 
             }
