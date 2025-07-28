@@ -12,6 +12,7 @@ trait Filterable
             return $query;
         }
 
+
         $exactMatchColumns = array_merge(['gender', 'class_group_id', 'school_id', 'is_active'], $exactMatchColumns);
 
         foreach ($filters as $column => $value) {
@@ -34,15 +35,11 @@ trait Filterable
                     $q->where($field, 'LIKE', "%$value%");
                 });
             } else {
-                // Apply simple where filter
-                if (is_numeric($value)) {
+
+                if (in_array($column, $exactMatchColumns)) {
                     $query->where($column, $value);
                 } else {
-                    if (in_array($column, $exactMatchColumns)) {
-                        $query->where($column, $value);
-                    } else {
-                        $query->where($column, 'LIKE', "%$value%");
-                    }
+                    $query->where($column, 'LIKE', "%$value%");
                 }
             }
         }
