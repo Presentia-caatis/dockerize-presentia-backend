@@ -144,7 +144,7 @@ class StudentController extends Controller
                 }
             }
             if (!empty($students)) {
-                ImportStudentJob::dispatch($students, $schoolId)->onQueue('import-student');;
+                ImportStudentJob::dispatch($students, $schoolId)->onQueue('import-student');
             }
         }
 
