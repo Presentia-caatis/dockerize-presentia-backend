@@ -34,7 +34,8 @@
         "files": [
             "app/Helpers/SemesterHelper.php",
             "app/Helpers/SchoolHelper.php",
-            "app/Helpers/TimeZoneHelper.php"
+            "app/Helpers/TimeZoneHelper.php",
+            "app/Helpers/LoggingHelper.php"
         ]
     },
     "autoload-dev": {

@@ -77,6 +77,7 @@ class AttendanceController extends Controller
                     ])->select('id', 'student_name', 'nis', 'nisn', 'gender');
                 },
                 'checkInStatus:id,status_name',
+                'checkOutStatus:id,status_name',
                 'attendanceWindow:id,date',
                 'absencePermit'
             ])->select([
@@ -221,6 +222,7 @@ class AttendanceController extends Controller
         }
 
         $validatedData['school_id'] = current_school_id();
+        $validatedData['semester_id'] = current_semester_id();
 
         $data = Attendance::create($validatedData);
 

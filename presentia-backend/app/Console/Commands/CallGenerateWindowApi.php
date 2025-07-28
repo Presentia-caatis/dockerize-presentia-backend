@@ -16,7 +16,7 @@ class CallGenerateWindowApi extends Command
      *
      * @var string
      */
-    protected $signature = 'call:generate-window-api {school_id}';
+    protected $signature = 'call:generate-window-api {school_id} {semester_id}';
 
     /**
      * The console command description.
@@ -31,6 +31,7 @@ class CallGenerateWindowApi extends Command
     public function handle()
     {
         config(['school.id' => $this->argument('school_id')]);
+        config(['semester.id' => $this->argument('semester_id')]);
         $request = new \Illuminate\Http\Request([
             'date' => stringify_convert_utc_to_timezone(\Carbon\Carbon::now(), current_school_timezone(), 'Y-m-d')
         ]);

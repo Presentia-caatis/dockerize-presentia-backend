@@ -23,17 +23,14 @@ class MigrateSMAN24Seeder extends Seeder
         DB::beginTransaction();
 
         try {
-            $start = Carbon::parse('2025-07-21')->toDateString();
-            $end = Carbon::parse('2025-12-30')->toDateString();
-            $semester = null;
             $schoolId = 3;
 
             $semester = Semester::create([
                 'school_id' => $schoolId,
                 'academic_year' => '2024/2025',
                 'period' => 'even',
-                'start_date' => $start,
-                'end_date' => $end,
+                'start_date' => "2025-07-07",
+                'end_date' => "2025-12-30",
                 'is_active' => true,
             ]);
 

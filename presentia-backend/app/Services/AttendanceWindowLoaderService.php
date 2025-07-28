@@ -52,6 +52,7 @@ class AttendanceWindowLoaderService
                     $attendanceSchedule->event->is_scheduler_active
                 );   
 
+
                 AttendanceWindow::create([
                     'event_id' => $event->id,
                     'school_id' => $event->school_id,

@@ -23,19 +23,24 @@ class ClassGroupController extends Controller
 
         $perPage = $validatedData['perPage'] ?? 10;
 
-        $query = $this->applyFilters(ClassGroup::query(), $request->input('filter', []), ['school_id']);
-        $query = $this->applySort($query, $request->input('sort', []), ['school_id']);
-
-        $data = $query->withCount([
-            'students as students_count' => function ($q) {
-                $q->withoutGlobalScope(SemesterScope::class)
-                    ->where('enrollments.semester_id', current_semester_id());
-            }
-        ])->paginate($perPage);
+        $query = ClassGroup::query();
 
         if ($validatedData['unfilteredSemester'] ?? false) {
             $query->withoutGlobalScope(SemesterScope::class);
+        } else {
+            $query->withCount([
+                'students as students_count' => function ($q) {
+                    $q->withoutGlobalScope(SemesterScope::class)
+                        ->where('enrollments.semester_id', current_semester_id());
+                }
+            ]);
         }
+
+        $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
+        $query = $this->applySort($query, $request->input('sort', []), ['school_id']);
+
+        $data = $query->paginate($perPage);
+        
 
         return response()->json([
             'status' => 'success',

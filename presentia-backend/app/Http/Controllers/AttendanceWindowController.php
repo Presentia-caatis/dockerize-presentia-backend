@@ -97,6 +97,7 @@ class AttendanceWindowController extends Controller
             'day_id' => $dayData->id,
             'name' => $dataSchedule->name,
             'school_id' => $dayData->school_id,
+            'semester_id' => $dayData->semester_id,
             'total_present' => 0,
             'total_absent' => 0,
             'date' => $request->date,

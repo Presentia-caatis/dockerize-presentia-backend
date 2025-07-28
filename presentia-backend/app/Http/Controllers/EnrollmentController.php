@@ -44,7 +44,7 @@ class EnrollmentController extends Controller
     {
         $validatedData = $request->validate([
             'class_group_id' => 'required|integer|exists:class_groups,id',
-            'student_id'     => 'required|integer|exists:students,id',
+            'student_id' => 'required|integer|exists:students,id',
         ]);
 
         $validatedData['school_id'] = current_school_id();
@@ -59,12 +59,23 @@ class EnrollmentController extends Controller
         ], 201);
     }
 
+    public function storeViaFile(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        [$result, $statusCode] = $this->enrollmentService->createFromFile($request->file('file'));
+
+        return response()->json($result, $statusCode);
+    }
+
     public function update(Request $request, $id)
     {
         $validatedData = $request->validate([
-            'semester_id'    => 'sometimes|required|integer|exists:semesters,id',
+            'semester_id' => 'sometimes|required|integer|exists:semesters,id',
             'class_group_id' => 'sometimes|required|integer|exists:class_groups,id',
-            'student_id'     => 'sometimes|required|integer|exists:students,id',
+            'student_id' => 'sometimes|required|integer|exists:students,id',
         ]);
 
 

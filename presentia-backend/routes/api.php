@@ -46,7 +46,8 @@ use App\Http\Controllers\{
     AttendanceReferenceController,
     SchoolInvitationController,
     SemesterController,
-    EnrollmentController
+    EnrollmentController,
+    CheckOutStatusController
 };
 
 //AUTH API
@@ -198,14 +199,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::delete('{id}', [SemesterController::class, 'destroy']);
     });
 
-    Route::middleware(['school-semester'])->prefix('enrollment')->group(function() {
-        Route::get('/', [EnrollmentController::class, 'getAll']);
-        Route::post('/', [EnrollmentController::class, 'store']);
-        Route::get('{id}', [EnrollmentController::class, 'getById']);
-        Route::put('{id}', [EnrollmentController::class, 'update']);
-        Route::delete('{id}', [EnrollmentController::class, 'destroy']);
-    });
-
     // JOB
     Route::middleware('role:super_admin')->prefix('job')->group(function () {
         Route::get('/failed', [JobController::class, 'failedJobs']);
@@ -218,6 +211,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     // SCHOOL DATA
     Route::middleware(['school-semester', 'permission:basic_school'])->group(function () {
+
+        Route::prefix('enrollment')->group(function() {
+            Route::get('/', [EnrollmentController::class, 'getAll']);
+            Route::post('/', [EnrollmentController::class, 'store']);
+            Route::post('/store-via-file', [EnrollmentController::class, 'storeViaFile']);
+            Route::get('{id}', [EnrollmentController::class, 'getById']);
+            Route::put('{id}', [EnrollmentController::class, 'update']);
+            Route::delete('{id}', [EnrollmentController::class, 'destroy']);
+        });
 
         // ATTENDANCE SOURCE
         Route::prefix('attendance-source')->group(function () {
@@ -266,7 +268,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         
             Route::middleware('permission:manage_students')->group(function () {
                 Route::post('/', [StudentController::class, 'store'])->withoutMiddleware('semester');
-                Route::post('/store-via-file', [StudentController::class, 'storeViaFile']);
                 Route::put('/{id}', [StudentController::class, 'update'])->withoutMiddleware('semester');
                 Route::delete('/{id}', [StudentController::class, 'destroy'])->withoutMiddleware('semester');
             });
@@ -300,6 +301,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::get('/{id}', [CheckInStatusController::class, 'getById']);
                 Route::put('/{id}', [CheckInStatusController::class, 'update']);
                 Route::delete('/{id}', [CheckInStatusController::class, 'destroy']);
+            });
+
+            Route::prefix('check-out-status')->group(function () {
+                Route::get('/', [CheckOutStatusController::class, 'getAll'])->withoutMiddleware('permission:manage_schools');
             });
 
             // DOCUMENT

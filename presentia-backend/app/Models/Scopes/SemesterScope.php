@@ -16,7 +16,7 @@ class SemesterScope implements Scope
         $table = $model->getTable();
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'semester_id')) {
             $builder->where("{$table}.semester_id", config('semester.id'));
-        } else {
+        } elseif (method_exists($model, 'semesters')) {
             $relation = $model->semesters();
             $pivotTable = $relation->getTable();
 

@@ -20,7 +20,7 @@ class SchoolScope implements Scope
         $table = $model->getTable();
         if ($model->getConnection()->getSchemaBuilder()->hasColumn($table, 'school_id')) {
             $builder->where("{$table}.school_id", $this->schoolId ?? config('school.id'));
-        } else {
+        } elseif (method_exists($model, 'schools')) {
             $relation = $model->schools();
             $pivotTable = method_exists($relation, 'getTable') ? $relation->getTable() : 'school_id';
     

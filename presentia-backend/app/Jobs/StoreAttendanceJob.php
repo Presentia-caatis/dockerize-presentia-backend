@@ -6,12 +6,11 @@ use App\Models\Attendance;
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
+use App\Models\Enrollment;
 use App\Models\FailedStoreAttendanceJob;
 use App\Models\Scopes\SchoolScope;
 use App\Models\Scopes\SemesterScope;
 use App\Models\Student;
-use App\Services\BelongsToSchoolService;
-use App\Services\SemesterService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -46,57 +45,45 @@ class StoreAttendanceJob implements ShouldQueue
         $schoolId = current_school_id();
         $schoolTimezone = current_school_timezone(); //get the school's timezone 
 
-        config(['semester.id' => (new SemesterService)->getByCurrentTime()->id]);
 
-        // (new BelongsToSchoolService($schoolId))->apply();
-
-        $inputDates = [];
-
-        foreach ($this->jsonInput as $student) {
-            $inputDates[Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d')] = true;
-        }
-
-        $inputDates = array_keys($inputDates);
-
-
-        //get all attendance windows
-        $attendanceWindows = AttendanceWindow::whereIn('date', $inputDates)
-            ->get()
-            ->groupBy('date');
-        //>>
+        $attendanceWindows = [];
 
         //get all check in statuses except the absence once <<
-        $checkInStatuses = CheckInStatus::where('is_active', true)
+        $checkInStatuses = CheckInStatus::withoutGlobalScope(SemesterScope::class)
+            ->where('is_active', true)
             ->where('late_duration', '!=', -1)
             ->orderBy('late_duration', 'asc')
-            ->get();
+            ->get()
+            ->groupBy('semester_id');
         //>>
 
         //get all the absence check in status <<
-        $absenceCheckInStatus = CheckInStatus::where('late_duration', -1)
-            ->first();
+        $absenceCheckInStatus = CheckInStatus::withoutGlobalScope(SemesterScope::class)
+            ->where('late_duration', -1)
+            ->get()
+            ->groupBy('semester_id');
         //>>
 
         //get all check out statuses <<
-        $checkOutStatuses = CheckOutStatus::pluck('id', 'late_duration')
-            ->toArray();
+        $checkOutStatuses = CheckOutStatus::withoutGlobalScope(SemesterScope::class)->get()->groupBy([
+            'semester_id',
+            'late_duration'
+        ]);
         //>>
 
         $isInAttendanceSession = false;
-
-        \Log::info('Semester_Id', [config('semester.id')]);
-        \Log::info('attendanceWindows', [$attendanceWindows ? $attendanceWindows->toArray() : []]);
-        \Log::info('checkInStatuses', [$checkInStatuses ? $checkInStatuses->toArray() : []]);
-        \Log::info('absenceCheckInStatus', [$absenceCheckInStatus ? $absenceCheckInStatus->toArray() : []]);
-        \Log::info('checkOutStatuses', [$checkOutStatuses ?: []]);
-        \Log::info('isInAttendanceSession', [$isInAttendanceSession]);
-        return;
 
         foreach ($this->jsonInput as $student) {
             $studentId = $student['id']; //get student id
             $checkTime = Carbon::parse($student['date']); //get the time where the student is triggering the adms
             $formattedDate = Carbon::parse($student['date'])->setTimezone($schoolTimezone)->format('Y-m-d'); // get the date only from student
-            $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null; //get all attendance window for desired date
+
+            if (!array_key_exists($formattedDate, $attendanceWindows)) {
+                $attendanceWindows[$formattedDate] = AttendanceWindow::withoutGlobalScope(SemesterScope::class)->where('date', $formattedDate)
+                    ->get();
+            }
+            $attendanceWindowsPerDate = $attendanceWindows[$formattedDate] ?? null;
+
 
             if (!$attendanceWindowsPerDate) {
                 $this->setResponse("failed", $studentId, "Tidak ada jadwal presensi untuk hari ini");
@@ -105,12 +92,20 @@ class StoreAttendanceJob implements ShouldQueue
             }
 
             foreach ($attendanceWindowsPerDate as $attendanceWindow) {
+                if(!Enrollment::withoutGlobalScope(SemesterScope::class)
+                    ->where('student_id', $studentId)
+                    ->where('semester_id', $attendanceWindow->semester_id)
+                    ->exists()){
+                    $this->setResponse("failed", $studentId, "Siswa tidak terdaftar dalam semester ini");
+                    $this->logFailure($studentId, $checkTime, "Not active student in current semester", $attendanceWindow->id);
+                    continue 2;
+                }
+
                 $checkInStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_start_time, $schoolTimezone);
                 $checkInEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_in_end_time, $schoolTimezone);
                 $checkOutStartTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_start_time, $schoolTimezone);
                 $checkOutEndTime = convert_timezone_to_utc($attendanceWindow->date . ' ' . $attendanceWindow->check_out_end_time, $schoolTimezone);
-
-                $lateCutoffTime = $checkInEndTime->copy()->addMinutes($checkInStatuses->max('late_duration'));
+                $lateCutoffTime = $checkInEndTime->copy()->addMinutes($checkInStatuses[$attendanceWindow->semester_id]->max('late_duration'));
                 $isInAttendanceSession = false;
 
                 if (
@@ -126,9 +121,10 @@ class StoreAttendanceJob implements ShouldQueue
 
                 $isInAttendanceSession = true;
 
-                $attendance = Attendance::where("student_id", $studentId)
+                $attendance = Attendance::withoutGlobalScope(SemesterScope::class)->where("student_id", $studentId)
                     ->where('attendance_window_id', $attendanceWindow->id)
                     ->first();
+
 
                 if (!$attendance) {
                     try {
@@ -136,8 +132,9 @@ class StoreAttendanceJob implements ShouldQueue
                             'school_id' => $schoolId,
                             'student_id' => $studentId,
                             'attendance_window_id' => $attendanceWindow->id,
-                            'check_in_status_id' => $absenceCheckInStatus->id,
-                            'check_out_status_id' => $checkOutStatuses["-1"]
+                            'check_in_status_id' => optional($absenceCheckInStatus[$attendanceWindow->semester_id]->first())->id,
+                            'check_out_status_id' => optional($checkOutStatuses[$attendanceWindow->semester_id]["-1"]->first())->id,
+                            'semester_id' => $attendanceWindow->semester_id
                         ]);
 
                     } catch (Exception $e) {
@@ -149,7 +146,7 @@ class StoreAttendanceJob implements ShouldQueue
                     // Prevent duplicate check-ins
                     if (
                         $attendance->check_in_time &&
-                        $attendance->check_in_status_id != $absenceCheckInStatus->id &&
+                        $attendance->check_in_status_id != optional($absenceCheckInStatus[$attendanceWindow->semester_id]->first())->id &&
                         $checkTime->between($checkInStartTime, $checkInEndTime)
                     ) {
                         $this->setResponse("failed", $studentId, "Siswa sudah presensi masuk");
@@ -157,7 +154,7 @@ class StoreAttendanceJob implements ShouldQueue
                         continue;
                     } else if (
                         $attendance->check_out_time &&
-                        $attendance->check_out_status_id != $checkOutStatuses["-1"] &&
+                        $attendance->check_out_status_id != optional($checkOutStatuses[$attendanceWindow->semester_id]["-1"]->first())->id &&
                         $checkTime->between($checkOutStartTime, $checkOutEndTime)
                     ) { // Prevent duplicate check-outs
                         $this->setResponse("failed", $studentId, "Siswa sudah presensi keluar");
@@ -169,11 +166,11 @@ class StoreAttendanceJob implements ShouldQueue
                 if ($checkTime->between($checkInStartTime, $lateCutoffTime)) {
                     if ($attendanceWindow->type == 'event' && $checkTime->lte($attendanceWindow->check_in_end_time)) {
                         $attendance->update([
-                            'check_in_status_id' => $absenceCheckInStatus->id,
+                            'check_in_status_id' => optional($checkInStatuses[$attendanceWindow->semester_id]->first())->id,
                             'check_in_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                         ]);
                     } else {
-                        foreach ($checkInStatuses as $cit) {
+                        foreach ($checkInStatuses[$attendanceWindow->semester_id] as $cit) {
                             if ($checkTime->between($checkInStartTime, $checkInEndTime->copy()->addMinutes($cit->late_duration))) {
                                 $attendance->update([
                                     'check_in_status_id' => $cit->id,
@@ -185,7 +182,7 @@ class StoreAttendanceJob implements ShouldQueue
                     }
                 } else {
                     $attendance->update([
-                        'check_out_status_id' => $checkOutStatuses["0"],
+                        'check_out_status_id' => optional($checkOutStatuses[$attendanceWindow->semester_id]["0"]->first())->id,
                         'check_out_time' => convert_utc_to_timezone($checkTime, $schoolTimezone)
                     ]);
                     if (!$attendance->check_in_time) {

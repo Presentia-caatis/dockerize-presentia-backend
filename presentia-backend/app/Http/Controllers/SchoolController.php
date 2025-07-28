@@ -7,6 +7,7 @@ use App\Models\AttendanceSchedule;
 use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
 use App\Models\Day;
+use App\Models\Scopes\SchoolScope;
 use App\Models\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -97,7 +98,6 @@ class SchoolController extends Controller
 
         try {
             \DB::beginTransaction();
-
 
             if ($request->hasFile('logo_image')) {
                 $validatedData['logo_image_path'] = $request->file('logo_image')->store($request->file('logo_image')->extension(), 'public');
@@ -304,7 +304,7 @@ class SchoolController extends Controller
         User::where('school_id', $school->id)->update(['school_id' => null]);
 
         AttendanceSchedule::whereHas('semester', function ($q) use ($school) {
-            $q->where('school_id', $school->id);
+            $q->withoutGlobalScope(SchoolScope::class)->where('school_id', $school->id);
         })->delete();
 
         if ($school->logo_image_path) {
