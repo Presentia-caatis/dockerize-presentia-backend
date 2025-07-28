@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Filterable;
+use App\Models\Student;
 use App\Sortable;
 use Illuminate\Http\Request;
 
