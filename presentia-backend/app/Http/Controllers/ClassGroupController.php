@@ -80,7 +80,7 @@ class ClassGroupController extends Controller
     public function destroy($id)
     {
         $classGroup = ClassGroup::findOrFail($id);
-        Student::where('class_group_id', $classGroup->id)->update('class_group_id', null);
+        Student::where('class_group_id', $classGroup->id)->update(['class_group_id' => null]);
         $classGroup->delete();
         return response()->json([
             'status' => 'success',
