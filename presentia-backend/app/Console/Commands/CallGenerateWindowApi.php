@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\AttendanceWindowController;
 use App\Models\CheckInStatus;
+use App\Services\SemesterService;
 use Illuminate\Console\Command;
 use function App\Helpers\current_school_timezone;
 use function App\Helpers\stringify_convert_utc_to_timezone;

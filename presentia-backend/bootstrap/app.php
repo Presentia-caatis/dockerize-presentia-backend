@@ -3,6 +3,9 @@
 use App\Models\AttendanceWindow;
 use App\Models\CheckInStatus;
 use App\Models\Scopes\SchoolScope;
+use App\Models\Scopes\SemesterScope;
+use App\Models\Semester;
+use App\Services\SemesterService;
 use Carbon\Carbon;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -119,23 +122,39 @@ return Application::configure(basePath: dirname(__DIR__))
             return;
         }
 
-        //Get the active school only
-        $schoolsQuery = App\Models\School::where('is_task_scheduling_active', true);
+        $schoolQuery = App\Models\School::where('is_task_scheduling_active', true);
+        $schoolIds = (clone $schoolQuery)->pluck('id')->toArray();
+        $schools = $schoolQuery->get(['id', 'timezone']);
 
+        $semesterIds = [];
+        foreach ($schools as $school) {
+            $nowInSchoolTz = Carbon::now($school->timezone);
 
-        $maxLateDurations = CheckInStatus::withoutGlobalScope(SchoolScope::class)
+            $semester = Semester::withoutGlobalScope(SchoolScope::class)
+                ->where('school_id', $school->id)
+                ->where('start_date', '<=', $nowInSchoolTz->format('Y-m-d H:i:s'))
+                ->where('end_date', '>=', $nowInSchoolTz->format('Y-m-d H:i:s'))
+                ->first();
+
+            if ($semester) {
+                $semesterIds[$school->id] = $semester->id;
+            }
+        }
+
+        $maxLateDurations = CheckInStatus::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
             ->selectRaw('school_id, MAX(late_duration) as max_late_duration')
-            ->whereIn('school_id', (clone $schoolsQuery)->pluck('id')->toArray())
+            ->whereIn('school_id', $schoolIds)
+            ->whereIn('semester_id', array_values($semesterIds))
             ->groupBy('school_id')
             ->pluck('max_late_duration', 'school_id');
 
-        foreach ($schoolsQuery->get() as $school) {
+        foreach ($schools as $school) {
             $maxLateDuration = $maxLateDurations[$school->id] ?? null;
 
             /**
              * @Schedule Generate window API for the school
              * */
-            $schedule->command("call:generate-window-api $school->id")
+            $schedule->command("call:generate-window-api {$school->id} {$semesterIds[$school->id]}")
                 ->timezone($school->timezone)
                 ->dailyAt('00:00');
 
@@ -143,21 +162,23 @@ return Application::configure(basePath: dirname(__DIR__))
              * @Schedule mark absent students
              * */
             //Get check in end times for today
-            $checkInEnds = AttendanceWindow::withoutGlobalScope(SchoolScope::class)
+            $checkInEnds = AttendanceWindow::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
                 ->where('date', stringify_convert_utc_to_timezone(now(), $school->timezone, 'Y-m-d'))
+                ->where('school_id', $school->id)
+                ->where('semester_id', $semesterIds[$school->id])
                 ->where('type', '!=', 'holiday')
                 ->pluck('check_in_end_time', 'id')
                 ->toArray();
-
+            
             foreach ($checkInEnds as $attendanceWindowId => $checkInEnd) {
                 $scheduleTime = Carbon::parse($checkInEnd, $school->timezone)
                     ->addMinutes($maxLateDuration)
                     ->format('H:i');
-                $schedule->command("call:mark-absent-students $school->id $attendanceWindowId")
+
+                $schedule->command("call:mark-absent-students {$school->id} {$semesterIds[$school->id]} {$attendanceWindowId}")
                     ->timezone($school->timezone)
                     ->dailyAt($scheduleTime);
             }
-
         }
     })
     ->create();
