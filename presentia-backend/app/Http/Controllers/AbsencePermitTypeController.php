@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\AbsencePermitType;
 use Illuminate\Validation\ValidationException;
 use function App\Helpers\current_school_id;
+use function App\Helpers\current_semester_id;
 
 class AbsencePermitTypeController extends Controller
 {
@@ -40,6 +41,7 @@ class AbsencePermitTypeController extends Controller
         ]);
 
         $validatedData['school_id'] = current_school_id();
+        $validatedData['semester_id'] = current_semester_id();
 
         $data = AbsencePermitType::create($validatedData);
         return response()->json([

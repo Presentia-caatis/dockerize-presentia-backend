@@ -46,6 +46,7 @@ class AbsencePermitController extends Controller
         ]);
 
         $validatedData['school_id'] = current_school_id();
+        $validatedData['semester_id'] = current_school_id();
 
         $absencePermit = AbsencePermit::create($validatedData);
 
