@@ -42,6 +42,35 @@ class SchoolController extends Controller
         ]);
     }
 
+    public function countAllSchools()
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Schools retrieved successfully',
+            'data' => School::count()
+        ]);
+    }
+
+    public function getByName($name)
+    {
+        $slug = Str::slug($name); 
+
+        $school = School::where(DB::raw("LOWER(REPLACE(name, ' ', '-'))"), $slug)->first();
+
+        if (!$school) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'School not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'School retrieved successfully',
+            'data' => $school
+        ]);
+    }
+
     public function getById($id)
     {
         $school = School::findOrFail($id);
@@ -196,7 +225,7 @@ class SchoolController extends Controller
             // if($request->logo_image){
             //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
             // }
-            
+
 
             \DB::commit();
 

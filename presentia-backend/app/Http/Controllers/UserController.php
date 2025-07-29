@@ -48,6 +48,15 @@ class UserController extends Controller
         ]);
     }
 
+    public function countAllUsers()
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Schools retrieved successfully',
+            'data' => User::count()
+        ]);
+    }
+
 
     public function getUnassignedUsers(Request $request)
     {

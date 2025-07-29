@@ -132,6 +132,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // RESTRICT ALL OTHER  to users with 'super_admin' role
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/', [UserController::class, 'index']);
+            Route::get('/count', [UserController::class, 'countAllUsers']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
@@ -178,6 +179,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::prefix('school')->group(function () {
         Route::middleware('role:super_admin')->group(function () {
             Route::post('/', [SchoolController::class, 'store']);
+            Route::get('/count', [SchoolController::class, 'countAllSchools']);
+            Route::get('/name/{name}', [SchoolController::class, 'getByName']);
             Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
