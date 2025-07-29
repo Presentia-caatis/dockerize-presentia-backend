@@ -15,6 +15,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Str;
+use Illuminate\Support\Facades\DB;
 use function App\Helpers\convert_utc_to_timezone;
 
 class SchoolController extends Controller
