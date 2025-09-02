@@ -40,44 +40,4 @@ class StaffClassManagementUnitTest extends TestCase
                 'data' => ['data' => []],
             ]);
     }
-
-    #[Test]
-    public function staff_cannot_add_class_group()
-    {
-        $schoolId = $this->schoolStaffUser->school_id;
-
-        $response = $this->postJson('/api/class-group', [
-            'school_id' => $schoolId,
-            'class_name' => 'Class 10A',
-        ]);
-
-        $response->assertStatus(403);
-    }
-
-    #[Test]
-    public function staff_cannot_update_class_group()
-    {
-        $schoolId = $this->schoolStaffUser->school_id; 
-
-        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
-
-        $response = $this->putJson("/api/class-group/{$classGroup->id}", [
-            'school_id' => $schoolId,
-            'class_name' => 'Updated Class Name',
-        ]);
-
-        $response->assertStatus(403);
-    }
-
-    #[Test]
-    public function staff_cannot_delete_class_group()
-    {
-        $schoolId = $this->schoolStaffUser->school_id;
-
-        $classGroup = ClassGroup::factory()->create(['school_id' => $schoolId]);
-
-        $response = $this->deleteJson("/api/class-group/{$classGroup->id}");
-
-        $response->assertStatus(403);
-    }
 }

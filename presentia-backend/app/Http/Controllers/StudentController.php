@@ -37,7 +37,7 @@ class StudentController extends Controller
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
         $query = $this->applySort($query, $request->input('sort', []), ['school_id']);
-        
+
         $data = $query->paginate($perPage);
 
         return response()->json([
@@ -59,7 +59,7 @@ class StudentController extends Controller
             'gender' => 'required|in:male,female',
         ]);
 
-
+        $validatedData['school_id'] = current_school_id();
         $data = Student::create($validatedData);
         return response()->json([
             'status' => 'success',

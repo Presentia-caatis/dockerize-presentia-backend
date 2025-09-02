@@ -22,7 +22,8 @@ trait AuthenticatesSchoolAdmin
         parent::setUp();
 
         $schoolAdminRole = Role::firstOrCreate(['name' => 'school_admin', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']); 
+        Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
+        Role::findOrCreate('school_staff'); 
        
         Permission::firstOrCreate(['name' => 'basic_school', 'guard_name' => 'web']);
         Permission::firstOrCreate(['name' => 'manage_students', 'guard_name' => 'web']);

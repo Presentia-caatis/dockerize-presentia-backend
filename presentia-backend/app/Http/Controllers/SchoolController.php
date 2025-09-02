@@ -16,6 +16,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Str;
+use Illuminate\Support\Facades\DB;
 use function App\Helpers\convert_utc_to_timezone;
 
 class SchoolController extends Controller
@@ -40,6 +41,35 @@ class SchoolController extends Controller
             'status' => 'success',
             'message' => 'Schools retrieved successfully',
             'data' => $data
+        ]);
+    }
+
+    public function countAllSchools()
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Schools retrieved successfully',
+            'data' => School::count()
+        ]);
+    }
+
+    public function getByName($name)
+    {
+        $slug = Str::slug($name);
+
+        $school = School::where(DB::raw("LOWER(REPLACE(name, ' ', '-'))"), $slug)->first();
+
+        if (!$school) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'School not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'School retrieved successfully',
+            'data' => $school
         ]);
     }
 
@@ -84,7 +114,7 @@ class SchoolController extends Controller
         $year = $now->year;
 
         if ($now->lessThan(Carbon::create($year, 6, 10))) {
-            
+
             $period = 'even';
             $academicYear = ($year - 1) . '/' . $year;
             $semesterStart = Carbon::create($year, 1, 30)->toDateString();
@@ -227,6 +257,10 @@ class SchoolController extends Controller
                     'semester_id' => $semester->id
                 ],
             ]);
+            // if($request->logo_image){
+            //     $school->logo_image_path = asset('storage/' . $school->logo_image_path);
+            // }
+
 
             \DB::commit();
 
