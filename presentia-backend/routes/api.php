@@ -189,9 +189,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
 
-        Route::get('/', [SchoolController::class, 'index']);
         Route::put('/{id}', [SchoolController::class, 'update']);
-
     });
 
     Route::middleware(['school'])->prefix('semester')->group(function () {
@@ -227,7 +225,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // SCHOOL DATA
     Route::middleware(['school-semester', 'permission:basic_school'])->group(function () {
 
-        Route::prefix('enrollment')->group(function() {
+        Route::prefix('enrollment')->group(function () {
             Route::get('/', [EnrollmentController::class, 'getAll']);
             Route::post('/', [EnrollmentController::class, 'store']);
             Route::post('/store-via-file', [EnrollmentController::class, 'storeViaFile']);
@@ -303,7 +301,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
                 Route::put('/{id}', [AttendanceController::class, 'update']);
                 Route::delete('/{id}', [AttendanceController::class, 'destroy']);
             });
-
         });
 
         Route::middleware('permission:manage_schools')->group(function () {
