@@ -135,6 +135,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // RESTRICT ALL OTHER  to users with 'super_admin' role
         Route::middleware('role:super_admin')->group(function () {
             Route::get('/', [UserController::class, 'getAll']);
+            Route::get('/count', [UserController::class, 'countAllUsers']);
             Route::post('/', [UserController::class, 'store']);
             Route::get('/{id}', [UserController::class, 'getById']);
             Route::delete('/{id}', [UserController::class, 'destroy']);
