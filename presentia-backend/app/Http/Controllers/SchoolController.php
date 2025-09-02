@@ -8,6 +8,7 @@ use App\Models\CheckInStatus;
 use App\Models\CheckOutStatus;
 use App\Models\Day;
 use App\Models\Scopes\SchoolScope;
+use App\Models\Semester;
 use App\Models\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Str;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\convert_utc_to_timezone;
+use function App\Helpers\current_school_timezone;
 
 class SchoolController extends Controller
 {
@@ -81,6 +83,23 @@ class SchoolController extends Controller
         // }
 
         unset($school->school_token);
+        
+        config(['school.id' => $id]);
+        $now = now()->timezone(current_school_timezone())->toDateString();
+
+        $semester = Semester::where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$semester) {
+            $semester = Semester::where('start_date', '>', $now)
+                ->where('is_active', true)
+                ->orderBy('start_date', 'asc')
+                ->first();
+        }
+
+        $school['current_semester'] = $semester; 
 
         return response()->json([
             'status' => 'success',

@@ -9,6 +9,7 @@ use App\Sortable;
 use Illuminate\Http\Request;
 
 use App\Models\Student;
+use function App\Helpers\current_school_id;
 
 class StudentController extends Controller
 {
