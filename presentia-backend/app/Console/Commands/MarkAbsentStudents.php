@@ -12,7 +12,7 @@ class MarkAbsentStudents extends Command
      *
      * @var string
      */
-    protected $signature = 'call:mark-absent-students {school_id} {attendance_window_id}';
+    protected $signature = 'call:mark-absent-students {school_id} {semester_id} {attendance_window_id}';
 
     /**
      * The console command description.
@@ -27,6 +27,7 @@ class MarkAbsentStudents extends Command
     public function handle()
     {
         config(['school.id' => $this->argument('school_id')]);
+        config(['semester.id' => $this->argument('semester_id')]);
 
         $request = new \Illuminate\Http\Request([
             'attendance_window_ids' => [$this->argument('attendance_window_id')]

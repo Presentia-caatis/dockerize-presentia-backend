@@ -225,14 +225,11 @@ class SemesterService
     public function getByCurrentTime()
     {
         $now = now()->timezone(current_school_timezone())->toDateString();
+        
         $semester = Semester::where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
             ->where('is_active', true)
             ->first();
-
-        if (!$semester) {
-            abort(422, "There is no active semester in current date");
-        }
 
         return $semester;
     }

@@ -183,10 +183,25 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         Route::middleware('role:super_admin')->group(function () {
             Route::post('/', [SchoolController::class, 'store']);
+            Route::get('/count', [SchoolController::class, 'countAllSchools']);
+            Route::get('/name/{name}', [SchoolController::class, 'getByName']);
             Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
-            Route::put('/{id}', [SchoolController::class, 'update']);
             Route::delete('/{id}', [SchoolController::class, 'destroy']);
         });
+
+        Route::get('/', [SchoolController::class, 'index']);
+        Route::put('/{id}', [SchoolController::class, 'update']);
+
+    });
+
+    Route::middleware(['school'])->prefix('semester')->group(function () {
+        Route::get('/', [SemesterController::class, 'getAll']);
+        Route::post('/', [SemesterController::class, 'store']);
+        Route::get('/current', [SemesterController::class, 'getByCurrentTime']);
+        Route::put('/is-active-toogle/{id}', [SemesterController::class, 'isActiveToogle']);
+        Route::get('{id}', [SemesterController::class, 'getById']);
+        Route::put('{id}', [SemesterController::class, 'update']);
+        Route::delete('{id}', [SemesterController::class, 'destroy']);
     });
 
     Route::middleware(['school'])->prefix('semester')->group(function () {
@@ -265,7 +280,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::prefix('student')->group(function () {
             Route::get('/csv', [StudentController::class, 'exportStudents'])->middleware('role:super_admin');
             Route::get('/{id}', [StudentController::class, 'getById'])->withoutMiddleware('semester');
-        
+
             Route::middleware('permission:manage_students')->group(function () {
                 Route::post('/', [StudentController::class, 'store'])->withoutMiddleware('semester');
                 Route::put('/{id}', [StudentController::class, 'update'])->withoutMiddleware('semester');
@@ -278,7 +293,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::post('/manual/nis', [AttendanceController::class, 'storeManualAttendanceNisOnly']);
             Route::get('/export', [AttendanceController::class, 'exportAttendance']);
 
-            Route::middleware('permission:manage_attendance')->group(function () {    
+            Route::middleware('permission:manage_attendance')->group(function () {
                 Route::put('/adjust', [AttendanceController::class, 'adjustAttendance']);
                 Route::post('/file', [AttendanceController::class, 'storeFromFile'])->middleware('role:super_admin');
                 Route::post('/manual', [AttendanceController::class, 'storeManualAttendance']);
@@ -293,7 +308,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
         Route::middleware('permission:manage_schools')->group(function () {
 
-            
+
             // ATTENDANCE LATE TYPE
             Route::prefix('check-in-status')->group(function () {
                 Route::get('/', [CheckInStatusController::class, 'getAll'])->withoutMiddleware('permission:manage_schools');

@@ -11,7 +11,6 @@ use App\Models\AttendanceWindow;
 use App\Models\CheckOutStatus;
 use App\Models\ClassGroup;
 use App\Models\Event;
-use App\Models\Scopes\SemesterScope;
 use App\Models\Student;
 use App\Sortable;
 use Carbon\Carbon;
@@ -359,7 +358,8 @@ class AttendanceController extends Controller
             $absentRecords = [];
             foreach ($missingStudentIds as $studentId) {
                 $absentRecords[] = [
-                    'school_id' => config('school.id'),
+                    'school_id' => current_school_id(),
+                    'semester_id' => current_semester_id(),
                     'student_id' => $studentId,
                     'attendance_window_id' => $attendanceWindowId,
                     'check_in_status_id' => $absenceCheckInStatusId,

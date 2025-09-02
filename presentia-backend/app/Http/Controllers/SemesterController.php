@@ -57,10 +57,14 @@ class SemesterController extends Controller
 
     public function getByCurrentTime()
     {
+        $semester = $this->semesterService->getByCurrentTime();
+        if (!$semester) {
+            abort(422, "There is no active semester in current date");
+        }
         return response()->json([
             'status' => 'success',
             'message' => 'Current semester retrieved successfully',
-            'data' => $this->semesterService->getByCurrentTime(),
+            'data' => $semester,
         ]);
     }
 
