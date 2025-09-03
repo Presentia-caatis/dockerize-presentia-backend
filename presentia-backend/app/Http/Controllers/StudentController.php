@@ -19,7 +19,8 @@ class StudentController extends Controller
     {
         $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1',
-            'unfilteredSemester' => 'sometimes|boolean'
+            'unfilteredSemester' => 'sometimes|boolean',
+            'onlyWithoutEnrollment' => 'sometimes|boolean'
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
@@ -34,6 +35,10 @@ class StudentController extends Controller
                         ->with('classGroup:id,school_id,class_name,created_at,updated_at');
                 }
             ]);
+        }
+
+        if (($validatedData['onlyWithoutEnrollment'] ?? false)) {
+            $query->whereDoesntHave('enrollments');
         }
 
         $query = $this->applyFilters($query, $request->input('filter', []), ['school_id']);
