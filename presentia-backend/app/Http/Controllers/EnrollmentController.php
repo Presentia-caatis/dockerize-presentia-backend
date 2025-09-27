@@ -18,11 +18,13 @@ class EnrollmentController extends Controller
 
     public function getAll(Request $request)
     {
-        $validatedDataData = $request->validate([
-            'perPage' => 'sometimes|integer|min:1'
+        $validatedData = $request->validate([
+            'perPage' => 'sometimes|integer|min:1',
+            'filter' => 'sometimes',
+            'sort' => 'sometimes'
         ]);
 
-        $enrollments = $this->enrollmentService->getAll($validatedDataData);
+        $enrollments = $this->enrollmentService->getAll($validatedData);
 
         return response()->json([
             'status' => 'success',

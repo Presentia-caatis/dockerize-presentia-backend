@@ -281,8 +281,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/{id}', [StudentController::class, 'getById'])->withoutMiddleware('semester');
 
             Route::middleware('permission:manage_students')->group(function () {
-                Route::post('/', [StudentController::class, 'store'])->withoutMiddleware('semester');
-                Route::put('/{id}', [StudentController::class, 'update'])->withoutMiddleware('semester');
+                Route::post('/', [StudentController::class, 'store']);
+                Route::put('/{id}', [StudentController::class, 'update']);
                 Route::delete('/{id}', [StudentController::class, 'destroy'])->withoutMiddleware('semester');
             });
         });

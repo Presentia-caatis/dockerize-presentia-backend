@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Filterable;
 use App\Models\Scopes\SemesterScope;
 use App\Models\Semester;
+use App\Services\EnrollmentService;
 use App\Sortable;
+use DB;
 use Illuminate\Http\Request;
 
 use App\Models\Student;
 use function App\Helpers\current_school_id;
+use function App\Helpers\current_semester_id;
 
 class StudentController extends Controller
 {
@@ -57,21 +60,47 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'school_id' => 'required|exists:schools,id',
             'is_active' => 'nullable|boolean',
             'nis' => 'required|string',
             'nisn' => 'required|string',
+            'class_group_id' => 'required|integer|exists:class_groups,id',
             'student_name' => 'required|string',
             'gender' => 'required|in:male,female',
         ]);
 
         $validatedData['school_id'] = current_school_id();
-        $data = Student::create($validatedData);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Student created successfully',
-            'data' => $data
-        ], 201);
+        DB::beginTransaction();
+        try {
+            $studentValidatedData = $validatedData;
+            unset($studentValidatedData['class_group_id']);
+            $data = Student::create($studentValidatedData);
+
+            if(isset($validatedData['class_group_id'])){
+                (new EnrollmentService())->create([
+                    'class_group_id' => $validatedData['class_group_id'],
+                    'student_id' => $data->id,
+                    'school_id' => $validatedData['school_id'],
+                    'semester_id' => current_semester_id()
+                ]);
+            }
+            $data->load('classGroups');
+            DB::commit();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Student created successfully',
+                'data' => $data
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create student',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+        
+       
     }
 
     public function exportStudents()
@@ -125,21 +154,52 @@ class StudentController extends Controller
     {
         $student = Student::withoutGlobalScope(SemesterScope::class)
             ->findOrFail($id);
+
         $validatedData = $request->validate([
             'is_active' => 'nullable|boolean',
             'nis' => 'nullable|string',
             'nisn' => 'nullable|string',
             'student_name' => 'nullable|string',
             'gender' => 'nullable|in:male,female',
+            'class_group_id' => 'required|integer|exists:class_groups,id',
         ]);
 
-        $student->update($validatedData);
+        DB::beginTransaction();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Student updated successfully',
-            'data' => $student
-        ]);
+        try {
+            $studentValidatedData = $validatedData;
+            unset($studentValidatedData['class_group_id']);
+            $student->update($studentValidatedData);
+            if( isset($validatedData['class_group_id'])){
+                $enrollmentService = new EnrollmentService();
+                if($student->enrollments()->doesntExist()){
+                    $enrollmentService->create([
+                        'class_group_id' => $validatedData['class_group_id'],
+                        'student_id' => $student->id,
+                        'school_id' => current_school_id(),
+                        'semester_id' => current_semester_id()
+                    ]);
+                }else {
+                    $enrollmentService->update($student->enrollments()->first()->id, [
+                        'class_group_id' => $validatedData['class_group_id'],
+                    ]);
+                }
+            }
+            $student->load('classGroups');
+            DB::commit();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Student updated successfully',
+                'data' => $student
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update student',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function destroy($id)

@@ -30,7 +30,7 @@ class SchoolController extends Controller
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
-
+        
         $data = School::paginate($perPage);
 
         // $data->getCollection()->transform(function ($school) {

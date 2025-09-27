@@ -2,18 +2,27 @@
 
 namespace App\Services;
 
+use App\Filterable;
 use App\Jobs\ImportEnrollmentJob;
 use App\Models\Enrollment;
+use App\Sortable;
 use Maatwebsite\Excel\Facades\Excel;
 use function App\Helpers\current_school_id;
 use function App\Helpers\current_semester_id;
 
 class EnrollmentService
 {
+    use Filterable, Sortable;
+
     public function getAll(array $data)
     {
         $perPage = $data['perPage'] ?? 10;
-        return Enrollment::with(['student', 'classGroup', 'semester'])->paginate($perPage);
+        $query = Enrollment::query();
+        
+        $query = $this->applyFilters($query, $data['filter'] ?? [], ['school_id']);
+        $query = $this->applySort($query, $data['sort'] ?? [], ['school_id']);
+
+        return $query->with(['student', 'classGroup', 'semester'])->paginate($perPage);
     }
 
     public function getById($id)
