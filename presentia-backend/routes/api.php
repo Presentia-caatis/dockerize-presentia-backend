@@ -187,7 +187,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             Route::get('/count', [SchoolController::class, 'countAllSchools']);
             Route::get('/name/{name}', [SchoolController::class, 'getByName']);
             Route::put('/task-scheduler-toogle/{id}', [SchoolController::class, 'taskSchedulerToogle']);
-            Route::delete('/{id}', [SchoolController::class, 'destroy']);
+            Route::delete('/', [SchoolController::class, 'destroy']);
         });
 
         Route::put('/{id}', [SchoolController::class, 'update']);

@@ -8,19 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // --- check_in_statuses ---
+        
         Schema::table('check_in_statuses', function (Blueprint $table) {
             $table->dropUnique(['late_duration', 'school_id']);
             $table->unique(['late_duration', 'school_id', 'semester_id']);
         });
 
-        // --- check_out_statuses ---
+        
         Schema::table('check_out_statuses', function (Blueprint $table) {
             $table->dropUnique(['late_duration', 'school_id']);
             $table->unique(['late_duration', 'school_id', 'semester_id']);
         });
 
-        // --- absence_permit_types ---
+        
         Schema::table('absence_permit_types', function (Blueprint $table) {
             $table->dropUnique(['school_id', 'permit_name']);
             $table->unique(['school_id', 'permit_name', 'semester_id']);

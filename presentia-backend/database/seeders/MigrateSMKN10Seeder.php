@@ -48,14 +48,36 @@ class MigrateSMKN10Seeder extends Seeder
             // Enroll students for first semester only (as before)
             Student::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
                 ->where('school_id', $schoolId)
+                ->whereDate('created_at', '<', '2025-07-01')
                 ->whereNotNull('class_group_id')
-                ->chunk(100, function ($students) use ($semester1) {
+                ->chunk(100, function ($students) use ($semester1, $semester2) {
                     foreach ($students as $student) {
                         Enrollment::create([
                             'student_id' => $student->id,
                             'class_group_id' => $student->class_group_id,
                             'school_id' => $student->school_id,
                             'semester_id' => $semester1->id,
+                        ]);
+                        Enrollment::create([
+                            'student_id' => $student->id,
+                            'class_group_id' => $student->class_group_id,
+                            'school_id' => $student->school_id,
+                            'semester_id' => $semester2->id,
+                        ]);
+                    }
+                });
+
+            Student::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
+                ->where('school_id', $schoolId)
+                ->whereDate('created_at', '>', '2025-07-01')
+                ->whereNotNull('class_group_id')
+                ->chunk(100, function ($students) use ($semester2) {
+                    foreach ($students as $student) {
+                        Enrollment::create([
+                            'student_id' => $student->id,
+                            'class_group_id' => $student->class_group_id,
+                            'school_id' => $student->school_id,
+                            'semester_id' => $semester2->id,
                         ]);
                     }
                 });
@@ -177,7 +199,7 @@ class MigrateSMKN10Seeder extends Seeder
                 ->get();
 
             foreach ($newAttendances as $att) {
-                
+
                 $oldCheckInStatus = DB::table('check_in_statuses')->where('id', $att->check_in_status_id)->first();
                 $oldCheckOutStatus = DB::table('check_out_statuses')->where('id', $att->check_out_status_id)->first();
 

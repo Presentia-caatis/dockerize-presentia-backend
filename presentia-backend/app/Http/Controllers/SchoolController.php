@@ -30,7 +30,7 @@ class SchoolController extends Controller
         ]);
 
         $perPage = $validatedData['perPage'] ?? 10;
-        
+
         $data = School::paginate($perPage);
 
         // $data->getCollection()->transform(function ($school) {
@@ -83,7 +83,7 @@ class SchoolController extends Controller
         // }
 
         unset($school->school_token);
-        
+
         config(['school.id' => $id]);
         $now = now()->timezone(current_school_timezone())->toDateString();
 
@@ -99,7 +99,7 @@ class SchoolController extends Controller
                 ->first();
         }
 
-        $school['current_semester'] = $semester; 
+        $school['current_semester'] = $semester;
 
         return response()->json([
             'status' => 'success',
@@ -334,7 +334,7 @@ class SchoolController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, $id)
+    public function destroy(Request $request)
     {
         $expectedConfirmation = 'I acknowledge that this action cannot be undone. Delete the school.';
 
@@ -347,26 +347,35 @@ class SchoolController extends Controller
                         $fail('The confirmation sentence should be: ' . $expectedConfirmation);
                     }
                 },
-            ]
+            ],
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:schools,id',
         ], [
             'delete_confirmation.required' => 'The delete confirmation field is required. Please fill in with: ' . $expectedConfirmation,
+            'ids.required' => 'At least one school id is required.'
         ]);
 
-        $school = School::findOrFail($id);
+        $ids = $request->input('ids');
 
-        User::where('school_id', $school->id)->update(['school_id' => null]);
+        foreach ($ids as $id) {
+            $school = School::findOrFail($id);
 
-        AttendanceSchedule::whereHas('semester', function ($q) use ($school) {
-            $q->withoutGlobalScope(SchoolScope::class)->where('school_id', $school->id);
-        })->delete();
+            User::where('school_id', $school->id)->update(['school_id' => null]);
 
-        if ($school->logo_image_path) {
-            Storage::disk('public')->delete($school->logo_image_path);
+            AttendanceSchedule::whereHas('semester', function ($q) use ($school) {
+                $q->withoutGlobalScope(SchoolScope::class)->where('school_id', $school->id);
+            })->delete();
+
+            if ($school->logo_image_path) {
+                Storage::disk('public')->delete($school->logo_image_path);
+            }
+
+            $school->delete();
         }
-        $school->delete();
+
         return response()->json([
             'status' => 'success',
-            'message' => 'School deleted successfully'
+            'message' => 'Selected schools deleted successfully'
         ]);
     }
 }

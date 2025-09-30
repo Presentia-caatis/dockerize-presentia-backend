@@ -19,7 +19,7 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             $table->unsignedBigInteger('class_group_id')->nullable();
-            // $table->foreign('class_group_id')->references('id')->on('class_groups')->nullOnDelete();
+            $table->foreign('class_group_id')->references('id')->on('class_groups')->nullOnDelete();
         });
     }
 };

@@ -118,7 +118,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         //Check if the table is exist
-        if (!Schema::hasTable('schools') || DB::table('schools')->count() === 0) {
+        if (!Schema::hasTable('schools') || DB::table('schools')->count() === 0 || !Schema::hasTable('semesters') || DB::table('semesters')->count() === 0){
             return;
         }
 
