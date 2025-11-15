@@ -118,7 +118,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         //Check if the table is exist
-        if (!Schema::hasTable('schools') || DB::table('schools')->count() === 0 || !Schema::hasTable('semesters') || DB::table('semesters')->count() === 0){
+        if (!Schema::hasTable('schools') || DB::table('schools')->count() === 0 || !Schema::hasTable('semesters') || DB::table('semesters')->count() === 0) {
             return;
         }
 
@@ -154,33 +154,35 @@ return Application::configure(basePath: dirname(__DIR__))
             /**
              * @Schedule Generate window API for the school
              * */
-            if(isset($semesterIds[$school->id])){
+            if (isset($semesterIds[$school->id])) {
                 $schedule->command("call:generate-window-api {$school->id} {$semesterIds[$school->id]}")
-                ->timezone($school->timezone)
-                ->dailyAt('00:00');
-            }
-            
-            /**
-             * @Schedule mark absent students
-             * */
-            //Get check in end times for today
-            $checkInEnds = AttendanceWindow::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
-                ->where('date', stringify_convert_utc_to_timezone(now(), $school->timezone, 'Y-m-d'))
-                ->where('school_id', $school->id)
-                ->where('semester_id', $semesterIds[$school->id])
-                ->where('type', '!=', 'holiday')
-                ->pluck('check_in_end_time', 'id')
-                ->toArray();
-            
-            foreach ($checkInEnds as $attendanceWindowId => $checkInEnd) {
-                $scheduleTime = Carbon::parse($checkInEnd, $school->timezone)
-                    ->addMinutes($maxLateDuration)
-                    ->format('H:i');
-
-                $schedule->command("call:mark-absent-students {$school->id} {$semesterIds[$school->id]} {$attendanceWindowId}")
                     ->timezone($school->timezone)
-                    ->dailyAt($scheduleTime);
+                    ->dailyAt('00:00');
+
+                /**
+                 * @Schedule mark absent students
+                 * */
+                //Get check in end times for today
+                $checkInEnds = AttendanceWindow::withoutGlobalScopes([SchoolScope::class, SemesterScope::class])
+                    ->where('date', stringify_convert_utc_to_timezone(now(), $school->timezone, 'Y-m-d'))
+                    ->where('school_id', $school->id)
+                    ->where('semester_id', $semesterIds[$school->id])
+                    ->where('type', '!=', 'holiday')
+                    ->pluck('check_in_end_time', 'id')
+                    ->toArray();
+
+                foreach ($checkInEnds as $attendanceWindowId => $checkInEnd) {
+                    $scheduleTime = Carbon::parse($checkInEnd, $school->timezone)
+                        ->addMinutes($maxLateDuration)
+                        ->format('H:i');
+
+                    $schedule->command("call:mark-absent-students {$school->id} {$semesterIds[$school->id]} {$attendanceWindowId}")
+                        ->timezone($school->timezone)
+                        ->dailyAt($scheduleTime);
+                }
             }
+
+
         }
     })
     ->create();
