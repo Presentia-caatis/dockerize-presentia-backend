@@ -67,7 +67,7 @@ class MigrateSMAN24Seeder extends Seeder
             DB::commit();
         } catch (Throwable $e) {
             DB::rollBack();
-            throw $e; // Rethrow the error so you know why it failed
+            \Log::error($e->getMessage());
         }
     }
 }
