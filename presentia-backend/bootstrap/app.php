@@ -154,10 +154,12 @@ return Application::configure(basePath: dirname(__DIR__))
             /**
              * @Schedule Generate window API for the school
              * */
-            $schedule->command("call:generate-window-api {$school->id} {$semesterIds[$school->id]}")
+            if($semesterIds[$school->id] !== nullOrEmptyString()){
+                $schedule->command("call:generate-window-api {$school->id} {$semesterIds[$school->id]}")
                 ->timezone($school->timezone)
                 ->dailyAt('00:00');
-
+            }
+            
             /**
              * @Schedule mark absent students
              * */
