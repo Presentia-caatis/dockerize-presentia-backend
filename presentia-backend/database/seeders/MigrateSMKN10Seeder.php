@@ -20,9 +20,11 @@ class MigrateSMKN10Seeder extends Seeder
      */
     public function run(): void
     {
-        DB::beginTransaction();
+        ini_set('memory_limit', '2G');
 
+        DB::beginTransaction();
         try {
+            \Log::info("Seeder started");
             $schoolId = 1;
 
             // FIRST SEMESTER: 2025-01-01 to 2025-07-01
@@ -230,7 +232,11 @@ class MigrateSMKN10Seeder extends Seeder
             DB::commit();
         } catch (Throwable $e) {
             DB::rollBack();
-            \Log::info("error", [$e->getMessage()]);
+            \Log::error('Seeder failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
         }
     }
 }
