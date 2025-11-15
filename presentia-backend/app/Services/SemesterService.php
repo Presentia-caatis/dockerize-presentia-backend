@@ -35,7 +35,6 @@ class SemesterService
     {
         DB::beginTransaction();
         try {
-            $data["is_active"] = true;
             $schoolId = current_school_id();
             $data["school_id"] = $schoolId;
             $this->checkDateOverlap($data['start_date'], $data['end_date']);

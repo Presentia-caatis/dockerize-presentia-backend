@@ -6,6 +6,7 @@ use App\Models\Semester;
 use Illuminate\Http\Request;
 use App\Services\SemesterService;
 use function App\Helpers\current_school_id;
+use function App\Helpers\current_school_timezone;
 
 class SemesterController extends Controller
 {
@@ -46,6 +47,16 @@ class SemesterController extends Controller
             'copy_all_absence_permit_type' => 'boolean'
         ]);
 
+        $now = now()->timezone(current_school_timezone())->toDateString();
+
+        $semester = Semester::where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where('is_active', true)
+            ->first();
+
+        if ($semester) {
+            $validatedData["is_active"] = false;
+        }
 
         $semester = $this->semesterService->create($validatedData, $migrationConfiguration);
         return response()->json([
