@@ -230,7 +230,7 @@ class MigrateSMKN10Seeder extends Seeder
             DB::commit();
         } catch (Throwable $e) {
             DB::rollBack();
-            \Log::error($e->getMessage());
+            \Log::info("error", [$e->getMessage()]);
         }
     }
 }
