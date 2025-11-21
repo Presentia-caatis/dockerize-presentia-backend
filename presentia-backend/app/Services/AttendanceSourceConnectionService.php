@@ -67,7 +67,7 @@ class AttendanceSourceConnectionService
 
     public function getAllData(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'perPage' => 'sometimes|integer|min:1'
         ]);
 
@@ -89,7 +89,7 @@ class AttendanceSourceConnectionService
             $mp_data[$item['pin']][] = $item['data']['FID'];
         }
 
-        $students = Student::with("classGroup");
+        $students = Student::with("classGroups");
 
         $students = $this->applyFilters($students, $request->input('filter', []), ['school_id']);
         $students = $this->applySort($students, $request->input('sort', []));
