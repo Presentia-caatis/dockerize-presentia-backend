@@ -36,7 +36,6 @@ class AttendanceExport implements WithMultipleSheets
         $checkInStatuses =$checkInStatusesQuery->get()->toArray();
         $checkInAbsenceId = $checkInStatusesQuery->where('late_duration', -1)->firstOrFail()->id;
         $absencePermitTypes = AbsencePermitType::orderBy('permit_name')->where('is_active', true)->get()->toArray(); 
-
         foreach ($classGroups as $classGroup) {
             $sheets[] = new AttendancePerClassSheet($classGroup, $attendanceWindows, $checkInStatuses,$absencePermitTypes, $checkInAbsenceId) ;
         }

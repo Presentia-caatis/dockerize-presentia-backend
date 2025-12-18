@@ -420,6 +420,13 @@ class AttendanceController extends Controller
 
         $startDate = $validated['startDate'] ?? AttendanceWindow::min('date');
         $endDate = $validated['endDate'] ?? AttendanceWindow::max('date');
+
+        if(!$startDate || !$endDate) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No attendance has been found.'
+            ]);
+        }
         $classGroup = $validated['classGroup'] ?? 'all';
 
         $classCounter = $classGroup == 'all' ? 'all' : count(explode(',', $classGroup));
